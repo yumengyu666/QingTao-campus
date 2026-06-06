@@ -53,7 +53,17 @@ export default function Mascot({ onClick, isChatOpen }: MascotProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Walking animation loop
+  // Stop walking when chat is open — mascot stands and "talks"
+  useEffect(() => {
+    if (isChatOpen) {
+      setIsWalking(false);
+      setShowTooltip(false);
+    } else {
+      // Resume after a short delay
+      const t = setTimeout(() => setIsWalking(true), 800);
+      return () => clearTimeout(t);
+    }
+  }, [isChatOpen]);
   useEffect(() => {
     const maxWidth = window.innerWidth;
 
@@ -344,15 +354,15 @@ export default function Mascot({ onClick, isChatOpen }: MascotProps) {
           <circle cx="24" cy="52" r="6" fill="url(#blushGrad)" />
           <circle cx="56" cy="52" r="6" fill="url(#blushGrad)" />
 
-          {/* Mouth */}
+          {/* Mouth — opens when talking/chatting */}
           <motion.path
-            d="M35 56 Q40 60 45 56"
+            d={isChatOpen ? "M33 56 Q40 64 47 56" : isJumping ? "M33 56 Q40 64 47 56" : "M35 56 Q40 60 45 56"}
             stroke="#047857"
             strokeWidth="1.5"
             strokeLinecap="round"
             fill="none"
-            animate={isJumping ? { d: 'M33 56 Q40 64 47 56' } : { d: 'M35 56 Q40 60 45 56' }}
-            transition={{ duration: 0.3 }}
+            animate={isChatOpen ? { d: ["M35 56 Q40 60 45 56", "M33 56 Q40 64 47 56"] } : {}}
+            transition={isChatOpen ? { duration: 0.6, repeat: Infinity, repeatType: 'reverse' } : { duration: 0.3 }}
           />
 
           {/* Sparkle effects (subtle) */}
