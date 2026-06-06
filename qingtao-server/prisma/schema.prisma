@@ -1,0 +1,741 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户 ====================
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique
+  passwordHash  String
+  nickname      String    @default("")
+  avatarUrl     String    @default("")
+  wechat        String    @default("")
+  qq            String    @default("")
+  bio           String    @default("")
+  campusArea    String    @default("")
+  phone         String    @default("")
+  email         String    @default("")
+  resetCode     String?
+  resetCodeExpiry DateTime?
+  role          String    @default("user")       // user | admin
+  status        String    @default("active")     // active | disabled
+  violationCount Int      @default(0)            // 违规标记次数
+  violationBanUntil DateTime?                    // 违规封号截止时间
+  tokenVersion  Int       @default(0)
+  notifPrefs    String    @default("{}")         // JSON: 通知偏好 {"chat_message":true,"new_comment":true,...}
+  lastActiveAt  DateTime?                          // 最后活跃时间（用于在线状态判断）
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  goods              Goods[]            @relation("GoodsUser")
+  posts              Post[]             @relation("PostUser")
+  lostFounds         LostFound[]        @relation("LostFoundUser")
+  profileChanges     ProfileChange[]    @relation("ProfileChangeUser")
+  notifications      Notification[]
+  reviewsReceived    Review[]           @relation("ReviewTarget")
+  reviewsGiven       Review[]           @relation("Reviewer")
+  reports            Report[]           @relation("ReportReporter")
+  cartItems          CartItem[]
+  favorites          Favorite[]
+  followedBy         Follow[]           @relation("Following")
+  following          Follow[]           @relation("Follower")
+  drafts             Draft[]
+  sentAnnouncements  Announcement[]
+  reviewedGoods      Goods[]            @relation("GoodsReviewer")
+  reviewedPosts      Post[]             @relation("PostReviewer")
+  reviewedLostFounds LostFound[]        @relation("LostFoundReviewer")
+  reviewedProfiles   ProfileChange[]    @relation("ProfileChangeReviewer")
+  handledReports     Report[]           @relation("ReportHandler")
+  postComments       PostComment[]
+  lostFoundComments  LostFoundComment[]
+  goodsComments      GoodsComment[]
+  sentMessages       ChatMessage[]      @relation("SentMessages")
+  receivedMessages   ChatMessage[]      @relation("ReceivedMessages")
+  blocksGiven        Block[]            @relation("Blocker")
+  blocksReceived     Block[]            @relation("Blocked")
+  uploadedImages     ImageReview[]
+  qaPosts            QaPost[]
+  qaAnswers          QaAnswer[]
+  courseResources    CourseResource[]
+  securityQuestion   SecurityQuestion?
+  tradeIntentsAsBuyer  TradeIntent[]   @relation("TradeBuyer")
+  tradeIntentsAsSeller TradeIntent[]   @relation("TradeSeller")
+  tradeReviewsReceived TradeReview[]  @relation("ReviewTargetUser")
+  tradeReviewsGiven    TradeReview[]  @relation("ReviewAuthor")
+  auditLogs            AuditLog[]
+
+  @@index([username])
+  @@index([role, status])
+}
+
+// ==================== 关注 ====================
+
+model Follow {
+  id           Int      @id @default(autoincrement())
+  followerId   Int
+  followingId  Int
+  createdAt    DateTime @default(now())
+
+  follower     User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following    User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ==================== 资料修改审核 ====================
+
+model ProfileChange {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  fieldName      String                          // nickname | avatarUrl | wechat | qq | bio | campusArea
+  oldValue       String    @default("")
+  newValue       String    @default("")
+  status         String    @default("pending")   // pending | approved | rejected
+  reviewComment  String    @default("")
+  reviewedBy     Int?
+  createdAt      DateTime  @default(now())
+  reviewedAt     DateTime?
+
+  user           User      @relation("ProfileChangeUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer       User?     @relation("ProfileChangeReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status, createdAt])
+}
+
+// ==================== 分类 ====================
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  name       String
+  icon       String    @default("default")
+  sortOrder  Int       @default(0)
+
+  goods      Goods[]
+}
+
+// ==================== 商品 ====================
+
+model Goods {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  categoryId      Int
+  title           String
+  description     String?
+  price           Float
+  originalPrice   Float?
+  listType        String    @default("sale")       // sale | rent
+  deposit         Float?                           // 出租押金
+  rentStart       String?                          // ISO datetime for rent
+  rentEnd         String?                          // ISO datetime for rent
+  condition       String    @default("used")       // brand_new | like_new | used | worn
+  images          String    @default("[]")         // JSON array ["url1","url2"]
+  campus          String    @default("kexue")      // kexue | dongfeng
+  campusLocation  String?
+  status          String    @default("pending")    // pending | approved | rejected | sold | reserved
+  viewCount       Int       @default(0)
+  isDeleted       Boolean   @default(false)
+  reviewedBy      Int?
+  reviewComment   String    @default("")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation("GoodsUser", fields: [userId], references: [id], onDelete: Cascade)
+  category        Category  @relation(fields: [categoryId], references: [id])
+  reviewer        User?     @relation("GoodsReviewer", fields: [reviewedBy], references: [id])
+  cartItems       CartItem[]
+  favorites       Favorite[]
+  comments        GoodsComment[]
+  reviews         Review[]
+  tradeIntents    TradeIntent[]     @relation("TradeGoods")
+  priceChanges    PriceChangeLog[]
+
+  @@index([categoryId, status])
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+// ==================== 商品评论 ====================
+
+model GoodsComment {
+  id             Int      @id @default(autoincrement())
+  goodsId        Int
+  userId         Int
+  content        String
+  status         String   @default("pending")
+  reviewComment  String   @default("")
+  createdAt      DateTime @default(now())
+
+  goods          Goods    @relation(fields: [goodsId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([goodsId, createdAt])
+}
+
+// ==================== 购物车 ====================
+
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  goodsId    Int
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goods      Goods    @relation(fields: [goodsId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, goodsId])
+}
+
+// ==================== 收藏 ====================
+
+model Favorite {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  goodsId    Int
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goods      Goods    @relation(fields: [goodsId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, goodsId])
+}
+
+// ==================== 帖子 ====================
+
+model Post {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  title          String
+  content        String?
+  images         String    @default("[]")          // JSON array
+  status         String    @default("pending")     // pending | approved | rejected
+  viewCount      Int       @default(0)
+  isDeleted      Boolean   @default(false)
+  reviewedBy     Int?
+  reviewComment  String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  user           User           @relation("PostUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer       User?          @relation("PostReviewer", fields: [reviewedBy], references: [id])
+  comments       PostComment[]
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model PostComment {
+  id             Int      @id @default(autoincrement())
+  postId         Int
+  userId         Int
+  content        String
+  status         String   @default("pending")
+  reviewComment  String   @default("")
+  createdAt      DateTime @default(now())
+
+  post           Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+}
+
+// ==================== 失物招领 ====================
+
+model LostFound {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  type           String                           // lost | found
+  title          String
+  description    String?
+  images         String    @default("[]")          // JSON array
+  campus         String    @default("kexue")       // kexue | dongfeng
+  location       String
+  lostTime       String
+  contactWechat  String    @default("")
+  contactQq      String    @default("")
+  reward         String    @default("")
+  status         String    @default("pending")     // pending | approved | rejected | resolved
+  isDeleted      Boolean   @default(false)
+  viewCount      Int       @default(0)
+  reviewedBy     Int?
+  reviewComment  String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  user           User           @relation("LostFoundUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer       User?          @relation("LostFoundReviewer", fields: [reviewedBy], references: [id])
+  comments       LostFoundComment[]
+
+  @@index([type, status, createdAt])
+  @@index([userId])
+}
+
+model LostFoundComment {
+  id             Int       @id @default(autoincrement())
+  lostFoundId    Int
+  userId         Int
+  content        String
+  status         String    @default("pending")
+  reviewComment  String    @default("")
+  createdAt      DateTime  @default(now())
+
+  lostFound      LostFound @relation(fields: [lostFoundId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([lostFoundId, createdAt])
+}
+
+// ==================== 通知 ====================
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  type       String                            // review_result | new_follower | goods_sold | announcement
+  title      String
+  content    String    @default("")
+  relatedId  Int?
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+}
+
+// ==================== 评价 ====================
+
+model Review {
+  id          Int       @id @default(autoincrement())
+  goodsId     Int
+  reviewerId  Int
+  targetId    Int
+  rating      Int       // 1-5
+  comment     String    @default("")
+  createdAt   DateTime  @default(now())
+
+  goods       Goods     @relation(fields: [goodsId], references: [id], onDelete: Cascade)
+  reviewer    User      @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  target      User      @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([goodsId, reviewerId])
+}
+
+// ==================== 举报 ====================
+
+model Report {
+  id          Int       @id @default(autoincrement())
+  reporterId  Int
+  targetType  String                            // goods | post | lostfound | user
+  targetId    Int
+  reason      String
+  status      String    @default("pending")      // pending | handled | dismissed
+  handledBy   Int?
+  createdAt   DateTime  @default(now())
+
+  reporter    User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  handler     User?     @relation("ReportHandler", fields: [handledBy], references: [id])
+
+  @@index([status, createdAt])
+}
+
+// ==================== 公告 ====================
+
+model Announcement {
+  id         Int       @id @default(autoincrement())
+  title      String
+  content    String?
+  isActive   Boolean   @default(true)
+  createdBy  Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  creator    User      @relation(fields: [createdBy], references: [id])
+
+  @@index([isActive, createdAt])
+}
+
+// ==================== 草稿 ====================
+
+model Draft {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  type      String    // goods | post | lostfound
+  data      String    // JSON
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+// ==================== 首页轮播 ====================
+
+model Banner {
+  id         Int       @id @default(autoincrement())
+  imageUrl   String
+  linkUrl    String    @default("")
+  sortOrder  Int       @default(0)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+}
+
+// ==================== 聊天消息 ====================
+
+model ChatMessage {
+  id             Int      @id @default(autoincrement())
+  senderId       Int
+  receiverId     Int
+  content        String
+  type           String   @default("text")       // text | image | emoji
+  imageStatus    String?                         // pending | approved | rejected
+  isRead         Boolean  @default(false)
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+  sender         User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver       User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, isRead])
+}
+
+// ==================== 拉黑 ====================
+
+model Block {
+  id             Int      @id @default(autoincrement())
+  blockerId      Int
+  blockedId      Int
+  createdAt      DateTime @default(now())
+  blocker        User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked        User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  @@unique([blockerId, blockedId])
+}
+
+// ==================== 图片审核 ====================
+
+model ImageReview {
+  id             Int      @id @default(autoincrement())
+  url            String
+  blurredUrl     String
+  uploaderId     Int
+  context        String                           // goods | post | chat | profile
+  contextId      Int?
+  status         String    @default("pending")    // pending | approved | rejected
+  reviewedBy     Int?
+  reviewComment  String    @default("")
+  createdAt      DateTime  @default(now())
+  uploader       User      @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  @@index([status, createdAt])
+}
+
+// ==================== 恋爱专区 ====================
+
+model DatingProfile {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  nickname       String
+  avatarSeed     String
+  customAvatar   String   @default("")
+  gender         String   @default("secret")
+  bio            String   @default("")
+  contactWechat  String   @default("")
+  contactQq      String   @default("")
+  createdAt      DateTime @default(now())
+  posts          DatingPost[]
+  sentRequests   DatingRequest[] @relation("DatingSender")
+  receivedRequests DatingRequest[] @relation("DatingReceiver")
+  sentMessages   DatingMessage[] @relation("DatingSenderMsg")
+  receivedMessages DatingMessage[] @relation("DatingReceiverMsg")
+  followers      DatingFollow[]  @relation("DatingFollowing")
+  following      DatingFollow[]  @relation("DatingFollower")
+  matches1       DailyMatch[]    @relation("MatchUser1")
+  matches2       DailyMatch[]    @relation("MatchUser2")
+}
+
+model DailyMatch {
+  id          Int      @id @default(autoincrement())
+  user1Id     Int
+  user2Id     Int
+  matchDate   String
+  revealed    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user1       DatingProfile @relation("MatchUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2       DatingProfile @relation("MatchUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  @@unique([user1Id, matchDate])
+  @@unique([user2Id, matchDate])
+  @@index([matchDate])
+}
+
+model DatingRequest {
+  id             Int      @id @default(autoincrement())
+  senderId       Int
+  receiverId     Int
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  sender         DatingProfile @relation("DatingSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver       DatingProfile @relation("DatingReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  @@unique([senderId, receiverId])
+}
+
+model DatingPost {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  content        String
+  images         String   @default("[]")
+  createdAt      DateTime @default(now())
+  author         DatingProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([createdAt])
+}
+
+model DatingFollow {
+  id             Int      @id @default(autoincrement())
+  followerId     Int
+  followingId    Int
+  createdAt      DateTime @default(now())
+  follower       DatingProfile @relation("DatingFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following      DatingProfile @relation("DatingFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  @@unique([followerId, followingId])
+}
+
+model DatingMessage {
+  id             Int      @id @default(autoincrement())
+  senderId       Int
+  receiverId     Int
+  content        String
+  type           String   @default("text")
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  sender         DatingProfile @relation("DatingSenderMsg", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver       DatingProfile @relation("DatingReceiverMsg", fields: [receiverId], references: [id], onDelete: Cascade)
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, isRead])
+}
+
+// ==================== 校园答疑 ====================
+
+model QaPost {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  type           String   @default("question")
+  title          String
+  content        String?
+  category       String   @default("other")
+  images         String   @default("[]")
+  viewCount      Int      @default(0)
+  answerCount    Int      @default(0)
+  bestAnswerId   Int?
+  isResolved     Boolean  @default(false)
+  isDeleted      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers        QaAnswer[]
+  @@index([type, category, createdAt])
+  @@index([userId])
+}
+
+model QaAnswer {
+  id             Int      @id @default(autoincrement())
+  postId         Int
+  userId         Int
+  content        String
+  images         String   @default("[]")
+  likeCount      Int      @default(0)
+  isBest         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  post           QaPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([postId, likeCount])
+}
+
+model QaVote {
+  id             Int      @id @default(autoincrement())
+  answerId       Int
+  userId         Int
+  createdAt      DateTime @default(now())
+  @@unique([answerId, userId])
+}
+
+// ==================== 树洞 ====================
+
+model TreeHolePost {
+  id             Int      @id @default(autoincrement())
+  code           String
+  content        String
+  images         String   @default("[]")
+  likeCount      Int      @default(0)
+  commentCount   Int      @default(0)
+  isDeleted      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  comments       TreeHoleComment[]
+  @@index([createdAt])
+}
+
+model TreeHoleComment {
+  id             Int      @id @default(autoincrement())
+  postId         Int
+  code           String
+  content        String
+  isDeleted      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  post           TreeHolePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([postId, createdAt])
+}
+
+// ==================== 考试资料 ====================
+
+model CourseResource {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  courseName     String
+  courseCode     String   @default("")
+  title          String
+  type           String   @default("exam")       // exam | note | mindmap | report | other
+  description    String?
+  fileUrl        String
+  fileSize       Int?
+  downloadCount  Int      @default(0)
+  likeCount      Int      @default(0)
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([courseName])
+  @@index([courseCode])
+  @@index([downloadCount])
+}
+
+model SearchLog {
+  id         Int       @id @default(autoincrement())
+  keyword    String
+  ip         String    @default("")
+  createdAt  DateTime  @default(now())
+
+  @@index([keyword])
+  @@index([createdAt])
+}
+
+// ==================== 安全提问（找回密码） ====================
+
+model SecurityQuestion {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  question1  String   @default("")  // 问题1
+  answer1    String   @default("")  // 答案1（hash存储）
+  question2  String   @default("")
+  answer2    String   @default("")
+  question3  String   @default("")
+  answer3    String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==================== 线下交易 ====================
+
+model RefreshTokenBlacklist {
+  id         Int      @id @default(autoincrement())
+  tokenHash  String   @unique   // SHA256 hash of refresh token
+  userId     Int
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+model LoginSession {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  ip         String   @default("")
+  userAgent  String   @default("")
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId, lastActive])
+}
+
+model SensitiveWord {
+  id         Int      @id @default(autoincrement())
+  word       String   @unique
+  category   String   @default("general")  // 分类：general/harassment/spam/fraud/politics
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  adminId     Int
+  action      String   // ban_user | delete_goods | review_approve | review_reject | appeal_handle | etc
+  targetType  String   // user | goods | post | lostfound | comment | report
+  targetId    Int?
+  detail      String   @default("")  // JSON or description
+  ip          String   @default("")
+  createdAt   DateTime @default(now())
+
+  admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@index([action, createdAt])
+}
+
+model PriceChangeLog {
+  id          Int      @id @default(autoincrement())
+  goodsId     Int
+  oldPrice    Float
+  newPrice    Float
+  changePercent Float
+  createdAt   DateTime @default(now())
+
+  goods       Goods    @relation(fields: [goodsId], references: [id], onDelete: Cascade)
+
+  @@index([goodsId, createdAt])
+}
+
+model TradeIntent {
+  id          Int       @id @default(autoincrement())
+  goodsId     Int
+  buyerId     Int
+  sellerId    Int
+  message     String    @default("")    // 买家留言
+  status      String    @default("pending")  // pending | accepted | rejected | completed
+  buyerRated  Boolean   @default(false)
+  sellerRated Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  goods       Goods     @relation("TradeGoods", fields: [goodsId], references: [id], onDelete: Cascade)
+  buyer       User      @relation("TradeBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller      User      @relation("TradeSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  reviews     TradeReview[]
+
+  @@unique([goodsId, buyerId])
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+}
+
+model TradeReview {
+  id          Int       @id @default(autoincrement())
+  tradeId     Int       @unique
+  reviewerId  Int
+  targetId    Int
+  rating      Int       // 1-5
+  comment     String    @default("")
+  createdAt   DateTime  @default(now())
+
+  trade       TradeIntent @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation("ReviewAuthor", fields: [reviewerId], references: [id], onDelete: Cascade)
+  target      User        @relation("ReviewTargetUser", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([targetId])
+}
