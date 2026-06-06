@@ -7,7 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const API_URL = process.env.MODERATION_API_URL!;
 const API_KEY = process.env.MODERATION_API_KEY!;
-const MODEL = process.env.MODERATION_MODEL || 'deepseek-chat';
+const MODEL = process.env.MODERATION_MODEL || 'deepseek-v4-flash';
 
 const SYSTEM_PROMPT = `你是内容安全哨兵。你的唯一功能是判断输入文本是否违规。
 你只能回复一个字符：0 或 1。0 = 安全，1 = 违规。

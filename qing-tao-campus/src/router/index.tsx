@@ -48,6 +48,7 @@ const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 const AdminContentPage = lazy(() => import('@/pages/admin/AdminContentPage'));
 const AdminImagesPage = lazy(() => import('@/pages/admin/AdminImagesPage'));
 const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage'));
+const AgentPage = lazy(() => import('@/pages/agent/AgentPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -121,6 +122,7 @@ export function AppRouter() {
         <Route path="dating/chat/:userId" element={<LazyLoad><DatingChatPage /></LazyLoad>} />
         <Route path="qa" element={<LazyLoad><QaListPage /></LazyLoad>} />
         <Route path="qa/:id" element={<LazyLoad><QaDetailPage /></LazyLoad>} />
+        <Route path="agent" element={<LazyLoad><AgentPage /></LazyLoad>} />
       </Route>
 
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>

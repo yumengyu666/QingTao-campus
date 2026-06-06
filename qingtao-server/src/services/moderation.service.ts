@@ -146,7 +146,7 @@ async function callDeepSeek(text: string): Promise<string> {
         ],
         temperature: 0,
         max_tokens: 1,
-        ...(cfg.model === 'deepseek-v4-flash' ? { thinking: { type: 'disabled' } as any } : {}),
+        thinking: { type: 'disabled' } as any,
       }),
       signal: controller.signal,
     });

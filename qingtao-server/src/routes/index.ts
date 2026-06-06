@@ -28,6 +28,7 @@ import { reportMessages } from '../controllers/report.controller';
 import * as statsCtrl from '../controllers/stats.controller';
 import { sseNotifications } from '../controllers/sse.controller';
 import { exportMyData, getActivity } from '../controllers/data.controller';
+import { agentChat, agentChatStream, clearConversation } from '../controllers/agent.controller';
 
 const router = Router();
 
@@ -76,6 +77,11 @@ router.get('/images/status', authMiddleware, checkStatus);
 // Image batch review — admin only
 router.post('/admin/images/batch', authMiddleware, batchImageReview);
 router.get('/admin/stats/review', authMiddleware, getReviewStats);
+
+// Agent chat — 智能助手小轻 (auth required)
+router.post('/agent/chat', authMiddleware, agentChat);
+router.post('/agent/chat/stream', authMiddleware, agentChatStream);
+router.post('/agent/chat/clear', authMiddleware, clearConversation);
 
 // Sensitive word management
 import { getSensitiveWords, addSensitiveWord, updateSensitiveWord, deleteSensitiveWord } from '../controllers/admin.controller';
