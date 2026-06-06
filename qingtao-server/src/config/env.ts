@@ -88,7 +88,7 @@ export const env = {
   DATABASE_URL: requireEnv('DATABASE_URL'),
   JWT_ACCESS_SECRET: requireEnv('JWT_ACCESS_SECRET'),
   JWT_REFRESH_SECRET: requireEnv('JWT_REFRESH_SECRET'),
-  JWT_ACCESS_EXPIRES: process.env.JWT_ACCESS_EXPIRES || '15m',
+  JWT_ACCESS_EXPIRES: process.env.JWT_ACCESS_EXPIRES || '2h',
   JWT_REFRESH_EXPIRES: process.env.JWT_REFRESH_EXPIRES || '7d',
   UPLOAD_PATH: process.env.UPLOAD_PATH || './uploads',
   MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '5242880', 10),
