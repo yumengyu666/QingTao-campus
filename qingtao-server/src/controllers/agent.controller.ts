@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { chatCompletion, chatCompletionStream, ChatMessage } from '../services/deepseek.service';
 import { prisma } from '../config/database';
+import { logger } from '../utils/logger';
 
 // ─── 对话历史内存存储（简单实现，有 TTL）───
 const conversationStore = new Map<number, { messages: ChatMessage[]; lastAccess: number }>();
@@ -194,8 +195,8 @@ export async function agentChat(req: Request, res: Response) {
       },
     });
   } catch (error: any) {
-    console.error('[Agent Chat] Error:', error.message);
-
+    logger.error('[Agent Chat] Error:', error.message);
+    
     // 如果 DeepSeek 不可用，降级到关键词匹配
     if (error.message?.includes('not configured') || error.message?.includes('fetch')) {
       return res.status(503).json({
