@@ -7,6 +7,20 @@ export async function createNotification(params: {
   content?: string;
   relatedId?: number;
 }) {
+  // 去重：5分钟内同一用户+类型+关联ID不重复创建
+  if (params.relatedId) {
+    const recent = await prisma.notification.findFirst({
+      where: {
+        userId: params.userId,
+        type: params.type,
+        relatedId: params.relatedId,
+        createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+      },
+      select: { id: true },
+    });
+    if (recent) return recent;
+  }
+
   const notif = await prisma.notification.create({
     data: {
       userId: params.userId,
@@ -27,6 +41,13 @@ export async function createNotification(params: {
   } catch {}
 
   return notif;
+}
+
+// 删除某内容相关的所有通知（删除商品/帖子/失物时调用）
+export async function cleanupRelatedNotifications(relatedId: number, types: string[]) {
+  await prisma.notification.deleteMany({
+    where: { relatedId, type: { in: types } },
+  });
 }
 
 // 给所有用户发送公告
