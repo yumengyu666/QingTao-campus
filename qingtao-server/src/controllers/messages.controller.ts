@@ -39,7 +39,7 @@ export async function getConversations(req: Request, res: Response, next: NextFu
       return paginated(res, [], 0, page, pageSize);
     }
 
-    const peerIds = [...new Set(conversations.map((c: any) => c.peerId))];
+    const peerIds = [...new Set(conversations.map((c: any) => Number(c.peerId)))];
 
     // 批量获取未读数（单条 SQL）
     const unreadRows = await prisma.$queryRawUnsafe<any[]>(
@@ -49,7 +49,7 @@ export async function getConversations(req: Request, res: Response, next: NextFu
        GROUP BY senderId`,
       userId, ...peerIds,
     );
-    const unreadMap = new Map(unreadRows.map((r: any) => [r.senderId, Number(r.unread)]));
+    const unreadMap = new Map(unreadRows.map((r: any) => [Number(r.senderId), Number(r.unread)]));
 
     // 批量获取用户信息
     const peers = await prisma.user.findMany({
@@ -59,17 +59,18 @@ export async function getConversations(req: Request, res: Response, next: NextFu
     const peerMap = new Map(peers.map(p => [p.id, p]));
 
     const data = conversations.map((c: any) => {
-      const peer = peerMap.get(c.peerId);
+      const peerId = Number(c.peerId);
+      const peer = peerMap.get(peerId);
       return {
-        userId: c.peerId,
+        userId: peerId,
         nickname: peer?.nickname || '',
         username: peer?.username || '',
         avatarUrl: peer?.avatarUrl || '',
         lastMessage: c.type === 'image' ? '[图片]' : (c.content || ''),
         lastType: c.type || 'text',
         lastTime: c.createdAt?.toISOString?.() || String(c.createdAt || ''),
-        unread: unreadMap.get(c.senderId === userId ? c.receiverId : c.senderId) || 0,
-        isMine: c.senderId === userId,
+        unread: unreadMap.get(Number(c.senderId) === userId ? Number(c.receiverId) : Number(c.senderId)) || 0,
+        isMine: Number(c.senderId) === userId,
         isRead: c.isRead === 1 || c.isRead === true,
         readAt: c.readAt?.toISOString?.() || null,
       };

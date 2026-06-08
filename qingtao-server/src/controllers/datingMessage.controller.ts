@@ -188,7 +188,7 @@ export async function getConversations(req: Request, res: Response, next: NextFu
       return paginated(res, [], 0, page, pageSize);
     }
 
-    const peerIds = [...new Set(conversations.map((c: any) => c.peerId))];
+    const peerIds = [...new Set(conversations.map((c: any) => Number(c.peerId)))];
 
     // 批量未读数
     const unreadRows = await prisma.$queryRawUnsafe<any[]>(
@@ -198,7 +198,7 @@ export async function getConversations(req: Request, res: Response, next: NextFu
        GROUP BY senderId`,
       myProfile.id, ...peerIds,
     );
-    const unreadMap = new Map(unreadRows.map((r: any) => [r.senderId, Number(r.unread)]));
+    const unreadMap = new Map(unreadRows.map((r: any) => [Number(r.senderId), Number(r.unread)]));
 
     // 批量获取恋爱资料
     const peers = await prisma.datingProfile.findMany({
@@ -208,17 +208,20 @@ export async function getConversations(req: Request, res: Response, next: NextFu
     const peerMap = new Map(peers.map(p => [p.id, p]));
 
     const data = conversations.map((c: any) => {
-      const peer = peerMap.get(c.peerId);
+      const peerId = Number(c.peerId);
+      const peer = peerMap.get(peerId);
+      const senderId = Number(c.senderId);
+      const receiverId = Number(c.receiverId);
       return {
-        profileId: c.peerId,
+        profileId: peerId,
         userId: peer?.userId,
         nickname: peer?.nickname || '',
         avatarSeed: peer?.avatarSeed || '',
         customAvatar: peer?.customAvatar || '',
         lastMessage: c.content || '',
         lastTime: c.createdAt?.toISOString?.() || String(c.createdAt || ''),
-        unread: unreadMap.get(c.senderId === myProfile.id ? c.receiverId : c.senderId) || 0,
-        isMine: c.senderId === myProfile.id,
+        unread: unreadMap.get(senderId === myProfile.id ? receiverId : senderId) || 0,
+        isMine: senderId === myProfile.id,
       };
     });
 
