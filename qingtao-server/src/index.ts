@@ -134,6 +134,11 @@ async function shutdown(signal: string) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
+// Graceful shutdown validation
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});
+
 // Global error handlers
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception', { error: err.message, stack: err.stack });
