@@ -200,6 +200,26 @@ function buildSystemPrompt(userName: string, campus: string): string {
 10. 如果用户说"帮我找..."、"有没有..."、"搜一下..."，告诉用户平台有全站搜索功能(在首页顶部搜索栏)，可以搜索商品/帖子/失物招领，并建议相关搜索关键词
 11. 如果用户对平台功能不熟悉，可以简短推荐相关功能（如"去看看首页的求购专区"），可以用短横线列出2-3个相关功能入口
 12. 英文用户用简短英文回复(3-5句)，然后引导回中文平台资源`;
+
+// 智能追问建议生成
+function generateSuggestions(userMsg: string, aiReply: string): string[] {
+  const defaults = ['今天有什么好东西？', '怎么发布商品？', '有什么新功能？'];
+  const msg = userMsg.toLowerCase();
+  
+  if (msg.includes('商品') || msg.includes('买卖') || msg.includes('二手')) {
+    return ['热门商品有哪些？', '怎么发布商品？', '怎么联系卖家？'];
+  }
+  if (msg.includes('发布') || msg.includes('卖')) {
+    return ['发布需要什么？', '图片有什么要求？', '审核要多久？'];
+  }
+  if (msg.includes('树洞') || msg.includes('匿名')) {
+    return ['树洞怎么发帖？', '匿名安全吗？', '怎么查看我的树洞？'];
+  }
+  if (msg.includes('恋爱') || msg.includes('交友')) {
+    return ['怎么创建恋爱资料？', '如何匹配？', '隐私怎么保护？'];
+  }
+  return defaults;
+}
 }
 
 // ─── POST /api/agent/chat ───
@@ -241,6 +261,9 @@ export async function agentChat(req: Request, res: Response) {
     addToHistory(userId, { role: 'user', content: message.trim() });
     addToHistory(userId, { role: 'assistant', content: response.content });
 
+    // 智能追问建议
+    const suggestions = generateSuggestions(message.trim(), response.content);
+
     return res.json({
       code: 200,
       message: 'ok',
@@ -249,6 +272,7 @@ export async function agentChat(req: Request, res: Response) {
         reasoning: response.reasoning_content || null,
         mode: thinkingMode,
         usage: response.usage,
+        suggestions,
         timestamp: new Date().toISOString(),
       },
     });
@@ -408,4 +432,30 @@ export async function clearConversation(req: Request, res: Response) {
   const userId = (req as any).user?.userId as number;
   clearHistory(userId);
   return res.json({ code: 200, message: '对话历史已清除', data: null });
+}
+
+// ─── POST /api/agent/feedback — 对话反馈 ───
+export async function submitFeedback(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.userId as number;
+    const { rating, comment } = req.body; // rating: 'up' | 'down'
+
+    if (!['up', 'down'].includes(rating)) {
+      return res.status(400).json({ code: 400, message: '请提供有效评价', data: null });
+    }
+
+    // 简单统计：记录最近一次用户消息
+    const lastUserMsg = await prisma.agentConversation.findFirst({
+      where: { userId, role: 'user' },
+      orderBy: { createdAt: 'desc' },
+      select: { content: true },
+    });
+
+    logger.info(`Agent feedback: user=${userId} rating=${rating} query="${lastUserMsg?.content?.slice(0, 50) || ''}"`);
+
+    return res.json({ code: 201, message: '感谢反馈！小轻会继续加油 💪', data: null });
+  } catch (err) {
+    logger.error('[Agent Feedback] Error:', err);
+    return res.status(500).json({ code: 500, message: '反馈提交失败', data: null });
+  }
 }

@@ -69,3 +69,17 @@ export const sensitiveOpLimiter = rateLimit({
     return req.ip || 'unknown';
   },
 });
+
+// Agent 智能助手限制：每用户每日50次
+export const agentLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 429, message: '小轻今天有点累了，明天再来找我聊天吧 😴', data: null },
+  keyGenerator: (req) => {
+    if (req.user?.userId) return `agent:${req.user.userId}`;
+    return `agent:ip:${req.ip}`;
+  },
+});
+
