@@ -23,6 +23,8 @@ const typingLimiter = rateLimit({
   message: { code: 429, message: '请求过于频繁', data: null },
 });
 
+router.get('/search/all', searchChatMessages);
+router.patch('/read/all', readAllMessages);
 router.get('/unread-count', ctrl.getUnreadCount);
 router.get('/conversations', ctrl.getConversations);
 router.get('/:userId', ctrl.getMessages);
@@ -30,7 +32,5 @@ router.post('/:userId', messageLimiter, ctrl.sendMessage);
 router.post('/:userId/typing', typingLimiter, ctrl.setTyping);
 router.get('/:userId/typing', ctrl.getTyping);
 router.patch('/:id/read', ctrl.markMessageRead);
-router.get('/search/all', searchChatMessages);
-router.patch('/read/all', readAllMessages);
 
 export default router;
