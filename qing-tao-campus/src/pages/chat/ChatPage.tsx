@@ -414,7 +414,7 @@ export default function ChatPage() {
                     </div>
                   )}
                   {/* Read status for my last message */}
-                  {isMine && idx === 0 && !msg._temp && (
+                  {isMine && i === 0 && !msg._temp && (
                     <span className={`self-end text-[10px] mt-0.5 ${msg.isRead ? 'text-blue-400' : 'text-gray-300 dark:text-gray-600'}`} title={msg.isRead && msg.readAt ? `已读 ${new Date(msg.readAt).toLocaleTimeString()}` : '未读'}>
                       {msg.isRead ? '已读' : '未读'}
                     </span>
