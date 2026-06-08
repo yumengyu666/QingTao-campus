@@ -70,6 +70,42 @@ async function getUserInfo(userId: number): Promise<{ nickname: string; campus: 
 }
 
 // ─── 小轻系统提示词 ───
+
+/** 构建动态上下文：热门商品、最新帖子、签到数据 */
+async function buildDynamicContext(campus: string): Promise<string> {
+  try {
+    const [hotGoods, newPosts, checkinCount] = await Promise.all([
+      prisma.goods.findMany({
+        where: { isDeleted: false, status: 'approved', ...(campus ? { campus } : {}) },
+        select: { title: true, price: true },
+        orderBy: { viewCount: 'desc' },
+        take: 3,
+      }),
+      prisma.post.findMany({
+        where: { isDeleted: false, status: 'approved' },
+        select: { title: true },
+        orderBy: { createdAt: 'desc' },
+        take: 2,
+      }),
+      prisma.dailyCheckin.count({
+        where: { checkinDate: new Date().toISOString().slice(0, 10) },
+      }),
+    ]);
+
+    const parts: string[] = [];
+    if (hotGoods.length > 0) {
+      parts.push(`热门商品：${hotGoods.map(g => `${g.title} ¥${g.price}`).join('、')}`);
+    }
+    if (newPosts.length > 0) {
+      parts.push(`最新帖子：${newPosts.map(p => p.title).join('、')}`);
+    }
+    parts.push(`今日已有 ${checkinCount} 人签到`);
+    return parts.join('\n');
+  } catch {
+    return '';
+  }
+}
+
 function buildSystemPrompt(userName: string, campus: string): string {
   return `你是"小轻"，轻淘（QingTao）校园平台的智能助手。轻淘是郑州轻工业大学的校园二手交易+社区平台。
 
@@ -175,9 +211,11 @@ export async function agentChat(req: Request, res: Response) {
     }
 
     const { nickname, campus } = await getUserInfo(userId);
+    const dynamicContext = await buildDynamicContext(campus);
 
     // 构建消息列表
-    const systemPrompt = buildSystemPrompt(nickname, campus);
+    const systemPrompt = buildSystemPrompt(nickname, campus) + 
+      (dynamicContext ? `\n\n## 当前校园动态\n${dynamicContext}` : '');
     const history = await getHistory(userId);
 
     const messages: ChatMessage[] = [
