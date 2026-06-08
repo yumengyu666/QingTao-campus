@@ -9,7 +9,7 @@ import { CONDITION_MAP, STATUS_MAP } from '@/types/goods';
 import { formatDate, formatTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
 import { saveBrowseHistory } from '@/pages/profile/BrowseHistoryPage';
-import { FiHeart, FiShoppingCart, FiCopy, FiCheck, FiEdit2, FiCheckCircle, FiTrash2, FiArrowDown, FiArrowUp, FiEye, FiClock, FiMessageCircle, FiFlag, FiShare2, FiCalendar } from 'react-icons/fi';
+import { FiHeart, FiShoppingCart, FiCopy, FiCheck, FiEdit2, FiCheckCircle, FiTrash2, FiArrowDown, FiArrowUp, FiEye, FiClock, FiMessageCircle, FiFlag, FiShare2, FiCalendar, FiRefreshCw } from 'react-icons/fi';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { useState, useEffect, useRef } from 'react';
@@ -36,6 +36,10 @@ export default function GoodsDetailPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reserving, setReserving] = useState(false);
+  const [bartering, setBartering] = useState(false);
+  const [showBarterPick, setShowBarterPick] = useState(false);
+  const [myGoods, setMyGoods] = useState<any[]>([]);
+  const [selectedBarterGoods, setSelectedBarterGoods] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [customReason, setCustomReason] = useState('');
   const [intentStatus, setIntentStatus] = useState<string | null>(null); // 'pending' | 'accepted' | null
@@ -323,6 +327,16 @@ export default function GoodsDetailPage() {
           {reserving ? '...' : '预约看货'}
         </button>
       )}
+      {!isOwner && goods.status === 'approved' && (
+        <button onClick={handleBarterPropose}
+          disabled={bartering}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all active:scale-[0.97] ${
+            bartering ? 'bg-gray-100 text-gray-400' : 'bg-green-50 text-green-600 border border-green-200 hover:bg-green-100'
+          }`}>
+          <FiRefreshCw />
+          {bartering ? '...' : '提议交换'}
+        </button>
+      )}
       <button onClick={toggleFavorite}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-medium transition-all active:scale-[0.97] ${favorited ? 'border-red-300 text-red-500 bg-red-50' : 'border-gray-200 dark:border-[var(--color-border)] text-gray-600 dark:text-[var(--color-text-secondary)]'}`}>
         <FiHeart className={favorited ? 'fill-red-500' : ''} />
@@ -358,6 +372,27 @@ export default function GoodsDetailPage() {
       else toast.error(json.message);
     } catch { toast.error('网络错误'); }
     finally { setReserving(false); }
+  };
+
+  const handleBarterPropose = async () => {
+    setBartering(true);
+    // 加载我的商品列表
+    try {
+      const res = await apiFetch(`/api/users/${goods.userId}/goods?pageSize=5`);
+      // 实际需要加载当前用户的商品来提议交换
+      const myRes = await apiFetch(`/api/users/me`);
+      // 简化版：直接弹窗让用户输入自己商品ID
+      const myGoodsId = prompt('请输入你想用来交换的商品ID（可在你的商品列表查看）：');
+      if (!myGoodsId) { setBartering(false); return; }
+      const barterRes = await apiFetch('/api/barter', {
+        method: 'POST',
+        body: JSON.stringify({ fromGoodsId: parseInt(myGoodsId), toGoodsId: goods.id, message: '想用我的物品交换你的' }),
+      });
+      const json = await barterRes.json();
+      if (json.code === 201) toast.success('交换提议已发送');
+      else toast.error(json.message);
+    } catch { toast.error('网络错误'); }
+    finally { setBartering(false); }
   };
 
   const handleReport = async () => {
