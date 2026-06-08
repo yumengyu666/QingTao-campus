@@ -34,6 +34,9 @@ const server = app.listen(env.PORT, () => {
   // 启动过期失物招领归档（每天凌晨4点：30天前resolved→archived）
   startLostFoundArchive();
 
+  // 启动过期通知清理（每天凌晨5点：30天前的已读通知）
+  startNotificationCleanup();
+
   // 初始化 WebSocket 实时通信
   initWebSocket(server);
 });
@@ -96,6 +99,20 @@ function startLostFoundArchive() {
   };
   setInterval(archive, 24 * 3600000);
   setTimeout(archive, 15000);
+}
+
+// 过期通知清理：30天前的已读通知
+function startNotificationCleanup() {
+  const cleanup = () => {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    prisma.notification.deleteMany({
+      where: { isRead: true, createdAt: { lt: cutoff } },
+    }).then(r => {
+      if (r.count > 0) logger.info(`Notification cleanup: deleted ${r.count} old read notifications`);
+    }).catch(e => logger.error('Notification cleanup failed:', e));
+  };
+  setInterval(cleanup, 24 * 3600000);
+  setTimeout(cleanup, 20000);
 }
 
 // Graceful shutdown
