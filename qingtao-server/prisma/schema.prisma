@@ -853,3 +853,17 @@ model UserBadge {
   @@unique([userId, badgeId])
   @@index([userId])
 }
+
+// ==================== Agent 对话记忆 ====================
+
+model AgentConversation {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  role      String
+  content   String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}

@@ -3,20 +3,58 @@ import { chatCompletion, chatCompletionStream, ChatMessage } from '../services/d
 import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
 
-// ─── 对话历史内存存储（简单实现，有 TTL）───
-const conversationStore = new Map<number, { messages: ChatMessage[]; lastAccess: number }>();
-const CONVERSATION_TTL = 30 * 60 * 1000; // 30 分钟
-const MAX_HISTORY = 20; // 最多保留 20 条消息
+// ─── DB 持久化记忆（替代内存 Map）───
+const CONVERSATION_TTL_MS = 30 * 60 * 1000; // 30 分钟
+const MAX_HISTORY = 20;
 
-// 定期清理过期对话
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of conversationStore) {
-    if (now - val.lastAccess > CONVERSATION_TTL) {
-      conversationStore.delete(key);
+async function getHistory(userId: number): Promise<ChatMessage[]> {
+  const cutoff = new Date(Date.now() - CONVERSATION_TTL_MS);
+  const rows = await prisma.agentConversation.findMany({
+    where: { userId, createdAt: { gte: cutoff } },
+    orderBy: { createdAt: 'asc' },
+    take: MAX_HISTORY,
+  });
+  return rows.map(r => ({ role: r.role as 'user' | 'assistant', content: r.content }));
+}
+
+async function addToHistory(userId: number, msg: ChatMessage) {
+  await prisma.agentConversation.create({
+    data: {
+      userId,
+      role: msg.role,
+      content: msg.content,
+      expiresAt: new Date(Date.now() + CONVERSATION_TTL_MS),
+    },
+  });
+  // 保留最近MAX_HISTORY条
+  const excess = await prisma.agentConversation.count({ where: { userId } });
+  if (excess > MAX_HISTORY) {
+    const toDelete = await prisma.agentConversation.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      take: excess - MAX_HISTORY,
+      select: { id: true },
+    });
+    if (toDelete.length > 0) {
+      await prisma.agentConversation.deleteMany({ where: { id: { in: toDelete.map(r => r.id) } } });
     }
   }
-}, 5 * 60 * 1000);
+}
+
+async function clearHistory(userId: number) {
+  await prisma.agentConversation.deleteMany({ where: { userId } });
+}
+
+// 清理过期对话
+async function cleanupExpired() {
+  await prisma.agentConversation.deleteMany({
+    where: { expiresAt: { lt: new Date() } },
+  });
+}
+
+// 每小时清理一次过期对话
+setInterval(() => { cleanupExpired().catch(() => {}); }, 60 * 60 * 1000);
+cleanupExpired().catch(() => {});
 
 /** 获取用户信息（昵称 + 校区） */
 async function getUserInfo(userId: number): Promise<{ nickname: string; campus: string }> {
@@ -25,34 +63,10 @@ async function getUserInfo(userId: number): Promise<{ nickname: string; campus: 
       where: { id: userId },
       select: { nickname: true, campusArea: true },
     });
-    return {
-      nickname: user?.nickname || '同学',
-      campus: user?.campusArea || '',
-    };
+    return { nickname: user?.nickname || '同学', campus: user?.campusArea || '' };
   } catch {
     return { nickname: '同学', campus: '' };
   }
-}
-
-function getHistory(userId: number): ChatMessage[] {
-  let entry = conversationStore.get(userId);
-  if (!entry || Date.now() - entry.lastAccess > CONVERSATION_TTL) {
-    entry = { messages: [], lastAccess: Date.now() };
-    conversationStore.set(userId, entry);
-  }
-  entry.lastAccess = Date.now();
-  return entry.messages;
-}
-
-function addToHistory(userId: number, msg: ChatMessage) {
-  const history = getHistory(userId);
-  history.push(msg);
-  // 限制长度
-  while (history.length > MAX_HISTORY) history.shift();
-}
-
-function clearHistory(userId: number) {
-  conversationStore.delete(userId);
 }
 
 // ─── 小轻系统提示词 ───
@@ -328,7 +342,7 @@ export async function agentChatStream(req: Request, res: Response) {
 
     res.end();
   } catch (error: any) {
-    console.error('[Agent Chat Stream] Error:', error.message);
+    logger.error('[Agent Chat Stream] Error:', error.message);
 
     // 如果还没发送 headers，返回错误
     if (!res.headersSent) {
