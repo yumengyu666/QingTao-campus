@@ -46,6 +46,8 @@ const ResourceDetailPage = lazy(() => import('@/pages/resources/ResourceDetailPa
 const TradeIntentsPage = lazy(() => import('@/pages/trade/TradeIntentsPage'));
 const ComparePage = lazy(() => import('@/pages/goods/ComparePage'));
 const ReservationsPage = lazy(() => import('@/pages/reservation/ReservationsPage'));
+const WantedListPage = lazy(() => import('@/pages/wanted/WantedListPage'));
+const PublishWantedPage = lazy(() => import('@/pages/wanted/PublishWantedPage'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 const AdminContentPage = lazy(() => import('@/pages/admin/AdminContentPage'));
 const AdminImagesPage = lazy(() => import('@/pages/admin/AdminImagesPage'));
@@ -114,6 +116,8 @@ export function AppRouter() {
         <Route path="profile/trades" element={<LazyLoad><TradeIntentsPage /></LazyLoad>} />
         <Route path="compare" element={<LazyLoad><ComparePage /></LazyLoad>} />
         <Route path="reservations" element={<LazyLoad><ReservationsPage /></LazyLoad>} />
+        <Route path="wanted" element={<LazyLoad><WantedListPage /></LazyLoad>} />
+        <Route path="publish/wanted" element={<LazyLoad><PublishWantedPage /></LazyLoad>} />
         <Route path="profile/password" element={<LazyLoad><ChangePasswordPage /></LazyLoad>} />
         <Route path="profile/security" element={<LazyLoad><AccountSecurityPage /></LazyLoad>} />
         <Route path="user/:id" element={<LazyLoad><UserProfilePage /></LazyLoad>} />
