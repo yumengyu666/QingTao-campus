@@ -105,7 +105,7 @@ export async function getGoodsList(req: Request, res: Response, next: NextFuncti
         where,
         include: {
           category: { select: { name: true, icon: true } },
-          user: { select: { id: true, nickname: true, avatarUrl: true } },
+          user: { select: { id: true, nickname: true, avatarUrl: true, status: true } },
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -152,7 +152,7 @@ export async function getNewest(req: Request, res: Response, next: NextFunction)
         where,
         include: {
           category: { select: { name: true, icon: true } },
-          user: { select: { id: true, nickname: true, avatarUrl: true } },
+          user: { select: { id: true, nickname: true, avatarUrl: true, status: true } },
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -161,7 +161,16 @@ export async function getNewest(req: Request, res: Response, next: NextFunction)
       prisma.goods.count({ where }),
     ]);
 
-    const data = list.map(g => ({ ...g, images: JSON.parse(g.images || '[]'), categoryName: g.category?.name || '未分类', categoryIcon: g.category?.icon || '📦', category: undefined }));
+    const data = list.map(g => {
+      const u = g.user as any;
+      const sellerDeleted = u?.status === 'disabled' || u?.nickname?.startsWith('已注销');
+      return {
+        ...g, images: JSON.parse(g.images || '[]'),
+        categoryName: g.category?.name || '未分类', categoryIcon: g.category?.icon || '📦',
+        category: undefined,
+        user: sellerDeleted ? { id: u.id, nickname: `已注销用户${u.id}`, avatarUrl: '' } : u,
+      };
+    });
     await attachPendingImageFlag(data, req.user?.userId);
     return paginated(res, data, total, page, pageSize);
   } catch (err) {
@@ -189,7 +198,7 @@ export async function getHot(req: Request, res: Response, next: NextFunction) {
         where,
         include: {
           category: { select: { name: true, icon: true } },
-          user: { select: { id: true, nickname: true, avatarUrl: true } },
+          user: { select: { id: true, nickname: true, avatarUrl: true, status: true } },
         },
         orderBy: { viewCount: 'desc' },
         take: HOT_POOL,
@@ -209,7 +218,16 @@ export async function getHot(req: Request, res: Response, next: NextFunction) {
       .sort((a, b) => b._hotScore - a._hotScore);
 
     const paged = sorted.slice((page - 1) * pageSize, page * pageSize);
-    const data = paged.map(({ _hotScore, ...g }: any) => ({ ...g, images: JSON.parse(g.images || '[]'), categoryName: g.category?.name, categoryIcon: g.category?.icon, category: undefined }));
+    const data = paged.map(({ _hotScore, ...g }: any) => {
+      const u = g.user as any;
+      const sellerDeleted = u?.status === 'disabled' || u?.nickname?.startsWith('已注销');
+      return {
+        ...g, images: JSON.parse(g.images || '[]'),
+        categoryName: g.category?.name, categoryIcon: g.category?.icon,
+        category: undefined,
+        user: sellerDeleted ? { id: u.id, nickname: `已注销用户${u.id}`, avatarUrl: '' } : u,
+      };
+    });
     await attachPendingImageFlag(data, req.user?.userId);
     return paginated(res, data, total, page, pageSize);
   } catch (err) {
@@ -685,7 +703,7 @@ export async function getRelatedGoods(req: Request, res: Response, next: NextFun
       },
       include: {
         category: { select: { name: true, icon: true } },
-        user: { select: { id: true, nickname: true, avatarUrl: true } },
+        user: { select: { id: true, nickname: true, avatarUrl: true, status: true } },
       },
       orderBy: { viewCount: 'desc' },
       take: 4,
