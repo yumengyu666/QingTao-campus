@@ -178,7 +178,7 @@ export async function agentChat(req: Request, res: Response) {
 
     // 构建消息列表
     const systemPrompt = buildSystemPrompt(nickname, campus);
-    const history = getHistory(userId);
+    const history = await getHistory(userId);
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -254,7 +254,7 @@ export async function agentChatStream(req: Request, res: Response) {
     if (res.socket) res.socket.setNoDelay(true);
 
     const systemPrompt = buildSystemPrompt(nickname, campus);
-    const history = getHistory(userId);
+    const history = await getHistory(userId);
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
