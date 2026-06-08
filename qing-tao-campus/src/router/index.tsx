@@ -45,6 +45,7 @@ const ResourceListPage = lazy(() => import('@/pages/resources/ResourceListPage')
 const ResourceDetailPage = lazy(() => import('@/pages/resources/ResourceDetailPage'));
 const TradeIntentsPage = lazy(() => import('@/pages/trade/TradeIntentsPage'));
 const ComparePage = lazy(() => import('@/pages/goods/ComparePage'));
+const ReservationsPage = lazy(() => import('@/pages/reservation/ReservationsPage'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 const AdminContentPage = lazy(() => import('@/pages/admin/AdminContentPage'));
 const AdminImagesPage = lazy(() => import('@/pages/admin/AdminImagesPage'));
@@ -112,6 +113,7 @@ export function AppRouter() {
         <Route path="profile/blacklist" element={<LazyLoad><BlacklistPage /></LazyLoad>} />
         <Route path="profile/trades" element={<LazyLoad><TradeIntentsPage /></LazyLoad>} />
         <Route path="compare" element={<LazyLoad><ComparePage /></LazyLoad>} />
+        <Route path="reservations" element={<LazyLoad><ReservationsPage /></LazyLoad>} />
         <Route path="profile/password" element={<LazyLoad><ChangePasswordPage /></LazyLoad>} />
         <Route path="profile/security" element={<LazyLoad><AccountSecurityPage /></LazyLoad>} />
         <Route path="user/:id" element={<LazyLoad><UserProfilePage /></LazyLoad>} />

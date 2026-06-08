@@ -9,7 +9,7 @@ import { CONDITION_MAP, STATUS_MAP } from '@/types/goods';
 import { formatDate, formatTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
 import { saveBrowseHistory } from '@/pages/profile/BrowseHistoryPage';
-import { FiHeart, FiShoppingCart, FiCopy, FiCheck, FiEdit2, FiCheckCircle, FiTrash2, FiArrowDown, FiArrowUp, FiEye, FiClock, FiMessageCircle, FiFlag, FiShare2 } from 'react-icons/fi';
+import { FiHeart, FiShoppingCart, FiCopy, FiCheck, FiEdit2, FiCheckCircle, FiTrash2, FiArrowDown, FiArrowUp, FiEye, FiClock, FiMessageCircle, FiFlag, FiShare2, FiCalendar } from 'react-icons/fi';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { useState, useEffect, useRef } from 'react';
@@ -35,6 +35,7 @@ export default function GoodsDetailPage() {
   const [showContact, setShowContact] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [reserving, setReserving] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [customReason, setCustomReason] = useState('');
   const [intentStatus, setIntentStatus] = useState<string | null>(null); // 'pending' | 'accepted' | null
@@ -312,6 +313,16 @@ export default function GoodsDetailPage() {
           私信卖家
         </button>
       )}
+      {!isOwner && goods.status === 'approved' && (
+        <button onClick={handleReserve}
+          disabled={reserving}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all active:scale-[0.97] ${
+            reserving ? 'bg-gray-100 text-gray-400' : 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
+          }`}>
+          <FiCalendar />
+          {reserving ? '...' : '预约看货'}
+        </button>
+      )}
       <button onClick={toggleFavorite}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-medium transition-all active:scale-[0.97] ${favorited ? 'border-red-300 text-red-500 bg-red-50' : 'border-gray-200 dark:border-[var(--color-border)] text-gray-600 dark:text-[var(--color-text-secondary)]'}`}>
         <FiHeart className={favorited ? 'fill-red-500' : ''} />
@@ -334,6 +345,20 @@ export default function GoodsDetailPage() {
       </button>
     </div>
   );
+
+  const handleReserve = async () => {
+    setReserving(true);
+    try {
+      const res = await apiFetch('/api/reservations', {
+        method: 'POST',
+        body: JSON.stringify({ goodsId: goods.id, message: '想约时间看看实物' }),
+      });
+      const json = await res.json();
+      if (json.code === 201) toast.success('预约成功，等待卖家确认');
+      else toast.error(json.message);
+    } catch { toast.error('网络错误'); }
+    finally { setReserving(false); }
+  };
 
   const handleReport = async () => {
     const finalReason = reportReason === '其他' ? customReason.trim() : reportReason;
