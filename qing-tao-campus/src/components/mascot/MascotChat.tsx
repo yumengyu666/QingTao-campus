@@ -151,15 +151,21 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
     setInput('');
     setIsLoading(true);
 
-    // ── Try real streaming (direct to backend, no Vite proxy) ──
+    // ── Try real streaming (with 30s timeout) ──
     let streamOk = false;
     try {
       const token = storage.getToken() || '';
+      const abortCtrl = new AbortController();
+      const timeoutId = setTimeout(() => abortCtrl.abort(), 30000);
+
       const streamRes = await fetch('/api/agent/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ message: trimmed, mode: aiMode }),
+        signal: abortCtrl.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (streamRes.ok && streamRes.body) {
         const reader = streamRes.body.getReader();
@@ -196,32 +202,55 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
                 setMessages((prev) => prev.map((m) =>
                   m.id === aiMsgId ? { ...m, text: p.content || fullText, reasoning: p.reasoning || fullReasoning || null, isStreaming: false } : m
                 ));
+              } else if (p.type === 'error') {
+                // Backend sent error mid-stream
+                fullText = p.message || 'AI 服务暂时不可用';
+                streamOk = true; // Don't fallback — backend already responded
+                setMessages((prev) => prev.map((m) =>
+                  m.id === aiMsgId ? { ...m, text: fullText, isStreaming: false } : m
+                ));
               }
             } catch { /* skip */ }
           }
         }
+        // Stream ended normally — ensure final state
         setMessages((prev) => prev.map((m) =>
           m.id === aiMsgId ? { ...m, isStreaming: false, text: m.text || '收到啦～' } : m
         ));
         streamOk = true;
       }
-    } catch {
-      // Stream failed — fall through to non-streaming
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        // Timeout — show error, don't fallback
+        setMessages((prev) => prev.map((m) =>
+          m.id === aiMsgId ? { ...m, text: '请求超时，请稍后再试 😢', isStreaming: false } : m
+        ));
+        streamOk = true; // Skip fallback — we already handled it
+      }
+      // Other errors → fall through to non-streaming
     }
 
-    // ── Fallback: non-streaming API ──
+    // ── Fallback: non-streaming API (with 30s timeout) ──
     if (!streamOk) {
       try {
-        const res = await apiFetch('/api/agent/chat', {
+        const abortCtrl = new AbortController();
+        const timeoutId = setTimeout(() => abortCtrl.abort(), 30000);
+
+        const res = await fetch('/api/agent/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${storage.getToken() || ''}`,
+          },
           body: JSON.stringify({ message: trimmed, mode: aiMode }),
+          signal: abortCtrl.signal,
         });
+
+        clearTimeout(timeoutId);
         const data = await res.json();
 
         if (data.code === 200 && data.data?.reply) {
           const reasoning = data.data?.reasoning || null;
-          // Simulate typing
           const fullText = data.data.reply;
           let i = 0;
           const speed = fullText.length > 100 ? 15 : 25;
@@ -243,11 +272,24 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
           }, speed);
           return; // typing handles setIsLoading
         }
-      } catch { /* ignore */ }
+
+        // API returned error
+        setMessages((prev) => prev.map((m) =>
+          m.id === aiMsgId ? { ...m, text: data.message || '小轻不在线，请稍后再试 😢', isStreaming: false } : m
+        ));
+      } catch (err: any) {
+        // Both streaming and non-streaming failed
+        const errorMsg = err.name === 'AbortError'
+          ? '请求超时，请稍后再试 😢'
+          : '网络异常，请检查网络后重试 📡';
+        setMessages((prev) => prev.map((m) =>
+          m.id === aiMsgId ? { ...m, text: errorMsg, isStreaming: false } : m
+        ));
+      }
     }
 
     setIsLoading(false);
-  }, [isLoading, aiMode]);
+  }, [isLoading, aiMode, nextId]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
