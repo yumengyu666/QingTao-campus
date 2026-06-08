@@ -793,3 +793,63 @@ model DailyCheckin {
   @@unique([userId, checkinDate])
   @@index([userId])
 }
+
+// ==================== 物品交换提议 ====================
+
+model BarterProposal {
+  id          Int       @id @default(autoincrement())
+  fromGoodsId Int
+  toGoodsId   Int
+  fromUserId  Int
+  toUserId    Int
+  status      String    @default("pending")
+  message     String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([fromGoodsId, toGoodsId])
+  @@index([fromUserId, status])
+  @@index([toUserId, status])
+}
+
+// ==================== 话题标签 ====================
+
+model TopicTag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  color     String    @default("#6366f1")
+  postCount Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([postCount])
+}
+
+model PostTag {
+  id     Int @id @default(autoincrement())
+  postId Int
+  tagId  Int
+
+  @@unique([postId, tagId])
+  @@index([tagId])
+}
+
+// ==================== 用户徽章 ====================
+
+model Badge {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  icon        String    @default("🏅")
+  description String    @default("")
+  condition   String    @default("")
+  createdAt   DateTime  @default(now())
+}
+
+model UserBadge {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  badgeId   Int
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
