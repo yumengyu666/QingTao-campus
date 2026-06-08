@@ -84,6 +84,17 @@ export async function createPost(req: Request, res: Response, next: NextFunction
     if (content.length > 1000) return error(res, '内容最多 1000 字');
     if (containsSensitive(content)) return error(res, '内容包含违规信息');
 
+    // IP重复检测：相同IP + 相同内容 5分钟内不重复发布
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const recentDuplicate = await prisma.treeHolePost.findFirst({
+      where: {
+        content: content.trim(),
+        createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+      },
+      select: { id: true },
+    });
+    if (recentDuplicate) return error(res, '请勿重复发布相同内容');
+
     const code = generateCode();
 
     const post = await prisma.treeHolePost.create({
