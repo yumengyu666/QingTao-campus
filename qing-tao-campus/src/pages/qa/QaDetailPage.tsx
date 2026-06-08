@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Skeleton } from '@/components/common/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
+import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
 import { FiThumbsUp, FiCheckCircle, FiSend, FiShare2, FiFlag } from 'react-icons/fi';
@@ -20,6 +21,7 @@ export default function QaDetailPage() {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [customReason, setCustomReason] = useState('');
+  const { bottomOffset } = useVisualViewport();
 
   useEffect(() => {
     if (!id || !token) return;
@@ -183,7 +185,8 @@ export default function QaDetailPage() {
       </div>
 
       {/* Answer Input */}
-      <div className="fixed bottom-14 left-0 right-0 bg-white/90 dark:bg-[var(--color-card)]/90 backdrop-blur border-t border-gray-200 dark:border-[var(--color-border)] px-4 py-3 z-20">
+      <div className="fixed left-0 right-0 bg-white/90 dark:bg-[var(--color-card)]/90 backdrop-blur border-t border-gray-200 dark:border-[var(--color-border)] px-4 py-3 z-20"
+        style={{ bottom: `calc(3.5rem + ${bottomOffset}px)` }}>
         <div className="flex items-center gap-2">
           <input value={answerText} onChange={e => setAnswerText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && submitAnswer()}
