@@ -216,13 +216,13 @@ export default function GoodsListPage() {
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1 ${
-            showFilters || condition || listType
+            showFilters || conditions.length > 0 || listType
               ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300'
               : 'bg-gray-100 dark:bg-[var(--color-card-hover)] text-gray-500 hover:bg-gray-200 dark:hover:bg-[var(--color-card-hover)]'
           }`}
         >
           <FiSliders className="text-[11px]" /> 筛选
-          {(condition || listType) && (
+          {(conditions.length > 0 || listType) && (
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
           )}
         </button>
