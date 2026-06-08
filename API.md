@@ -529,6 +529,92 @@
 
 ---
 
+## 预约 /api/reservations
+
+### POST /api/reservations
+预约看货（需登录）
+- Body: `{ goodsId, message? }`
+- 返回 201: `{ id, goodsId, status:"pending", expiresAt }`
+- 24小时未确认自动过期
+
+### GET /api/reservations
+我的预约列表（需登录）
+- Query: `role?` (buyer|seller), `page?`, `pageSize?`
+
+### PATCH /api/reservations/:id/accept
+卖家接受预约（需登录）
+
+### PATCH /api/reservations/:id/reject
+卖家拒绝预约（需登录）
+
+### DELETE /api/reservations/:id
+买家取消预约（需登录）
+
+---
+## 求购 /api/wanted
+
+### GET /api/wanted
+求购列表（可选认证）
+- Query: `category?, campus?, page?, pageSize?`
+
+### GET /api/wanted/:id
+求购详情
+
+### POST /api/wanted
+发布求购（需登录）
+- Body: `{ title, category?, campus?, budget?, description?, images? }`
+
+### DELETE /api/wanted/:id
+删除求购（仅作者）
+
+---
+## 签到 /api/checkin
+
+### POST /api/checkin
+每日签到（需登录）
+- 返回 201: `{ streak, date, milestone }`
+
+### GET /api/checkin
+签到状态（需登录）
+- 返回: `{ checkedToday, streak, recent[] }`
+
+---
+## 物品交换 /api/barter
+
+### POST /api/barter
+发起交换提议（需登录）
+- Body: `{ fromGoodsId, toGoodsId, message? }`
+
+### GET /api/barter
+我的交换提议列表（需登录）
+- Query: `role?` (sent|received)
+
+### PATCH /api/barter/:id/accept
+接受交换提议（仅接收方）
+
+### PATCH /api/barter/:id/reject
+拒绝交换提议（仅接收方）
+
+---
+## 徽章 /api/badges
+
+### GET /api/badges
+我的徽章列表（需登录）
+
+### GET /api/badges/all
+全部可用徽章（公开）
+
+---
+## 标签 /api/tags
+
+### GET /api/tags
+热门标签列表
+
+### GET /api/tags/:name/posts
+标签下帖子列表
+- Query: `page?, pageSize?`
+
+---
 ## 管理后台 /api/admin
 
 所有管理接口需 `admin` 角色。
