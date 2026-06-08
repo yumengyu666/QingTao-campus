@@ -48,6 +48,7 @@ const ComparePage = lazy(() => import('@/pages/goods/ComparePage'));
 const ReservationsPage = lazy(() => import('@/pages/reservation/ReservationsPage'));
 const WantedListPage = lazy(() => import('@/pages/wanted/WantedListPage'));
 const PublishWantedPage = lazy(() => import('@/pages/wanted/PublishWantedPage'));
+const WantedDetailPage = lazy(() => import('@/pages/wanted/WantedDetailPage'));
 const BarterPage = lazy(() => import('@/pages/barter/BarterPage'));
 const TagsPage = lazy(() => import('@/pages/tag/TagsPage'));
 const BadgesPage = lazy(() => import('@/pages/badge/BadgesPage'));
@@ -120,6 +121,7 @@ export function AppRouter() {
         <Route path="compare" element={<LazyLoad><ComparePage /></LazyLoad>} />
         <Route path="reservations" element={<LazyLoad><ReservationsPage /></LazyLoad>} />
         <Route path="wanted" element={<LazyLoad><WantedListPage /></LazyLoad>} />
+        <Route path="wanted/:id" element={<LazyLoad><WantedDetailPage /></LazyLoad>} />
         <Route path="publish/wanted" element={<LazyLoad><PublishWantedPage /></LazyLoad>} />
         <Route path="barter" element={<LazyLoad><BarterPage /></LazyLoad>} />
         <Route path="tags" element={<LazyLoad><TagsPage /></LazyLoad>} />

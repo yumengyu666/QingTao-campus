@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiMessageSquare, FiPlusCircle, FiUser, FiShield, FiMail, FiHash, FiBookOpen, FiHeart, FiMessageCircle } from 'react-icons/fi';
+import { FiHome, FiMessageSquare, FiPlusCircle, FiUser, FiShield, FiMail, FiHash, FiBookOpen, FiHeart, FiMessageCircle, FiSearch, FiRefreshCw, FiGrid } from 'react-icons/fi';
 import { useAuthStore } from '@/stores/authStore';
 import { useUnreadStore } from '@/stores/unreadStore';
 import { UserAvatar } from '@/components/common/UserAvatar';
@@ -150,11 +150,17 @@ export function SideNav() {
             <NavLinkItem key={tab.to} {...tab} />
           ))}
 
+          {/* Wanted — 求购 */}
+          <NavLinkItem to="/wanted" icon={FiSearch} label="求购" />
+
           {/* TreeHole */}
           <NavLinkItem to="/treehole" icon={FiHash} label="树洞" />
 
           {/* Resources */}
           <NavLinkItem to="/resources" icon={FiBookOpen} label="资料" />
+
+          {/* Tags — 话题 */}
+          <NavLinkItem to="/tags" icon={FiGrid} label="话题" />
 
           {/* Agent 小轻助手 */}
           <NavLinkItem to="/agent" icon={FiMessageCircle} label="小轻助手" />
