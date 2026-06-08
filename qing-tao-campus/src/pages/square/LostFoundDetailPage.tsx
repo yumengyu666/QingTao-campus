@@ -6,6 +6,7 @@ import { CampusTag } from '@/components/common/CampusTag';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { Skeleton } from '@/components/common/Skeleton';
 import { ImageLightbox } from '@/components/common/ImageLightbox';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { FiSend, FiFlag, FiCopy, FiCheck, FiMessageCircle, FiCheckCircle, FiTrash2, FiEye, FiClock, FiEdit2 } from 'react-icons/fi';
 import { formatDate, formatTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
@@ -36,6 +37,7 @@ export default function LostFoundDetailPage() {
   const [reportReason, setReportReason] = useState('');
   const [customReason, setCustomReason] = useState('');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
