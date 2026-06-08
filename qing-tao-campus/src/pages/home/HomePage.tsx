@@ -4,6 +4,7 @@ import { Autoplay, Pagination } from 'swiper/modules';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DailyCheckin } from '@/components/checkin/DailyCheckin';
+import { QuickEntries } from '@/components/home/QuickEntries';
 import { SearchBar } from '@/components/common/SearchBar';
 import { CAMPUS_MAP } from '@/utils/constants';
 import { Skeleton } from '@/components/common/Skeleton';
@@ -133,6 +134,9 @@ export default function HomePage() {
       <div className="px-4 pt-3 pb-2 md:pt-0">
         <SearchBar placeholder="搜索商品..." searchType="goods" />
       </div>
+
+      {/* Quick Entries */}
+      <QuickEntries />
 
       {/* Daily Checkin */}
       <DailyCheckin />
