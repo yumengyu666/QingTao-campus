@@ -5,6 +5,7 @@ export interface JwtPayload {
   username: string;
   role: string;
   tokenVersion: number;
+  fp?: string; // 设备指纹哈希（User-Agent + IP前缀）
 }
 
 declare global {

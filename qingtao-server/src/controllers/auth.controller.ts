@@ -105,7 +105,8 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       },
     });
 
-    const tokens = generateTokens({ userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion });
+    const fp = `${req.headers['user-agent'] || ''}|${(req.ip || '').split('.').slice(0, 2).join('.')}`;
+    const tokens = generateTokens({ userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion }, fp);
 
     logger.info(`User registered: ${username} (id=${user.id})`);
 
@@ -154,7 +155,8 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     // 登录成功：清除失败计数
     clearLoginAttempts(lockKey);
 
-    const tokens = generateTokens({ userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion });
+    const fp = `${req.headers['user-agent'] || ''}|${(req.ip || '').split('.').slice(0, 2).join('.')}`;
+    const tokens = generateTokens({ userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion }, fp);
 
     logger.info(`User login: ${username} (id=${user.id})`);
 
@@ -185,7 +187,11 @@ export async function refreshToken(req: Request, res: Response, next: NextFuncti
 
     // 轮换：旧Token加入黑名单，颁发新Token对
     await blacklistRefreshToken(token, user.id);
-    const tokens = generateTokens({ userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion });
+    const fp = (payload as any).fp ? undefined : undefined; // 保留旧指纹，通过payload传递
+    const tokens = generateTokens(
+      { userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion },
+      (payload as any).fp || undefined,
+    );
 
     return success(res, { token: tokens.accessToken, refreshToken: tokens.refreshToken });
   } catch (err) {

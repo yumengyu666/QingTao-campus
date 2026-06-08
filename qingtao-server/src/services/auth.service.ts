@@ -5,13 +5,20 @@ import { jwtConfig } from '../config/jwt';
 import { prisma } from '../config/database';
 import type { JwtPayload } from '../types/express';
 
-export function generateTokens(payload: { userId: number; username: string; role: string; tokenVersion: number }) {
-  const accessToken = jwt.sign(payload, jwtConfig.accessSecret, {
+export function generateTokens(
+  payload: { userId: number; username: string; role: string; tokenVersion: number },
+  fingerprint?: string,
+) {
+  const tokenPayload = fingerprint
+    ? { ...payload, fp: crypto.createHash('sha256').update(fingerprint).digest('hex').slice(0, 16) }
+    : payload;
+
+  const accessToken = jwt.sign(tokenPayload, jwtConfig.accessSecret, {
     expiresIn: jwtConfig.accessExpires,
     algorithm: 'HS256',
   } as jwt.SignOptions);
 
-  const refreshToken = jwt.sign(payload, jwtConfig.refreshSecret, {
+  const refreshToken = jwt.sign(tokenPayload, jwtConfig.refreshSecret, {
     expiresIn: jwtConfig.refreshExpires,
     algorithm: 'HS256',
   } as jwt.SignOptions);
