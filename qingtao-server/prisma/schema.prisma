@@ -739,3 +739,22 @@ model TradeReview {
 
   @@index([targetId])
 }
+
+// ==================== 物品预约 ====================
+
+model Reservation {
+  id          Int       @id @default(autoincrement())
+  goodsId     Int
+  buyerId     Int
+  sellerId    Int
+  status      String    @default("pending")
+  message     String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expiresAt   DateTime
+
+  @@unique([goodsId, buyerId])
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+  @@index([expiresAt])
+}

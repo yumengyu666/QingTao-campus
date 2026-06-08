@@ -5,6 +5,7 @@ import { logger } from './utils/logger';
 import { startSearchLogCleanup } from './controllers/search.controller';
 import { recoveryScan } from './middleware/moderation.middleware';
 import { startViolationClear } from './controllers/report.controller';
+import { expireReservations } from './controllers/reservation.controller';
 import { initWebSocket } from './services/websocket.service';
 import { cleanupExpiredBlacklist } from './services/auth.service';
 
@@ -36,6 +37,10 @@ const server = app.listen(env.PORT, () => {
 
   // 启动过期通知清理（每天凌晨5点：30天前的已读通知）
   startNotificationCleanup();
+
+  // 启动过期预约自动释放（每10分钟）
+  setInterval(() => { expireReservations().catch(() => {}); }, 10 * 60 * 1000);
+  expireReservations().catch(() => {});
 
   // 初始化 WebSocket 实时通信
   initWebSocket(server);
