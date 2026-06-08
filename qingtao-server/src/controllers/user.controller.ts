@@ -110,17 +110,22 @@ export async function getMyProfileChanges(req: Request, res: Response, next: Nex
   }
 }
 
-// PUT /api/users/profile — 修改个人资料（直接生效，无需审核）
+// PUT /api/users/profile — 修改个人资料（直接生效，L1敏感词+L2 AI审核）
 export async function updateProfile(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.user!.userId;
     const allowedFields = ['nickname', 'avatarUrl', 'wechat', 'qq', 'bio', 'campusArea', 'phone', 'email'];
+    const fieldLimits: Record<string, number> = { nickname: 20, wechat: 50, qq: 20, bio: 200, phone: 20, email: 100 };
     const changes = req.body;
 
     const data: Record<string, string> = {};
     for (const [field, newValue] of Object.entries(changes)) {
       if (!allowedFields.includes(field)) continue;
       if (typeof newValue !== 'string') continue;
+      const limit = fieldLimits[field];
+      if (limit && (newValue as string).length > limit) {
+        return error(res, `"${field}"不能超过${limit}个字符`);
+      }
       if (containsSensitive(newValue)) return error(res, `"${field}"包含违规内容`);
       data[field] = newValue;
     }
