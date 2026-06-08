@@ -50,3 +50,22 @@ export const publishLimiter = rateLimit({
     return req.ip || 'unknown';
   },
 });
+
+// 敏感操作限制：修改密码/注销账号 — 每用户每小时最多 3 次
+export const sensitiveOpLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 429, message: '敏感操作过于频繁，请1小时后再试', data: null },
+  keyGenerator: (req) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const payload = JSON.parse(Buffer.from(authHeader.slice(7).split('.')[1], 'base64').toString());
+        return `sensitive:${payload.userId}`;
+      } catch {}
+    }
+    return req.ip || 'unknown';
+  },
+});
