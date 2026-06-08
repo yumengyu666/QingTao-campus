@@ -21,6 +21,7 @@ import draftRoutes from './draft.routes';
 import tradeRoutes from './trade.routes';
 import reservationRoutes from './reservation.routes';
 import wantedRoutes from './wanted.routes';
+import checkinRoutes from './checkin.routes';
 import { authMiddleware } from '../middleware/auth';
 import { submitReport, submitAppeal, batchReview, getAuditLogs, exportCSV } from '../controllers/admin.controller';
 import { getBanners } from '../controllers/banner.controller';
@@ -59,6 +60,7 @@ router.use('/resources', courseResourceRoutes);
 router.use('/trades', tradeRoutes);
 router.use('/reservations', reservationRoutes);
 router.use('/wanted', wantedRoutes);
+router.use('/checkin', checkinRoutes);
 
 router.get('/banners', getBanners);
 router.get('/captcha/generate', generateCaptcha);

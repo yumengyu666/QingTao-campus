@@ -780,3 +780,16 @@ model WantedItem {
   @@index([userId])
   @@index([createdAt])
 }
+
+// ==================== 每日签到 ====================
+
+model DailyCheckin {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  checkinDate String
+  streak      Int       @default(1)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, checkinDate])
+  @@index([userId])
+}
