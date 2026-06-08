@@ -74,6 +74,9 @@ async function getUserInfo(userId: number): Promise<{ nickname: string; campus: 
 /** 构建动态上下文：热门商品、最新帖子、签到数据 */
 async function buildDynamicContext(campus: string): Promise<string> {
   try {
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 6 ? '夜深了' : hour < 9 ? '早上好' : hour < 12 ? '上午好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : '晚上好';
+
     const [hotGoods, newPosts, checkinCount] = await Promise.all([
       prisma.goods.findMany({
         where: { isDeleted: false, status: 'approved', ...(campus ? { campus } : {}) },
@@ -92,9 +95,9 @@ async function buildDynamicContext(campus: string): Promise<string> {
       }),
     ]);
 
-    const parts: string[] = [];
+    const parts: string[] = [`现在时间是${timeGreeting}`];
     if (hotGoods.length > 0) {
-      parts.push(`热门商品：${hotGoods.map(g => `${g.title} ¥${g.price}`).join('、')}`);
+      parts.push(`当前热门商品：${hotGoods.map(g => `${g.title} ¥${g.price}`).join('、')}。如果用户问到商品，可以建议这些`);
     }
     if (newPosts.length > 0) {
       parts.push(`最新帖子：${newPosts.map(p => p.title).join('、')}`);
@@ -193,7 +196,10 @@ function buildSystemPrompt(userName: string, campus: string): string {
 6. 回答保持简洁，一般不超过 200 字
 7. 如果用户问如何操作，给出具体步骤
 8. 适当使用换行和 emoji 让回复更可读
-9. 你是郑州轻工业大学专属的助手，了解校园文化`;
+9. 你是郑州轻工业大学专属的助手，了解校园文化
+10. 如果用户说"帮我找..."、"有没有..."、"搜一下..."，告诉用户平台有全站搜索功能(在首页顶部搜索栏)，可以搜索商品/帖子/失物招领，并建议相关搜索关键词
+11. 如果用户对平台功能不熟悉，可以简短推荐相关功能（如"去看看首页的求购专区"），可以用短横线列出2-3个相关功能入口
+12. 英文用户用简短英文回复(3-5句)，然后引导回中文平台资源`;
 }
 
 // ─── POST /api/agent/chat ───
