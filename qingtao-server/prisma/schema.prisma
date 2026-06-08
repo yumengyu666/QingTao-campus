@@ -758,3 +758,25 @@ model Reservation {
   @@index([sellerId, status])
   @@index([expiresAt])
 }
+
+// ==================== 公开求购 ====================
+
+model WantedItem {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  title       String
+  category    String    @default("")
+  campus      String    @default("")
+  budget      Float?
+  description String    @default("")
+  images      String    @default("[]")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isDeleted   Boolean   @default(false)
+  viewCount   Int       @default(0)
+
+  @@index([category])
+  @@index([campus])
+  @@index([userId])
+  @@index([createdAt])
+}
