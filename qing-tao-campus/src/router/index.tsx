@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { ScrollToTop } from '@/components/common/ScrollToTop';
 import { lazy, Suspense } from 'react';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
