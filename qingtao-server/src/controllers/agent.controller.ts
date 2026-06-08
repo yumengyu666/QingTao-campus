@@ -220,7 +220,6 @@ function generateSuggestions(userMsg: string, aiReply: string): string[] {
   }
   return defaults;
 }
-}
 
 // ─── POST /api/agent/chat ───
 export async function agentChat(req: Request, res: Response) {
