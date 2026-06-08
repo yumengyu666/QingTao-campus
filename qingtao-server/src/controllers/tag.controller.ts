@@ -16,8 +16,8 @@ export async function getTags(_req: Request, res: Response, next: NextFunction) 
 /** GET /api/tags/:name/posts — 标签下的帖子 */
 export async function getPostsByTag(req: Request, res: Response, next: NextFunction) {
   try {
-    const name = req.params.name;
-    const page = Math.max(parseInt((req.query.page as string) || '1'), 1);
+    const name = String(req.params.name || '');
+    const page = Math.max(parseInt(String(req.query.page || '1')), 1);
     const pageSize = 20;
 
     const tag = await prisma.topicTag.findUnique({ where: { name } });
