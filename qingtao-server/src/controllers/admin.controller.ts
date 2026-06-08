@@ -313,6 +313,16 @@ export async function toggleUserStatus(req: Request, res: Response, next: NextFu
       }
     });
 
+    // 审计日志
+    logAction({
+      adminId: req.user!.userId,
+      action: status === 'disabled' ? 'disable_user' : 'enable_user',
+      targetType: 'user',
+      targetId: id,
+      detail: `${status === 'disabled' ? '禁用' : '启用'}用户 ${user.username} (id=${id})`,
+      ip: req.ip,
+    });
+
     return success(res, null, status === 'active' ? '已启用' : '已禁用（内容已冻结）');
   } catch (err) {
     next(err);
