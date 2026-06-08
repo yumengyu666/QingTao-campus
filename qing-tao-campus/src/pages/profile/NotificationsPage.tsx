@@ -10,7 +10,7 @@ import { apiFetch } from '@/utils/api';
 import toast from 'react-hot-toast';
 import { FiBell, FiTrash2, FiCheckCircle } from 'react-icons/fi';
 
-const typeIcons: Record<string, string> = { review_result: '📋', new_follower: '👤', new_comment: '💬', goods_sold: '💰', announcement: '📢', dating_request: '💝', chat_message: '✉️' };
+const typeIcons: Record<string, string> = { review_result: '📋', new_follower: '👤', new_comment: '💬', goods_sold: '💰', announcement: '📢', dating_request: '💝', chat_message: '✉️', reservation: '📅', barter: '🔄', wanted: '🔍' };
 
 function getNotificationLink(n: any): string | null {
   const id = n.relatedId;
@@ -21,7 +21,10 @@ function getNotificationLink(n: any): string | null {
     case 'new_follower': return `/user/${id}`;
     case 'chat_message': return `/messages/${id}`;
     case 'dating_request': return '/dating';
-    case 'review_result': return null; // 审核结果不跳转
+    case 'reservation': return '/reservations';
+    case 'barter': return '/barter';
+    case 'wanted': return id ? `/wanted/${id}` : '/wanted';
+    case 'review_result': return null;
     default: return null;
   }
 }

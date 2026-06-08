@@ -145,6 +145,36 @@ async function main() {
   console.log('  Users:  zhangsan ~ chenchen / 123456');
 }
 
+  // ─── Badges ───
+  const badges = [
+    { name: '初来乍到', icon: '🌱', description: '完成首次签到' },
+    { name: '签到达人', icon: '🔥', description: '连续签到7天' },
+    { name: '签到王者', icon: '👑', description: '连续签到30天' },
+    { name: '发布先锋', icon: '📦', description: '发布首个商品' },
+    { name: '社交达人', icon: '💬', description: '发布10条评论' },
+    { name: '交易能手', icon: '🤝', description: '完成首次交易' },
+    { name: '热心肠', icon: '❤️', description: '帮助他人10次' },
+    { name: '鉴定师', icon: '🔍', description: '浏览100个商品' },
+  ];
+  for (const b of badges) {
+    await prisma.badge.upsert({ where: { name: b.name }, update: b, create: b });
+  }
+  console.log(`  ✅ ${badges.length} badges created`);
+
+  // ─── Topic Tags ───
+  const tags = [
+    { name: '教材', color: '#6366f1' }, { name: '考研', color: '#ef4444' },
+    { name: '四六级', color: '#f59e0b' }, { name: '电脑', color: '#10b981' },
+    { name: '手机', color: '#8b5cf6' }, { name: '自行车', color: '#06b6d4' },
+    { name: '宿舍', color: '#ec4899' }, { name: '食堂', color: '#f97316' },
+    { name: '选课', color: '#14b8a6' }, { name: '毕业', color: '#6366f1' },
+  ];
+  for (const t of tags) {
+    await prisma.topicTag.upsert({ where: { name: t.name }, update: t, create: t });
+  }
+  console.log(`  ✅ ${tags.length} topic tags created`);
+}
+
 main()
   .catch((e) => { console.error(e); process.exit(1); })
   .finally(() => prisma.$disconnect());
