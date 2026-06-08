@@ -200,6 +200,7 @@ function buildSystemPrompt(userName: string, campus: string): string {
 10. 如果用户说"帮我找..."、"有没有..."、"搜一下..."，告诉用户平台有全站搜索功能(在首页顶部搜索栏)，可以搜索商品/帖子/失物招领，并建议相关搜索关键词
 11. 如果用户对平台功能不熟悉，可以简短推荐相关功能（如"去看看首页的求购专区"），可以用短横线列出2-3个相关功能入口
 12. 英文用户用简短英文回复(3-5句)，然后引导回中文平台资源`;
+}
 
 // 智能追问建议生成
 function generateSuggestions(userMsg: string, aiReply: string): string[] {
