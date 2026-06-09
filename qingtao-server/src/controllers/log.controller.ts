@@ -3,7 +3,7 @@ import { prisma } from '../config/database';
 import { success, error, paginated } from '../utils/response';
 
 /** GET /api/admin/logs — 管理员查看操作日志 */
-export async function getAuditLogs(req: Request, res: Response, next: NextFunction) {
+export async function getAdminLogs(req: Request, res: Response, next: NextFunction) {
   try {
     if (req.user!.role !== 'admin') return error(res, '无权限', 403);
     const page = Math.max(parseInt(req.query.page as string) || 1, 1);
@@ -17,7 +17,7 @@ export async function getAuditLogs(req: Request, res: Response, next: NextFuncti
 
     const [logs, total] = await Promise.all([
       prisma.report.findMany({ where, skip: (page - 1) * pageSize, take: pageSize, orderBy: { createdAt: 'desc' },
-        select: { id: true, type: true, reason: true, createdAt: true, reporterId: true, targetId: true, targetType: true } }),
+        select: { id: true, reason: true, createdAt: true, reporterId: true, targetId: true, targetType: true } }),
       prisma.report.count({ where }),
     ]);
 
