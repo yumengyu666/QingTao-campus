@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import { success, error } from '../utils/response';
+import { addPoints } from './points.controller';
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -32,9 +33,14 @@ export async function checkin(req: Request, res: Response, next: NextFunction) {
       data: { userId, checkinDate: date, streak },
     });
 
+    // 签到奖励积分
+    const pts = await addPoints(userId, 'daily_checkin');
+
     return success(res, {
       streak,
       date,
+      points: pts?.points,
+      level: pts?.level,
       milestone: streak % 7 === 0 ? `🎉 连续签到${streak}天！` : null,
     }, '签到成功', 201);
   } catch (err) { next(err); }

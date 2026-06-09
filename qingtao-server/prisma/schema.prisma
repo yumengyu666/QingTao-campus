@@ -30,6 +30,8 @@ model User {
   tokenVersion  Int       @default(0)
   notifPrefs    String    @default("{}")         // JSON: 通知偏好 {"chat_message":true,"new_comment":true,...}
   lastActiveAt  DateTime?                          // 最后活跃时间（用于在线状态判断）
+  points        Int       @default(0)              // 积分
+  level         Int       @default(1)              // 等级 = floor(sqrt(points/10))
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

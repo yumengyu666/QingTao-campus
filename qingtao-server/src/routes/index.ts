@@ -34,6 +34,7 @@ import { reportMessages } from '../controllers/report.controller';
 import * as statsCtrl from '../controllers/stats.controller';
 import { sseNotifications } from '../controllers/sse.controller';
 import { exportMyData, getActivity } from '../controllers/data.controller';
+import { getMyPoints } from '../controllers/points.controller';
 import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
 
 const router = Router();
@@ -43,6 +44,7 @@ router.get('/sse/notifications', sseNotifications);
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.get('/users/me/points', authMiddleware, getMyPoints);
 router.use('/goods', goodsRoutes);
 router.use('/cart', cartRoutes);
 router.use('/favorites', favoriteRoutes);
