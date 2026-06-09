@@ -38,6 +38,7 @@ import { getMyPoints } from '../controllers/points.controller';
 import { healthCheck, getMetrics } from '../controllers/health.controller';
 import { getAdminLogs, adminDashboard } from '../controllers/log.controller';
 import { batchUpdateStatus, activityLogsHandler } from '../controllers/admin.extend.controller';
+import v1Routes from './v1/index';
 import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
 
 const router = Router();
@@ -118,5 +119,8 @@ router.get('/admin/dashboard', authMiddleware, adminDashboard);
 router.get('/admin/audit', authMiddleware, getAdminLogs);
 router.post('/admin/batch-status', authMiddleware, batchUpdateStatus);
 router.get('/admin/activity-logs', authMiddleware, activityLogsHandler);
+
+// API v1 版本路由
+router.use('/v1', v1Routes);
 
 export default router;
