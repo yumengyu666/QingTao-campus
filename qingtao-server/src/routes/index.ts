@@ -37,6 +37,7 @@ import { exportMyData, getActivity } from '../controllers/data.controller';
 import { getMyPoints } from '../controllers/points.controller';
 import { healthCheck, getMetrics } from '../controllers/health.controller';
 import { getAdminLogs, adminDashboard } from '../controllers/log.controller';
+import { batchUpdateStatus, activityLogsHandler } from '../controllers/admin.extend.controller';
 import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
 
 const router = Router();
@@ -115,5 +116,7 @@ router.delete('/admin/sensitive-words/:id', authMiddleware, deleteSensitiveWord)
 // Admin dashboard + audit logs
 router.get('/admin/dashboard', authMiddleware, adminDashboard);
 router.get('/admin/audit', authMiddleware, getAdminLogs);
+router.post('/admin/batch-status', authMiddleware, batchUpdateStatus);
+router.get('/admin/activity-logs', authMiddleware, activityLogsHandler);
 
 export default router;

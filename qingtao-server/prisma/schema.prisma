@@ -869,3 +869,20 @@ model AgentConversation {
   @@index([userId, createdAt])
   @@index([expiresAt])
 }
+
+// ==================== 用户行为日志 ====================
+
+model ActivityLog {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  action    String    // login, publish_goods, comment, trade, report, checkin, etc.
+  targetType String?  // goods, post, comment, user
+  targetId  Int?
+  detail    String    @default("") // JSON extra info
+  ip        String    @default("")
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([createdAt])
+}
