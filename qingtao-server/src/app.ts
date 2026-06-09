@@ -10,6 +10,7 @@ import { prisma } from './config/database';
 import { globalLimiter } from './middleware/rateLimiter';
 import { enumerationGuard } from './middleware/enumerationGuard';
 import { errorHandler } from './middleware/errorHandler';
+import { etagCache } from './middleware/etag';
 import { requestLogger, slowQueryWarn } from './middleware/requestLogger';
 import routes from './routes/index';
 import { logger } from './utils/logger';
