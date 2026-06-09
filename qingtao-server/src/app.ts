@@ -45,6 +45,10 @@ app.use(cors({
   maxAge: 86400,
 }));
 
+// Request ID — 链路追踪
+import { requestIdMiddleware } from './middleware/requestId';
+app.use(requestIdMiddleware);
+
 // Request logging + slow query warning
 app.use(requestLogger);
 app.use(slowQueryWarn(2000));

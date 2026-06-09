@@ -58,6 +58,9 @@ export default function GoodsDetailPage() {
         if (json.code === 200) {
           setGoods(json.data);
 
+          // 服务端记录浏览历史
+          apiFetch(`/api/history/views/${id}`, { method: 'POST' }).catch(() => {});
+
           // AI 审核轮询（status=pending 时轮询，最多4次×3秒）
           if (json.data.status === 'pending') {
             let pollCount = 0;

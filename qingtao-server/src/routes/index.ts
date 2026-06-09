@@ -31,6 +31,11 @@ import { getBanners } from '../controllers/banner.controller';
 import { generateCaptcha } from '../controllers/captcha.controller';
 import { checkStatus, batchImageReview, getReviewStats } from '../controllers/images.controller';
 import { reportMessages } from '../controllers/report.controller';
+import { getRecentViews, trackView } from '../controllers/history.controller';
+import { getFollowingFeed } from '../controllers/feed.controller';
+import { getExplore } from '../controllers/explore.controller';
+import { getTrending, getUserAnalytics } from '../controllers/analytics.controller';
+import { getReportStats } from '../controllers/reportStats.controller';
 import * as statsCtrl from '../controllers/stats.controller';
 import { getLeaderboard as getLeaderboardRanking } from '../controllers/leaderboard.controller';
 import { sseNotifications } from '../controllers/sse.controller';
@@ -40,6 +45,7 @@ import { healthCheck, getMetrics } from '../controllers/health.controller';
 import { getAdminLogs, adminDashboard } from '../controllers/log.controller';
 import { batchUpdateStatus, activityLogsHandler } from '../controllers/admin.extend.controller';
 import v1Routes from './v1/index';
+import debugRoutes from './debug.routes';
 import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
 import { circuitBreaker } from '../middleware/circuit-breaker';
 
@@ -90,6 +96,21 @@ router.get('/stats/summary', statsCtrl.getSummary);
 // Leaderboard — new ranking API
 router.get('/leaderboard', getLeaderboardRanking);
 
+// History — recently viewed
+router.get('/history/views', authMiddleware, getRecentViews);
+router.post('/history/views/:goodsId', authMiddleware, trackView);
+
+// Feed — 关注动态流
+router.get('/feed', authMiddleware, getFollowingFeed);
+
+// Explore — 发现页聚合
+router.get('/explore', getExplore);
+
+// Analytics — 趋势 + 用户分析
+router.get('/analytics/trending', getTrending);
+router.get('/analytics/user/:userId', getUserAnalytics);
+router.get('/admin/reports/stats', authMiddleware, getReportStats);
+
 // Report — auth required but not admin
 router.post('/reports', authMiddleware, submitReport);
 router.post('/reports/appeal', authMiddleware, submitAppeal);
@@ -128,5 +149,8 @@ router.get('/admin/activity-logs', authMiddleware, activityLogsHandler);
 
 // API v1 版本路由
 router.use('/v1', v1Routes);
+
+// Debug 路由（管理限流配置查看等）
+router.use('/debug', debugRoutes);
 
 export default router;
