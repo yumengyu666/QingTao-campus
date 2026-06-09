@@ -35,12 +35,17 @@ import * as statsCtrl from '../controllers/stats.controller';
 import { sseNotifications } from '../controllers/sse.controller';
 import { exportMyData, getActivity } from '../controllers/data.controller';
 import { getMyPoints } from '../controllers/points.controller';
+import { healthCheck, getMetrics } from '../controllers/health.controller';
 import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
 
 const router = Router();
 
 // SSE 实时推送（不需要 authMiddleware，token 通过 query 传递）
 router.get('/sse/notifications', sseNotifications);
+
+// Health check — public
+router.get('/health', healthCheck);
+router.get('/health/metrics', getMetrics);
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
