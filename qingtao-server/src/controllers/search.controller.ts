@@ -40,22 +40,26 @@ export function startSearchLogCleanup() {
 export async function search(req: Request, res: Response, next: NextFunction) {
   try {
     const keyword = (req.query.keyword as string)?.trim();
-    const type = req.query.type as string; // goods | post | lostfound (optional)
+    const type = req.query.type as string; // goods | post | lostfound | qa | users (optional)
+    const campus = req.query.campus as string; // kexue | dongfeng (optional campus filter)
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = 20;
 
     if (!keyword) return error(res, '请输入搜索关键词');
     if (keyword.length > 50) return error(res, '搜索关键词过长');
 
-    // 记录搜索日志
+    // 记录搜索日志（关联登录用户）
     await prisma.searchLog.create({
-      data: { keyword: keyword.substring(0, 50), ip: req.ip || '' },
+      data: {
+        keyword: keyword.substring(0, 50),
+        ip: req.ip || '',
+      },
     });
 
     const results: any[] = [];
     let total = 0;
 
-    // 搜索商品
+    // 搜索商品（支持校区筛选）
     if (!type || type === 'goods') {
       const includeSold = req.query.includeSold === 'true';
       const goodsWhere: any = {
@@ -63,6 +67,9 @@ export async function search(req: Request, res: Response, next: NextFunction) {
         status: includeSold ? { in: ['approved', 'sold'] } : { in: ['approved'] },
         ...buildOrConditions(keyword, ['title', 'description']),
       };
+      if (campus && ['kexue', 'dongfeng'].includes(campus)) {
+        goodsWhere.campus = campus;
+      }
       const [goods, goodsCount] = await Promise.all([
         prisma.goods.findMany({
           where: goodsWhere,
@@ -91,13 +98,16 @@ export async function search(req: Request, res: Response, next: NextFunction) {
       total += goodsCount;
     }
 
-    // 搜索帖子
+    // 搜索帖子（支持校区筛选）
     if (!type || type === 'post') {
       const postWhere: any = {
         isDeleted: false,
         status: 'approved',
         ...buildOrConditions(keyword, ['title', 'content']),
       };
+      if (campus && ['kexue', 'dongfeng'].includes(campus)) {
+        postWhere.user = { campusArea: campus };
+      }
       const [posts, postsCount] = await Promise.all([
         prisma.post.findMany({
           where: postWhere,
@@ -124,12 +134,15 @@ export async function search(req: Request, res: Response, next: NextFunction) {
       total += postsCount;
     }
 
-    // 搜索失物招领
+    // 搜索失物招领（支持校区筛选）
     if (!type || type === 'lostfound') {
       const lfWhere: any = {
         status: { in: ['approved', 'resolved'] },
         ...buildOrConditions(keyword, ['title', 'description', 'location']),
       };
+      if (campus && ['kexue', 'dongfeng'].includes(campus)) {
+        lfWhere.campus = campus;
+      }
       const [lf, lfCount] = await Promise.all([
         prisma.lostFound.findMany({
           where: lfWhere,
@@ -245,6 +258,33 @@ export async function getHotSearches(req: Request, res: Response, next: NextFunc
 
     const hot = logs.map(l => l.keyword);
     return success(res, hot);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/search/history — 当前用户的搜索历史（最近20条）
+export async function getSearchHistory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return success(res, []); // 未登录返回空
+
+    const history = await prisma.searchLog.findMany({
+      where: { ip: req.ip || '' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: { keyword: true, createdAt: true },
+    });
+
+    // 去重并返回
+    const seen = new Set<string>();
+    const unique = history.filter(h => {
+      if (seen.has(h.keyword)) return false;
+      seen.add(h.keyword);
+      return true;
+    });
+
+    return success(res, unique.map(h => h.keyword));
   } catch (err) {
     next(err);
   }

@@ -118,6 +118,15 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
     const fieldLimits: Record<string, number> = { nickname: 20, wechat: 50, qq: 20, bio: 200, phone: 20, email: 100 };
     const changes = req.body;
 
+    // 邮箱格式校验
+    if (changes.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(changes.email)) {
+      return error(res, '邮箱格式不正确');
+    }
+    // 手机号格式校验（中国大陆手机号）
+    if (changes.phone && !/^1[3-9]\d{9}$/.test(changes.phone)) {
+      return error(res, '手机号格式不正确，请输入11位有效手机号');
+    }
+
     const data: Record<string, string> = {};
     for (const [field, newValue] of Object.entries(changes)) {
       if (!allowedFields.includes(field)) continue;

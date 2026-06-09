@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
-import { Skeleton } from '@/components/common/Skeleton';
 import { Pagination } from '@/components/common/Pagination';
 import { BackToTop } from '@/components/common/BackToTop';
+import { LazyImage } from '@/components/common/LazyImage';
+import { ShimmerCard } from '@/components/ui/ShimmerCard';
 import { CONDITION_COLORS, CAMPUS_MAP } from '@/utils/constants';
 import { CONDITION_MAP } from '@/types/goods';
 import { apiFetch } from '@/utils/api';
@@ -302,8 +303,10 @@ export default function GoodsListPage() {
 
       {/* Goods Grid */}
       {loading && initialLoad ? (
-        <div className="p-4">
-          <Skeleton.Grid count={8} cols={2} />
+        <div className="p-4 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ShimmerCard key={i} lines={2} avatar={false} className="h-56" />
+          ))}
         </div>
       ) : goods.length === 0 ? (
         <EmptyState
@@ -331,11 +334,11 @@ export default function GoodsListPage() {
             >
               <div className="h-36 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-4xl relative overflow-hidden">
                 {firstImg ? (
-                  <img
+                  <LazyImage
                     src={getImgSrc(firstImg)}
-                    alt=""
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+                    alt={g.title}
+                    className="w-full h-full group-hover:scale-105 transition-transform duration-300"
+                    placeholderColor={isOwner ? '#f0fdf4' : '#f3f4f6'}
                   />
                 ) : (
                   <span className="text-4xl">📦</span>

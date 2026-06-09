@@ -32,6 +32,7 @@ import { generateCaptcha } from '../controllers/captcha.controller';
 import { checkStatus, batchImageReview, getReviewStats } from '../controllers/images.controller';
 import { reportMessages } from '../controllers/report.controller';
 import * as statsCtrl from '../controllers/stats.controller';
+import { getLeaderboard as getLeaderboardRanking } from '../controllers/leaderboard.controller';
 import { sseNotifications } from '../controllers/sse.controller';
 import { exportMyData, getActivity } from '../controllers/data.controller';
 import { getMyPoints } from '../controllers/points.controller';
@@ -40,6 +41,7 @@ import { getAdminLogs, adminDashboard } from '../controllers/log.controller';
 import { batchUpdateStatus, activityLogsHandler } from '../controllers/admin.extend.controller';
 import v1Routes from './v1/index';
 import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
+import { circuitBreaker } from '../middleware/circuit-breaker';
 
 const router = Router();
 
@@ -85,6 +87,9 @@ router.get('/captcha/generate', generateCaptcha);
 router.get('/stats/leaderboard', statsCtrl.getLeaderboard);
 router.get('/stats/summary', statsCtrl.getSummary);
 
+// Leaderboard — new ranking API
+router.get('/leaderboard', getLeaderboardRanking);
+
 // Report — auth required but not admin
 router.post('/reports', authMiddleware, submitReport);
 router.post('/reports/appeal', authMiddleware, submitAppeal);
@@ -100,10 +105,11 @@ router.get('/images/status', authMiddleware, checkStatus);
 router.post('/admin/images/batch', authMiddleware, batchImageReview);
 router.get('/admin/stats/review', authMiddleware, getReviewStats);
 
-// Agent chat — 智能助手小轻 (auth required + rate limited)
+// Agent chat — 智能助手小轻 (auth required + rate limited + circuit breaker)
 import { agentLimiter } from '../middleware/rateLimiter';
-router.post('/agent/chat', authMiddleware, agentLimiter, agentChat);
-router.post('/agent/chat/stream', authMiddleware, agentLimiter, agentChatStream);
+const agentCircuit = circuitBreaker('agent-chat');
+router.post('/agent/chat', authMiddleware, agentLimiter, agentCircuit, agentChat);
+router.post('/agent/chat/stream', authMiddleware, agentLimiter, agentCircuit, agentChatStream);
 router.post('/agent/chat/clear', authMiddleware, clearConversation);
 router.post('/agent/feedback', authMiddleware, submitFeedback);
 

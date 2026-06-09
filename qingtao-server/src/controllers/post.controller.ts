@@ -183,7 +183,7 @@ export async function deletePost(req: Request, res: Response, next: NextFunction
     if (post.userId !== req.user!.userId && req.user!.role !== 'admin') return error(res, '无权操作', 403);
 
     await prisma.post.update({ where: { id }, data: { isDeleted: true } });
-    await prisma.notification.deleteMany({ where: { relatedId: id, type: 'new_comment' } });
+    await prisma.notification.deleteMany({ where: { relatedId: id } });
 
     return success(res, null, '已删除');
   } catch (err) {

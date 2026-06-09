@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
+import { PulseDot } from '@/components/ui/PulseDot';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -9,11 +10,16 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<any>({});
   const [banners, setBanners] = useState<any[]>([]);
   const [newBanner, setNewBanner] = useState({ imageUrl: '', linkUrl: '', sortOrder: 0 });
+  const [healthStatus, setHealthStatus] = useState<'healthy' | 'degraded' | 'checking'>('checking');
+
+  const fetchHealth = () => apiFetch('/health').then(r => r.json()).then(j => {
+    setHealthStatus(j.status === 'ok' ? 'healthy' : 'degraded');
+  }).catch(() => setHealthStatus('degraded'));
 
   const fetchStats = () => apiFetch('/api/admin/stats').then(r => r.json()).then(j => { if (j.code === 200) setStats(j.data); }).catch(() => toast.error('加载统计数据失败'));
   const fetchBanners = () => apiFetch('/api/banners').then(r => r.json()).then(j => { if (j.code === 200) setBanners(j.data || []); }).catch(() => toast.error('加载轮播图失败'));
 
-  useEffect(() => { fetchStats(); fetchBanners(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchStats(); fetchBanners(); fetchHealth(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addBanner = async () => {
     if (!newBanner.imageUrl.trim()) { toast.error('请输入图片URL'); return; }
@@ -44,7 +50,13 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h2 className="text-lg font-bold mb-4">数据概览</h2>
+      <h2 className="text-lg font-bold mb-3">数据概览</h2>
+      <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-white dark:bg-[var(--color-card)]">
+        <PulseDot color={healthStatus === 'healthy' ? 'green' : healthStatus === 'degraded' ? 'red' : 'yellow'} size="sm" pulse={healthStatus !== 'checking'} />
+        <span className="text-sm text-gray-600 dark:text-gray-300">
+          系统状态：{healthStatus === 'healthy' ? '正常运行' : healthStatus === 'degraded' ? '服务降级' : '检测中...'}
+        </span>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {cards.map((c) => (
           <div key={c.label} className={`${c.color} rounded-xl p-4`}>

@@ -41,6 +41,32 @@ export default function PublishGoodsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editLoading, setEditLoading] = useState(isEdit);
   const [categories, setCategories] = useState<{ id: number; name: string; icon: string }[]>([]);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+
+  // Auto-save draft to API every 30 seconds
+  useEffect(() => {
+    const save = () => {
+      const draftData: Record<string, any> = {
+        title, description, price, originalPrice, categoryId,
+        listType, deposit, rentStart, rentEnd, condition, campus,
+        campusLocation: location,
+        images: images.map(img => ({ url: img.url, blurredUrl: img.blurredUrl, reviewId: img.reviewId })),
+      };
+      // Only save if there's meaningful content
+      const hasContent = title.trim() || description.trim() || price || images.length > 0;
+      if (!hasContent) return;
+
+      apiFetch('/api/drafts', {
+        method: 'POST',
+        body: JSON.stringify({ type: 'goods', data: draftData }),
+      })
+        .then(() => setDraftSavedAt(Date.now()))
+        .catch(() => {});
+    };
+
+    const interval = setInterval(save, 30000);
+    return () => clearInterval(interval);
+  }, [title, description, price, originalPrice, categoryId, listType, condition, campus, location, deposit, rentStart, rentEnd, images]);
 
   // Load existing data in edit mode
   useEffect(() => {
@@ -306,6 +332,11 @@ export default function PublishGoodsPage() {
           className="w-full py-3.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors text-lg">
           {submitting ? '提交中...' : isEdit ? '保存修改' : '发布'}
         </button>
+        {draftSavedAt && (
+          <p className="text-xs text-green-600 dark:text-green-400 text-center -mt-2">
+            ✓ 草稿已自动保存于 {new Date(draftSavedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
         <p className="text-xs text-gray-400 text-center -mt-2">图片需审核，文字 AI 自动检测</p>
 
         <div style={{ height: keyboardHeight ? `${keyboardHeight}px` : '4rem' }} />

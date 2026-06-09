@@ -8,6 +8,7 @@ import { startViolationClear } from './controllers/report.controller';
 import { expireReservations } from './controllers/reservation.controller';
 import { initWebSocket } from './services/websocket.service';
 import { cleanupExpiredBlacklist } from './services/auth.service';
+import { cleanupOrphanFiles } from './services/file-cleanup.service';
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server running on http://localhost:${env.PORT} [${env.NODE_ENV}]`);
@@ -37,6 +38,10 @@ const server = app.listen(env.PORT, () => {
 
   // 启动过期通知清理（每天凌晨5点：30天前的已读通知）
   startNotificationCleanup();
+
+  // 启动文件清理（每天凌晨2点：7天前的未引用上传文件）
+  setInterval(() => { cleanupOrphanFiles().catch(() => {}); }, 24 * 3600000);
+  setTimeout(() => { cleanupOrphanFiles().catch(() => {}); }, 30000);
 
   // 启动过期预约自动释放（每10分钟）
   setInterval(() => { expireReservations().catch(() => {}); }, 10 * 60 * 1000);

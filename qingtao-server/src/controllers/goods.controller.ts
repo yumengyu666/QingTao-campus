@@ -190,7 +190,7 @@ export async function getHot(req: Request, res: Response, next: NextFunction) {
     if (categoryId) where.categoryId = categoryId;
     if (campus) where.campus = campus;
 
-    // 热门算法：取浏览量最高的200条，综合时间衰减排序
+    // 热门算法：viewCount / max(1, days^1.5)，浏览量高 + 发布时间近 = 得分高
     const HOT_POOL = 200;
 
     const [list, total] = await Promise.all([
@@ -206,13 +206,13 @@ export async function getHot(req: Request, res: Response, next: NextFunction) {
       prisma.goods.count({ where }),
     ]);
 
-    // 综合排序：浏览量 0.3 + 时间新鲜度 0.2 + 综合热度基值
+    // 综合排序：浏览量 / max(1, 距今天数^1.5)，非对称时间衰减
     const now = Date.now();
     const sorted = list
       .map(g => {
-        const ageHours = (now - new Date(g.createdAt).getTime()) / (1000 * 60 * 60);
-        const freshnessScore = Math.max(0, 1 - ageHours / (7 * 24)); // 7天内线性衰减
-        const hotScore = (g.viewCount || 0) * 0.3 + freshnessScore * 100 * 0.2 + Math.log1p(g.viewCount || 0) * 10;
+        const ageDays = (now - new Date(g.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+        const decay = Math.max(1, Math.pow(ageDays, 1.5));
+        const hotScore = (g.viewCount || 0) / decay;
         return { ...g, _hotScore: hotScore };
       })
       .sort((a, b) => b._hotScore - a._hotScore);
@@ -449,7 +449,7 @@ export async function deleteGoods(req: Request, res: Response, next: NextFunctio
 
     await prisma.goods.update({ where: { id }, data: { isDeleted: true } });
     await prisma.favorite.deleteMany({ where: { goodsId: id } });
-    await prisma.notification.deleteMany({ where: { relatedId: id, type: 'new_comment' } });
+    await prisma.notification.deleteMany({ where: { relatedId: id } });
 
     return success(res, null, '已删除');
   } catch (err) {

@@ -10,6 +10,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed-bots": "tsx prisma/seed-bots.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {
@@ -27,6 +28,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^8.0.10",
     "sharp": "^0.33.5",
     "uuid": "^10.0.0",
     "winston": "^3.17.0",
@@ -41,6 +43,7 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.9.0",
+    "@types/nodemailer": "^8.0.0",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "prisma": "^5.22.0",

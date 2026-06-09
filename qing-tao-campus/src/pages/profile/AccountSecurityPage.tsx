@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
-import { FiShield, FiSave } from 'react-icons/fi';
+import { FiShield, FiSave, FiBell, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -15,6 +15,17 @@ const PRESET_QUESTIONS = [
   '我出生的城市是哪里？',
   '我的小学校名是什么？',
   '我最难忘的旅行目的地？',
+];
+
+const NOTIF_TYPES: { key: string; label: string; desc: string }[] = [
+  { key: 'chat_message', label: '私信通知', desc: '收到新私信时通知' },
+  { key: 'new_comment', label: '评论通知', desc: '有人评论你的内容时通知' },
+  { key: 'new_follower', label: '关注通知', desc: '有人关注你时通知' },
+  { key: 'goods_sold', label: '售出通知', desc: '收藏的商品售出时通知' },
+  { key: 'price_drop', label: '降价通知', desc: '收藏的商品降价≥10%时通知' },
+  { key: 'dating_request', label: '恋爱请求', desc: '收到恋爱请求时通知' },
+  { key: 'review_result', label: '审核结果', desc: '内容审核结果通知' },
+  { key: 'announcement', label: '系统公告', desc: '平台重要公告通知' },
 ];
 
 export default function AccountSecurityPage() {
@@ -31,6 +42,8 @@ export default function AccountSecurityPage() {
   const [custom2, setCustom2] = useState('');
   const [custom3, setCustom3] = useState('');
   const [hasSet, setHasSet] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({});
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -49,6 +62,14 @@ export default function AccountSecurityPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    // 加载通知偏好
+    apiFetch('/api/users/me/notif-prefs')
+      .then(r => r.json())
+      .then(json => {
+        if (json.code === 200 && json.data) setNotifPrefs(json.data);
+      })
+      .catch(() => {});
   }, [token]);
 
   const handleSave = async () => {
@@ -149,6 +170,61 @@ export default function AccountSecurityPage() {
               )}
             </>
           )}
+        </motion.div>
+
+        {/* 通知偏好设置 */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-white dark:bg-[var(--color-card)] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-[var(--color-border)]/50">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <FiBell className="text-amber-500 text-sm" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm">通知偏好</h2>
+              <p className="text-xs text-gray-400">选择你希望接收的通知类型</p>
+            </div>
+          </div>
+          <div className="space-y-1">
+            {NOTIF_TYPES.map(({ key, label, desc }) => (
+              <label key={key} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)]/50 cursor-pointer transition-colors">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="text-xs text-gray-400 truncate">{desc}</p>
+                </div>
+                <button
+                  onClick={() => setNotifPrefs(p => ({ ...p, [key]: !p[key] }))}
+                  className="ml-3 flex-shrink-0 focus:outline-none"
+                >
+                  {notifPrefs[key] !== false ? (
+                    <FiToggleRight className="text-xl text-indigo-500" />
+                  ) : (
+                    <FiToggleLeft className="text-xl text-gray-300" />
+                  )}
+                </button>
+              </label>
+            ))}
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={async () => {
+              setSavingPrefs(true);
+              try {
+                const res = await apiFetch('/api/users/me/notif-prefs', {
+                  method: 'PUT',
+                  body: JSON.stringify(notifPrefs),
+                });
+                const json = await res.json();
+                if (json.code === 200) toast.success('通知偏好已保存');
+                else toast.error(json.message);
+              } catch { toast.error('网络错误'); }
+              setSavingPrefs(false);
+            }}
+            disabled={savingPrefs}
+            className="w-full mt-4 py-3 rounded-xl bg-amber-500 text-white font-medium text-sm hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <FiSave className="text-sm" />
+            {savingPrefs ? '保存中...' : '保存通知偏好'}
+          </motion.button>
         </motion.div>
       </div>
     </div>

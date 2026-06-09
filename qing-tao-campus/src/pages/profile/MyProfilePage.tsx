@@ -89,7 +89,7 @@ export default function MyProfilePage() {
       ],
     },
     {
-      version: 'v1.2.0',
+      version: 'v2.4.0',
       date: '2026-05-31',
       items: [
         '新增求购功能，可在发布页选择"求购"',
@@ -101,7 +101,7 @@ export default function MyProfilePage() {
       ],
     },
     {
-      version: 'v1.1.0',
+      version: 'v2.3.0',
       date: '2026-05-30',
       items: [
         '用户主页上线（查看他人商品/帖子/联系方式）',

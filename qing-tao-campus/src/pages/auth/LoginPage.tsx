@@ -141,6 +141,12 @@ export default function LoginPage() {
               onFocus={e => { e.target.style.background = 'rgba(255,255,255,0.2)'; e.target.style.borderColor = 'rgba(255,255,255,0.6)'; e.target.style.boxShadow = '0 0 10px rgba(255,255,255,0.1)'; }}
               onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.1)'; e.target.style.borderColor = 'rgba(255,255,255,0.2)'; e.target.style.boxShadow = 'none'; }}
             />
+            <div className="text-right mt-1">
+              <button type="button" onClick={() => setShowForgotPwd(true)}
+                className="text-white/60 text-xs hover:text-white hover:underline transition-all">
+                忘记密码？
+              </button>
+            </div>
           </div>
 
           <div className="mb-5 relative">
@@ -180,10 +186,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center mt-5 space-y-2">
-          <button onClick={() => setShowForgotPwd(true)} className="text-white/60 text-xs hover:text-white hover:underline transition-all">
-            忘记密码？
-          </button>
+        <div className="text-center mt-5">
           <Link to="/register" className="block text-white/80 text-[13px] no-underline hover:text-white hover:underline transition-all">
             还没有账号？去注册
           </Link>

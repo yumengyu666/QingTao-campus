@@ -210,7 +210,7 @@ export async function deleteLostFound(req: Request, res: Response, next: NextFun
     if (item.userId !== req.user!.userId && req.user!.role !== 'admin') return error(res, '无权操作', 403);
 
     await prisma.lostFound.update({ where: { id }, data: { isDeleted: true } });
-    await prisma.notification.deleteMany({ where: { relatedId: id, type: 'new_comment' } });
+    await prisma.notification.deleteMany({ where: { relatedId: id } });
 
     return success(res, null, '已删除');
   } catch (err) {
