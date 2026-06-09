@@ -36,6 +36,7 @@ import { sseNotifications } from '../controllers/sse.controller';
 import { exportMyData, getActivity } from '../controllers/data.controller';
 import { getMyPoints } from '../controllers/points.controller';
 import { healthCheck, getMetrics } from '../controllers/health.controller';
+import { getAuditLogs, adminDashboard } from '../controllers/log.controller';
 import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
 
 const router = Router();
@@ -110,5 +111,9 @@ router.get('/admin/sensitive-words', authMiddleware, getSensitiveWords);
 router.post('/admin/sensitive-words', authMiddleware, addSensitiveWord);
 router.put('/admin/sensitive-words/:id', authMiddleware, updateSensitiveWord);
 router.delete('/admin/sensitive-words/:id', authMiddleware, deleteSensitiveWord);
+
+// Admin dashboard + audit logs
+router.get('/admin/dashboard', authMiddleware, adminDashboard);
+router.get('/admin/audit', authMiddleware, getAuditLogs);
 
 export default router;
