@@ -10,7 +10,7 @@ import { prisma } from './config/database';
 import { globalLimiter } from './middleware/rateLimiter';
 import { enumerationGuard } from './middleware/enumerationGuard';
 import { errorHandler } from './middleware/errorHandler';
-import { etagCache } from './middleware/etag';
+import { requestLogger, slowQueryWarn } from './middleware/requestLogger';
 import routes from './routes/index';
 import { logger } from './utils/logger';
 
@@ -43,6 +43,10 @@ app.use(cors({
   credentials: true,
   maxAge: 86400,
 }));
+
+// Request logging + slow query warning
+app.use(requestLogger);
+app.use(slowQueryWarn(2000));
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
