@@ -1,6 +1,7 @@
 ﻿import { FiArrowLeft, FiShare2 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { DarkModeToggle } from "@/components/common/DarkModeToggle";
+import { ThemePicker } from "@/components/theme/ThemePicker";
 import { useEffect } from "react";
 
 interface Props {
@@ -30,6 +31,7 @@ export function Header({ title, showBack = true, onShare, rightAction }: Props) 
         </div>
         <h1 className="font-medium text-base truncate md:font-semibold">{title}</h1>
         <div className="w-16 flex justify-end items-center gap-2">
+          <ThemePicker />
           <DarkModeToggle />
           {onShare && (
             <button onClick={onShare} className="p-1 md:p-0">
