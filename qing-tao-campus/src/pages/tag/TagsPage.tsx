@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Pagination } from '@/components/common/Pagination';
@@ -9,6 +10,7 @@ import { motion } from 'framer-motion';
 
 export default function TagsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [tags, setTags] = useState<any[]>([]);
   const [selectedTag, setSelectedTag] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
@@ -59,7 +61,7 @@ export default function TagsPage() {
           {loading ? <div className="text-center py-10 text-gray-400">加载中...</div> :
            posts.length === 0 ? <EmptyState message="暂无相关帖子" /> :
             posts.map(p => (
-              <div key={p.id} onClick={() => navigate(`/square/post/${p.id}`)}
+              <div key={p.id} onClick={() => nav(`/square/post/${p.id}`)}
                 className="bg-white dark:bg-[var(--color-card)] rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow">
                 <h3 className="font-medium text-sm">{p.title}</h3>
                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.content}</p>

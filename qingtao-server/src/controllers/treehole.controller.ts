@@ -108,8 +108,8 @@ export async function createPost(req: Request, res: Response, next: NextFunction
     // L2 AI 异步审核（必须在 return 之前注册 fire-and-forget）
     aiModerate(content, { contentType: 'treehole', userId: req.user?.userId }).then(result => {
       if (result === 'violation') {
-        logger.warn(`AI flagged treehole post #${post.id}, deleting`);
-        prisma.treeHolePost.update({ where: { id: post.id }, data: { isDeleted: true } }).catch(() => {});
+        logger.warn(`AI flagged treehole post #${post.id}, marking rejected`);
+        prisma.treeHolePost.update({ where: { id: post.id }, data: { status: 'rejected', isDeleted: true } }).catch(() => {});
       }
     });
 
@@ -164,15 +164,13 @@ export async function createComment(req: Request, res: Response, next: NextFunct
 }
 
 /**
- * 点赞防刷：IP + 帖子ID 去重（内存，30分钟周期清空）
+ * 点赞防刷：数据库持久化（IP + 帖子ID 唯一约束）
  * 
  * 防护层级：
- * L1: 服务端 IP+postId 去重 — 清除 localStorage 无法绕过
- * L2: 每30分钟清空缓存 — 防止内存无限增长
- * L3: 取消赞需先有点赞记录 — 防止负数点赞
+ * L1: DB @@unique([clientIp, postId]) — 同一IP对同一帖子只能点赞一次，重启不丢失
+ * L2: 取消赞需先有记录 — 防止负数点赞
+ * L3: 定时清理30天前旧记录 — 防止表无限增长
  */
-const likeRegistry = new Map<string, number>();
-setInterval(() => likeRegistry.clear(), 30 * 60 * 1000);
 
 /** POST /api/treehole/:id/like — 点赞/取消赞（游客可访问） */
 export async function toggleLike(req: Request, res: Response, next: NextFunction) {
@@ -181,29 +179,37 @@ export async function toggleLike(req: Request, res: Response, next: NextFunction
     if (isNaN(id)) return error(res, '无效的树洞帖子ID');
     const { action } = req.body;
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-    const key = `${clientIp}:${id}`;
 
     const post = await prisma.treeHolePost.findUnique({ where: { id } });
     if (!post) return error(res, '帖子不存在', 404);
 
     if (action === 'like') {
-      if (likeRegistry.has(key)) return error(res, '你已经点过赞了');
-      likeRegistry.set(key, Date.now());
-      await prisma.treeHolePost.update({
-        where: { id },
-        data: { likeCount: { increment: 1 } },
+      const exist = await prisma.treeHoleLike.findUnique({
+        where: { clientIp_postId: { clientIp, postId: id } },
       });
+      if (exist) return error(res, '你已经点过赞了');
+
+      await prisma.$transaction([
+        prisma.treeHoleLike.create({ data: { clientIp, postId: id } }),
+        prisma.treeHolePost.update({ where: { id }, data: { likeCount: { increment: 1 } } }),
+      ]);
       return success(res, { likeCount: post.likeCount + 1 }, '已点赞');
     }
 
     if (action === 'unlike') {
-      if (!likeRegistry.has(key)) return error(res, '你还没有点赞');
-      likeRegistry.delete(key);
-      const updated = await prisma.treeHolePost.update({
-        where: { id },
-        data: { likeCount: Math.max(0, post.likeCount - 1) },
+      const exist = await prisma.treeHoleLike.findUnique({
+        where: { clientIp_postId: { clientIp, postId: id } },
       });
-      return success(res, { likeCount: updated.likeCount }, '已取消赞');
+      if (!exist) return error(res, '你还没有点赞');
+
+      await prisma.$transaction([
+        prisma.treeHoleLike.delete({ where: { clientIp_postId: { clientIp, postId: id } } }),
+        prisma.treeHolePost.update({
+          where: { id },
+          data: { likeCount: Math.max(0, post.likeCount - 1) },
+        }),
+      ]);
+      return success(res, { likeCount: Math.max(0, post.likeCount - 1) }, '已取消赞');
     }
 
     return error(res, 'action 必须为 like 或 unlike');

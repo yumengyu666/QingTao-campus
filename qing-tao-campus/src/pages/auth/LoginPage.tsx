@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showForgotPwd, setShowForgotPwd] = useState(false);
   const [captchaRefreshKey, setCaptchaRefreshKey] = useState(0);
+  const [version, setVersion] = useState<'normal' | 'lg'>(localStorage.getItem('prefer_lg') === '1' ? 'lg' : 'normal');
 
   const handleCaptchaReady = useCallback((id: string, answer: string) => {
     setCaptchaId(id);
@@ -50,7 +51,8 @@ export default function LoginPage() {
         const { token, refreshToken, user } = json.data;
         setAuth(token, user, refreshToken);
         toast.success('登录成功');
-        navigate(user.role === 'admin' ? '/admin' : '/', { replace: true });
+        const preferLg = localStorage.getItem('prefer_lg') === '1';
+        navigate(user.role === 'admin' ? '/admin' : (preferLg ? '/lg/' : '/'), { replace: true });
       } else {
         toast.error(json.message || '登录失败');
         setCaptchaId('');
@@ -110,7 +112,7 @@ export default function LoginPage() {
             <FiAlertTriangle className="text-red-200 flex-shrink-0 mt-0.5" />
             <div className="text-white/90 text-sm">
               <p className="font-semibold">账号已被封禁</p>
-              <p className="text-xs mt-1 text-white/70">请联系 2306524741@qq.com 申诉。</p>
+              <p className="text-xs mt-1 text-white/70">请联系管理员申诉。</p>
             </div>
           </div>
         )}
@@ -191,6 +193,33 @@ export default function LoginPage() {
             还没有账号？去注册
           </Link>
         </div>
+
+        {/* Version switch */}
+        <div className="mt-6 pt-4 border-t border-white/20">
+          <p className="text-white/60 text-xs text-center mb-2">选择界面版本</p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => { setVersion('normal'); localStorage.setItem('prefer_lg', '0'); }}
+              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+                version === 'normal'
+                  ? 'bg-white text-indigo-600 shadow-md'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              {version === 'normal' && '✓ '}普通版本
+            </button>
+            <button
+              onClick={() => { setVersion('lg'); localStorage.setItem('prefer_lg', '1'); }}
+              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+                version === 'lg'
+                  ? 'bg-white text-indigo-600 shadow-md'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              {version === 'lg' && '✓ '}液态玻璃
+            </button>
+          </div>
+        </div>
       </div>
       {/* Disclaimer Modal */}
       {showDisclaimer && (
@@ -210,8 +239,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   const [username, setUsername] = useState('');
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
-  const [code, setCode] = useState('');
-  const [resetCodeReturned, setResetCodeReturned] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -249,7 +277,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
       });
       const json = await res.json();
       if (json.code === 200) {
-        setResetCodeReturned(json.data?.resetCode || '');
+        setResetToken(json.data?.resetToken || '');
         toast.success('验证通过');
         setStep('reset');
       } else {
@@ -260,13 +288,13 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleReset = async () => {
-    if (!code.trim() || !newPassword.trim()) { toast.error('请填写重置码和新密码'); return; }
+    if (!resetToken || !newPassword.trim()) { toast.error('请填写新密码'); return; }
     if (newPassword.length < 6) { toast.error('新密码至少6位'); return; }
     setLoading(true);
     try {
       const res = await apiFetch('/api/auth/reset-password', {
         method: 'POST',
-        body: JSON.stringify({ username: username.trim(), code: code.trim(), newPassword }),
+        body: JSON.stringify({ username: username.trim(), resetToken, newPassword }),
       });
       const json = await res.json();
       if (json.code === 200) {
@@ -328,18 +356,12 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">验证通过！请输入重置码和新密码。</p>
+            <p className="text-sm text-gray-500">验证通过！请设置新密码（10分钟内有效）。</p>
             <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs p-3 rounded-lg">
-              重置码：<b className="text-lg tracking-widest font-mono select-all">{resetCodeReturned || '加载中...'}</b><br/>
-              有效期10分钟，请尽快使用
+              身份验证已通过，请尽快设置新密码
             </div>
             <input
-              type="text" placeholder="6位重置码" value={code}
-              onChange={e => setCode(e.target.value)} maxLength={6}
-              className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-[var(--color-card-hover)] outline-none text-sm text-center tracking-[4px] font-mono"
-            />
-            <input
-              type="password" placeholder="新密码（至少6位）" value={newPassword}
+              type="password" placeholder="新密码（至少6位，含字母和数字）" value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-[var(--color-card-hover)] outline-none text-sm"
             />

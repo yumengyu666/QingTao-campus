@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
+import { Prisma } from '@prisma/client';
 import { success, error } from '../utils/response';
 
 /**
@@ -30,7 +31,7 @@ export async function getTrending(req: Request, res: Response, next: NextFunctio
       // 最近7天新增商品
       prisma.goods.count({ where: { createdAt: { gte: sevenDaysAgo }, isDeleted: false } }),
       // 最近活跃时段统计（基于消息+发帖时间的前24小时分布）
-      prisma.$queryRawUnsafe<any[]>(`
+      prisma.$queryRaw<any[]>(Prisma.sql`
         SELECT CAST(strftime('%H', createdAt) AS INTEGER) as hour, COUNT(*) as count
         FROM ChatMessage
         WHERE createdAt >= datetime('now', '-7 days')

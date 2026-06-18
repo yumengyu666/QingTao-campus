@@ -1,0 +1,479 @@
+/* ============================================================
+   液态玻璃 · Liquid Glass Light Theme v2
+   iOS 26 / visionOS 风格 — 透明白色毛玻璃
+   ============================================================ */
+
+/* ── Light mode root overrides ── */
+.lg-root {
+  color-scheme: light;
+  background: #F2F2F7;
+  color: #0F172A;
+  min-height: 100dvh;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro", sans-serif;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+
+  /* ── Override theme tokens for light mode ── */
+  --color-bg-app: #F2F2F7;
+  --color-bg-page: #F2F2F7;
+  --color-bg: #F2F2F7;
+  --color-bg-alt: #F2F2F7;
+
+  --lg-surface-0: rgba(0,0,0,0.02);
+  --lg-surface-1: rgba(255,255,255,0.65);
+  --lg-surface-2: rgba(255,255,255,0.78);
+  --lg-surface-3: rgba(255,255,255,0.85);
+  --lg-surface-4: rgba(255,255,255,0.92);
+  --lg-surface-hover: rgba(0,0,0,0.04);
+  --lg-surface-active: rgba(0,0,0,0.08);
+  --lg-surface-selected: rgba(0,102,214,0.08);
+  --lg-surface-disabled: rgba(0,0,0,0.04);
+  --lg-surface-input: rgba(255,255,255,0.55);
+  --lg-surface-input-focus: rgba(255,255,255,0.82);
+
+  --color-bg-section: var(--lg-surface-1);
+  --color-bg-raised: var(--lg-surface-2);
+  --color-bg-overlay: var(--lg-surface-1);
+  --color-bg-hover: var(--lg-surface-hover);
+  --color-bg-active: var(--lg-surface-active);
+  --color-bg-selected: var(--lg-surface-selected);
+  --color-bg-input: var(--lg-surface-input);
+  --color-bg-input-focus: var(--lg-surface-input-focus);
+  --color-card: var(--lg-surface-1);
+  --color-card-hover: var(--lg-surface-2);
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: rgba(0,0,0,0.55);
+  --color-text-tertiary: rgba(0,0,0,0.35);
+  --color-text-quaternary: rgba(0,0,0,0.18);
+  --color-text-disabled: rgba(0,0,0,0.22);
+  --color-text-placeholder: rgba(0,0,0,0.30);
+  --color-text: var(--color-text-primary);
+
+  --lg-border-subtle: rgba(0,0,0,0.05);
+  --lg-border-default: rgba(0,0,0,0.08);
+  --lg-border-strong: rgba(0,0,0,0.12);
+  --lg-border-hover: rgba(0,0,0,0.16);
+  --lg-border-active: rgba(0,0,0,0.22);
+  --lg-border-divider: rgba(0,0,0,0.06);
+
+  --color-border-default: var(--lg-border-default);
+  --color-border-light: var(--lg-border-subtle);
+  --color-border-strong: var(--lg-border-strong);
+  --color-border-hover: var(--lg-border-hover);
+  --color-border-divider: var(--lg-border-divider);
+  --color-border: var(--lg-border-default);
+  --color-input-border: var(--lg-border-default);
+  --color-input-bg: var(--lg-surface-input);
+
+  --lg-glass-bg: rgba(255,255,255,0.70);
+  --lg-glass-bg-light: rgba(255,255,255,0.55);
+  --lg-glass-bg-heavy: rgba(255,255,255,0.88);
+  --lg-glass-border: rgba(255,255,255,0.50);
+  --lg-glass-border-light: rgba(255,255,255,0.30);
+  --lg-glass-border-strong: rgba(255,255,255,0.65);
+
+  --color-glass-bg: var(--lg-glass-bg);
+  --color-glass-bg-strong: var(--lg-glass-bg-heavy);
+  --color-glass: var(--lg-glass-bg);
+
+  --lg-shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --lg-shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+  --lg-shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --lg-shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+  --lg-shadow-xl: 0 12px 32px rgba(0,0,0,0.10);
+  --lg-shadow-2xl: 0 20px 48px rgba(0,0,0,0.12);
+  --lg-shadow-glow: 0 0 20px rgba(0,102,214,0.12);
+
+  --shadow-xs: var(--lg-shadow-xs);
+  --shadow-sm: var(--lg-shadow-sm);
+  --shadow-md: var(--lg-shadow-md);
+  --shadow-lg: var(--lg-shadow-lg);
+  --shadow-xl: var(--lg-shadow-xl);
+  --shadow-2xl: var(--lg-shadow-2xl);
+  --shadow-glow: var(--lg-shadow-glow);
+
+  --card-bg: var(--lg-surface-1);
+  --card-bg-hover: var(--lg-surface-2);
+  --card-border: var(--lg-border-default);
+  --card-border-hover: rgba(0,102,214,0.25);
+  --card-shadow: var(--lg-shadow-sm);
+  --card-shadow-hover: var(--lg-shadow-md);
+
+  --skeleton-bg: rgba(0,0,0,0.05);
+  --skeleton-shine: rgba(0,0,0,0.10);
+  --tooltip-bg: rgba(0,0,0,0.85);
+  --tooltip-text: #FFFFFF;
+}
+
+/* ── Text overrides inside lg-root ── */
+.lg-root .text-gray-900,
+.lg-root .dark\:text-gray-100 { color: var(--color-text-primary) !important; }
+.lg-root .text-gray-800 { color: #1E293B !important; }
+.lg-root .text-gray-700 { color: rgba(0,0,0,0.70) !important; }
+.lg-root .text-gray-600 { color: var(--color-text-secondary) !important; }
+.lg-root .text-gray-500 { color: rgba(0,0,0,0.45) !important; }
+.lg-root .text-gray-400 { color: var(--color-text-tertiary) !important; }
+.lg-root .text-gray-300 { color: rgba(0,0,0,0.20) !important; }
+.lg-root .text-black { color: #0F172A !important; }
+
+/* ── Colored button text must stay white ── */
+.lg-root .bg-indigo-500 .text-white,
+.lg-root .bg-indigo-600 .text-white,
+.lg-root button.bg-indigo-500 .text-white,
+.lg-root button.bg-blue-500 .text-white,
+.lg-root .bg-red-500 .text-white,
+.lg-root .bg-green-500 .text-white,
+.lg-root [class*="bg-gradient"] .text-white { color: #FFFFFF !important; }
+
+/* ── Price colors ── */
+.lg-root .text-red-500 { color: #FF3B30 !important; }
+.lg-root .text-red-600 { color: #E0352B !important; }
+.lg-root .text-orange-500 { color: #FF9500 !important; }
+.lg-root .text-green-500 { color: #34C759 !important; }
+.lg-root .text-green-600 { color: #2DB84D !important; }
+.lg-root .text-indigo-500 { color: #0066D6 !important; }
+.lg-root .text-indigo-600 { color: #0066D6 !important; }
+.lg-root .text-indigo-700 { color: #004DA6 !important; }
+
+/* ── Card / bg-white overrides ── */
+.lg-root .bg-white,
+.lg-root .bg-white\/80,
+.lg-root .bg-white\/85,
+.lg-root .bg-white\/90,
+.lg-root .bg-white\/95 {
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,0.50) !important;
+}
+
+/* ── Header / sticky glass ── */
+.lg-root header.sticky,
+.lg-root .bg-\[\#F2F2F7\]\/80 {
+  background: rgba(242,242,247,0.82) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* ── Input overrides ── */
+.lg-root input[type="text"],
+.lg-root input[type="password"],
+.lg-root input[type="email"],
+.lg-root input[type="tel"],
+.lg-root input[type="number"],
+.lg-root input[type="search"],
+.lg-root textarea,
+.lg-root select {
+  background: rgba(255,255,255,0.55) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: #0F172A !important;
+}
+.lg-root input:focus,
+.lg-root textarea:focus,
+.lg-root select:focus {
+  background: rgba(255,255,255,0.85) !important;
+  border-color: #0066D6 !important;
+  box-shadow: 0 0 0 3px rgba(0,102,214,0.10) !important;
+}
+
+/* ── Rounded-xl form sections ── */
+.lg-root .rounded-xl {
+  background: rgba(255,255,255,0.55) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* ── Borders ── */
+.lg-root .border-gray-100,
+.lg-root .border-gray-200 { border-color: var(--lg-border-default) !important; }
+.lg-root .border-gray-300 { border-color: var(--lg-border-strong) !important; }
+.lg-root .border-white\/60 { border-color: rgba(255,255,255,0.55) !important; }
+
+/* ── Glass cards (explicit lg-* classes) ── */
+.lg-root .lg-card {
+  background: rgba(255,255,255,0.60);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 6px 24px rgba(0,0,0,0.05);
+}
+
+.lg-root .lg-card-featured {
+  background: linear-gradient(135deg, rgba(255,255,255,0.88), rgba(255,255,255,0.60));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.65);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,102,214,0.06), 0 8px 32px rgba(0,0,0,0.05);
+}
+
+.lg-root .lg-card-elevated {
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.60);
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+}
+
+/* ── Inputs ── */
+.lg-root .lg-input {
+  background: rgba(255,255,255,0.50);
+  border: 1px solid rgba(0,0,0,0.06);
+  color: #0F172A;
+}
+.lg-root .lg-input:focus {
+  border-color: #0066D6;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 0 0 3px rgba(0,102,214,0.08);
+}
+.lg-root .lg-input::placeholder { color: rgba(0,0,0,0.28); }
+
+/* ── Buttons ── */
+.lg-root .lg-btn {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(0,0,0,0.06);
+  color: #0F172A;
+}
+.lg-root .lg-btn-primary {
+  background: #0066D6;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0,102,214,0.25);
+}
+
+/* ── Chips ── */
+.lg-root .lg-chip-active {
+  background: rgba(0,102,214,0.10);
+  color: #0066D6;
+  border: 1px solid rgba(0,102,214,0.22);
+}
+.lg-root .lg-chip-inactive {
+  background: rgba(255,255,255,0.50);
+  color: rgba(0,0,0,0.45);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ── Tab bar ── */
+.lg-root .lg-tabbar-pill {
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.70);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+.lg-root .lg-tabbar-item-active {
+  background: #0066D6;
+}
+.lg-root .lg-tabbar-label-active { color: #FFFFFF; }
+.lg-root .lg-tabbar-label-inactive { color: rgba(0,0,0,0.30); }
+
+/* ── Product card ── */
+.lg-root .lg-product-card {
+  background: rgba(255,255,255,0.60);
+  border: 1px solid rgba(255,255,255,0.45);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 3px 12px rgba(0,0,0,0.03);
+}
+
+/* ── Profile card ── */
+.lg-root .lg-profile-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.88), rgba(255,255,255,0.60));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 2px 8px rgba(0,102,214,0.05), 0 8px 32px rgba(0,0,0,0.04);
+}
+
+/* ── Quick entry ── */
+.lg-root .lg-quick-icon {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.lg-root .lg-quick-label { color: rgba(0,0,0,0.45); }
+
+/* ── Typography ── */
+.lg-root .lg-h1,
+.lg-root .lg-h2,
+.lg-root .lg-h3 { color: #0F172A; }
+.lg-root .lg-body { color: rgba(0,0,0,0.55); }
+.lg-root .lg-caption { color: rgba(0,0,0,0.30); }
+.lg-root .lg-price { color: #FF9500; }
+
+/* ── Glass backdrop & sheet ── */
+.lg-root .lg-backdrop {
+  background: rgba(0,0,0,0.35);
+}
+.lg-root .lg-sheet {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-bottom: none;
+}
+.lg-root .lg-dialog {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.65);
+}
+
+/* ── Glass header ── */
+.lg-root .lg-header {
+  background: rgba(242,242,247,0.80);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ── Glass toast ── */
+.lg-root .lg-toast {
+  background: rgba(255,255,255,0.92);
+  color: #0F172A;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+
+/* ── Modal / dialog glass ── */
+.lg-root .fixed.inset-0.z-50 {
+  background: rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+.lg-root .fixed.inset-0 .bg-white,
+.lg-root [class*="rounded-t-2xl"].bg-white,
+.lg-root [class*="rounded-2xl"].bg-white {
+  background: rgba(255,255,255,0.88) !important;
+  backdrop-filter: blur(30px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+  border: 1px solid rgba(255,255,255,0.55) !important;
+}
+
+/* ── Toast / action sheet ── */
+.lg-root [role="status"],
+.lg-root .toast {
+  background: rgba(255,255,255,0.88) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,0.45) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10) !important;
+}
+
+/* ── Sonner toasts ── */
+.lg-root [data-sonner-toaster] [data-sonner-toast] {
+  background: rgba(255,255,255,0.88) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  border: 1px solid rgba(255,255,255,0.50) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Sticky bottom bars ── */
+.lg-root .sticky.bottom-0,
+.lg-root .fixed.bottom-0 {
+  background: rgba(242,242,247,0.82) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-top: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* ── Tag / badge chips ── */
+.lg-root .bg-indigo-50 { background: rgba(0,102,214,0.08) !important; }
+.lg-root .bg-gray-100 {
+  background: rgba(255,255,255,0.55) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* ── Image lightbox ── */
+.lg-root [class*="fixed"][class*="inset-0"][class*="bg-black"] {
+  background: rgba(0,0,0,0.55) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* ── Swiper ── */
+.lg-root .swiper { border-radius: 16px; overflow: hidden; }
+.lg-root .swiper-pagination-bullet { background: rgba(0,0,0,0.25) !important; }
+.lg-root .swiper-pagination-bullet-active { background: #0066D6 !important; }
+
+/* ── Scrollbar ── */
+.lg-root * { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.08) transparent; }
+
+/* ── Selection ── */
+.lg-root ::selection { background: rgba(0,102,214,0.18); color: #0F172A; }
+
+/* ── Skeleton ── */
+.lg-root .animate-pulse {
+  background: linear-gradient(90deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.03) 100%) !important;
+  background-size: 200% 100% !important;
+  animation: lg-shimmer-light 1.5s ease-in-out infinite !important;
+}
+@keyframes lg-shimmer-light {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Image / media containment ── */
+.lg-root img, .lg-root video { max-width: 100%; height: auto; }
+
+/* ── Safe area ── */
+.lg-root .pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* ── Hover states ── */
+.lg-root .hover\:bg-gray-100:hover { background: rgba(0,0,0,0.04) !important; }
+.lg-root .hover\:bg-black\/5:hover { background: rgba(0,0,0,0.04) !important; }
+/* ── Glass header (light) ── */
+.lg-root .lg-header {
+  background: rgba(242,242,247,0.80);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ── Sub-page header (light) ── */
+.lg-root .lg-sub-header {
+  background: rgba(242,242,247,0.75);
+}
+
+/* ── Glass background (light) ── */
+.lg-root.lg-bg {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(0,102,214,0.05), transparent 65%),
+    radial-gradient(ellipse 50% 35% at 50% 110%, rgba(102,51,153,0.03), transparent 65%),
+    #F2F2F7;
+}
+/* ── Chat page specific overrides (light) ── */
+.lg-root .bg-white.dark\:bg-gray-800,
+.lg-root .dark\:bg-gray-800 {
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+}
+.lg-root .bg-gray-200\/50.dark\:bg-gray-700\/50 {
+  background: rgba(0,0,0,0.04) !important;
+}
+
+/* ── Bottom action bars (not at bottom:0) ── */
+.lg-root .fixed.bottom-14 {
+  background: rgba(242,242,247,0.85) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-top: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* ── Chat bubble (light) ── */
+.lg-root .bg-\[var\(--color-chat-bubble-self\)\] {
+  background: rgba(149,236,105,0.55) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+.lg-root .bg-\[var\(--color-chat-bubble-other\)\] {
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* ── Emoji picker glass (light) ── */
+.lg-root .grid.grid-cols-10.bg-white {
+  background: rgba(255,255,255,0.88) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+}

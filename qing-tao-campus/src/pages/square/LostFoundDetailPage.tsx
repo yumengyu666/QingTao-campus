@@ -6,6 +6,7 @@ import { CampusTag } from '@/components/common/CampusTag';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { Skeleton } from '@/components/common/Skeleton';
 import { ImageLightbox } from '@/components/common/ImageLightbox';
+import { ShareButton } from '@/components/common/ShareButton';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { FiSend, FiFlag, FiCopy, FiCheck, FiMessageCircle, FiCheckCircle, FiTrash2, FiEye, FiClock, FiEdit2 } from 'react-icons/fi';
 import { formatDate, formatTime } from '@/utils/format';
@@ -111,7 +112,7 @@ export default function LostFoundDetailPage() {
         body: JSON.stringify({ targetType: 'lostfound', targetId: Number(id), reason: finalReason }),
       });
       const json = await res.json();
-      if (json.code === 201) { toast.success('举报已提交'); setShowReport(false); setReportReason(''); setCustomReason(''); }
+      if (json.code === 201) { toast.success('举报已提交，管理员处理后会通知你'); setShowReport(false); setReportReason(''); setCustomReason(''); }
       else toast.error(json.message);
     } catch { toast.error('网络错误'); }
   };
@@ -129,14 +130,14 @@ export default function LostFoundDetailPage() {
 
   return (
     <div>
-      <Header title="失物详情" onShare={() => {
-        const url = window.location.href;
-        if (navigator.share) {
-          navigator.share({ title: item.title, url }).catch(() => {});
-        } else {
-          navigator.clipboard.writeText(url).then(() => toast.success('链接已复制')).catch(() => {});
+      <Header
+        title="失物详情"
+        rightAction={
+          item ? (
+            <ShareButton title={item.title} />
+          ) : undefined
         }
-      }} />
+      />
 
       {/* Main content */}
       <div className="bg-white dark:bg-[var(--color-card)] p-4 md:rounded-xl">

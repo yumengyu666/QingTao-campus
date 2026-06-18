@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Pagination } from '@/components/common/Pagination';
+import { EndOfList } from '@/components/common/EndOfList';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
@@ -167,6 +168,7 @@ export default function ResourceListPage() {
 
         {/* Pagination */}
         <Pagination page={page} total={total} onPageChange={(p) => { setPage(p); fetchList(p, search, typeFilter, sort); }} />
+        {!loading && resources.length > 0 && <EndOfList />}
       </div>
 
       {/* Upload FAB — only if logged in */}

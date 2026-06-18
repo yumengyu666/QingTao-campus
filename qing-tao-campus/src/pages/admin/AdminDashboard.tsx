@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
 import { PulseDot } from '@/components/ui/PulseDot';
+import { Skeleton } from '@/components/common/Skeleton';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -11,12 +12,13 @@ export default function AdminDashboard() {
   const [banners, setBanners] = useState<any[]>([]);
   const [newBanner, setNewBanner] = useState({ imageUrl: '', linkUrl: '', sortOrder: 0 });
   const [healthStatus, setHealthStatus] = useState<'healthy' | 'degraded' | 'checking'>('checking');
+  const [loading, setLoading] = useState(true);
 
   const fetchHealth = () => apiFetch('/health').then(r => r.json()).then(j => {
     setHealthStatus(j.status === 'ok' ? 'healthy' : 'degraded');
   }).catch(() => setHealthStatus('degraded'));
 
-  const fetchStats = () => apiFetch('/api/admin/stats').then(r => r.json()).then(j => { if (j.code === 200) setStats(j.data); }).catch(() => toast.error('加载统计数据失败'));
+  const fetchStats = () => apiFetch('/api/admin/stats').then(r => r.json()).then(j => { if (j.code === 200) setStats(j.data); }).catch(() => toast.error('加载统计数据失败')).finally(() => setLoading(false));
   const fetchBanners = () => apiFetch('/api/banners').then(r => r.json()).then(j => { if (j.code === 200) setBanners(j.data || []); }).catch(() => toast.error('加载轮播图失败'));
 
   useEffect(() => { fetchStats(); fetchBanners(); fetchHealth(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -58,12 +60,21 @@ export default function AdminDashboard() {
         </span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {cards.map((c) => (
-          <div key={c.label} className={`${c.color} rounded-xl p-4`}>
-            <p className="text-xs opacity-70">{c.label}</p>
-            <p className="text-2xl font-bold mt-1">{c.value}</p>
-          </div>
-        ))}
+        {loading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="bg-white/50 dark:bg-[var(--color-card)]/50 rounded-xl p-4 animate-pulse">
+              <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+              <div className="h-7 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
+          ))
+        ) : (
+          cards.map((c) => (
+            <div key={c.label} className={`${c.color} rounded-xl p-4`}>
+              <p className="text-xs opacity-70">{c.label}</p>
+              <p className="text-2xl font-bold mt-1">{c.value}</p>
+            </div>
+          ))
+        )}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         <button onClick={() => navigate('/admin/content')} className="p-4 bg-white dark:bg-[var(--color-card)] rounded-xl text-left hover:shadow-md transition-shadow active:scale-[0.98]">

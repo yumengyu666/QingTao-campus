@@ -1,11 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { serverError } from '../utils/response';
+import { AppError } from '../utils/appError';
 import { env } from '../config/env';
 import { Prisma } from '@prisma/client';
 import multer from 'multer';
 
 export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction) {
+  // ─── AppError — 已知业务错误 ───
+  if (err instanceof AppError) {
+    logger.warn(`${req.method} ${req.path} [${err.code}] ${err.message}`, {
+      userId: req.user?.userId,
+      statusCode: err.statusCode,
+    });
+    return res.status(err.statusCode).json({
+      code: err.statusCode,
+      message: err.message,
+      data: null,
+      ...(err.details ? { details: err.details } : {}),
+    });
+  }
+
   logger.error(`${req.method} ${req.path} - ${err.message}`, {
     stack: err.stack,
     ip: req.ip,

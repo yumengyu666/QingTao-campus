@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/common/Skeleton';
@@ -11,6 +12,7 @@ import toast from 'react-hot-toast';
 
 export default function MyPostsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const user = useAuthStore((s) => s.user);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export default function MyPostsPage() {
       : (
         <div className="p-4 md:p-0 space-y-2">
           {posts.map((p) => (
-            <div key={p.id} onClick={() => navigate(`/square/post/${p.id}`)}
+            <div key={p.id} onClick={() => nav(`/square/post/${p.id}`)}
               className="bg-white dark:bg-[var(--color-card)] rounded-xl p-4 cursor-pointer active:scale-[0.98] transition-transform">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-sm flex-1 truncate">{p.title}</h3>

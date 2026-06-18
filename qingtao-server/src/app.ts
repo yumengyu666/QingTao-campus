@@ -20,11 +20,11 @@ const app = express();
 // Security headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin for images
-  contentSecurityPolicy: env.isDev ? false : {
+  contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],
@@ -55,7 +55,7 @@ app.use(slowQueryWarn(2000));
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // Global: 封号用户拦截 — 所有请求一律禁止
 app.use(async (req, res, next) => {
@@ -112,6 +112,19 @@ app.use('/api/notifications/announcements', etagCache(120));
 // API routes
 app.use('/api', routes);
 
+// Frontend static (production)
+const frontendDist = path.resolve(__dirname, '../dist');
+app.use(express.static(frontendDist, { maxAge: '1d', fallthrough: true }));
+app.get('*', (_req, res, next) => {
+  if (_req.path.startsWith('/api/')) return next();
+  const indexPath = path.join(frontendDist, 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    next();
+  }
+});
+
 // Health check — 限制每分钟 30 次，减少信息暴露
 import rateLimit from 'express-rate-limit';
 const healthLimiter = rateLimit({
@@ -124,14 +137,11 @@ const healthLimiter = rateLimit({
 app.get('/health', healthLimiter, async (_req, res) => {
   let dbOk = false;
   try {
-    await prisma.$queryRawUnsafe('SELECT 1');
+    await prisma.$queryRaw`SELECT 1`;
     dbOk = true;
   } catch {}
   res.json({
     status: dbOk ? 'ok' : 'degraded',
-    database: dbOk ? 'connected' : 'disconnected',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
   });
 });
 

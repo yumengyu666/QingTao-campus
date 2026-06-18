@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FiX, FiLoader, FiUpload, FiAlertCircle, FiMove } from 'react-icons/fi';
 import { apiFetch } from '@/utils/api';
+import { storage } from '@/utils/storage';
 
 interface ImageItem {
   url: string;
@@ -64,7 +65,7 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload/image');
-      const token = localStorage.getItem('qingtao_token');
+      const token = storage.getToken();
       if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));

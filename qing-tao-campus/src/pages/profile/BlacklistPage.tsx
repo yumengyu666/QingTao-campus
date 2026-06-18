@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { FiUser, FiUnlock } from 'react-icons/fi';
 import { apiFetch } from '@/utils/api';
 import toast from 'react-hot-toast';
@@ -19,6 +20,7 @@ export default function BlacklistPage() {
   const [list, setList] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const nav = useAppNavigate();
 
   const fetchList = async () => {
     try {
@@ -58,7 +60,7 @@ export default function BlacklistPage() {
         <div className="space-y-2">
           {list.map((user) => (
             <div key={user.id} className="flex items-center gap-3 p-3 bg-white dark:bg-[var(--color-card)] rounded-xl">
-              <button onClick={() => navigate(`/user/${user.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+              <button onClick={() => nav(`/user/${user.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                 <UserAvatar src={user.avatarUrl} nickname={user.nickname || user.username} size="md" />
                 <span className="font-medium text-sm truncate">{user.nickname || user.username}</span>
               </button>

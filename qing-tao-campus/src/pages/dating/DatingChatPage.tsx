@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '@/utils/api';
 import { formatChatTime } from '@/utils/format';
@@ -30,6 +31,7 @@ function shouldShowTime(msgs: any[], i: number): boolean {
 export default function DatingChatPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -196,7 +198,7 @@ export default function DatingChatPage() {
       const json = await res.json();
       if (json.code === 200) {
         toast.success('已拉黑');
-        navigate('/dating/messages');
+        nav('/dating/messages');
       } else toast.error(json.message);
     } catch { toast.error('操作失败'); }
   };
@@ -260,13 +262,13 @@ export default function DatingChatPage() {
 
   const displayedMessages = messages;
 
-  if (loading) return <ChatSkeleton onBack={() => navigate('/dating/messages')} />;
+  if (loading) return <ChatSkeleton onBack={() => nav('/dating/messages')} />;
 
   return (
-    <div className="h-dvh flex flex-col bg-[#ededed] dark:bg-[#111] fixed inset-0 z-50 md:relative md:z-auto md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)] md:rounded-xl md:overflow-hidden">
+    <div className="h-dvh flex flex-col bg-[var(--color-chat-bg)] fixed inset-0 z-50 md:relative md:z-auto md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)] md:rounded-xl md:overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 bg-[#ededed] dark:bg-[#1a1a1a] px-4 h-12 flex items-center gap-3 border-b border-black/5 dark:border-white/5 z-10">
-        <button onClick={() => navigate('/dating/messages')} className="p-1 -ml-1">
+      <div className="flex-shrink-0 bg-[var(--color-chat-bg)] px-4 h-12 flex items-center gap-3 border-b border-black/5 dark:border-white/5 z-10">
+        <button onClick={() => nav('/dating/messages')} className="p-1 -ml-1">
           <FiArrowLeft className="text-xl text-gray-700 dark:text-gray-300" />
         </button>
         <div className="flex-1 min-w-0">
@@ -274,6 +276,12 @@ export default function DatingChatPage() {
             {peer?.nickname || '恋爱聊天'}
           </span>
         </div>
+        {peer?.userId && (
+          <button onClick={() => navigate(`/messages/${peer.userId}`)}
+            className="text-xs px-2 py-1 rounded-md text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors mr-1">
+            普通消息
+          </button>
+        )}
         <button className="p-1 relative" onClick={() => setShowMenu(v => !v)}>
           <FiMoreHorizontal className="text-xl text-gray-600 dark:text-gray-400" />
         </button>
@@ -325,7 +333,7 @@ export default function DatingChatPage() {
               <div key={msg.id || i}>
                 {showTime && (
                   <div className="flex justify-center my-3">
-                    <span className="text-[10px] text-gray-400 bg-[#d8d8d8]/70 dark:bg-gray-800/70 px-2.5 py-0.5 rounded-sm">
+                    <span className="text-[10px] text-gray-400 bg-[var(--color-chat-timestamp-bg)] px-2.5 py-0.5 rounded-sm">
                       {formatChatTime(msg.createdAt)}
                     </span>
                   </div>
@@ -349,8 +357,8 @@ export default function DatingChatPage() {
                     msg._violation
                       ? 'bg-red-100 dark:bg-red-900/20 text-red-500 rounded-[8px]'
                       : isMine
-                        ? 'bg-[#95ec69] text-gray-900 rounded-[8px_2px_8px_8px]'
-                        : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-[2px_8px_8px_8px]'
+                        ? 'bg-[var(--color-chat-bubble-self)] text-gray-900 rounded-[8px_2px_8px_8px]'
+                        : 'bg-[var(--color-chat-bubble-other)] text-gray-900 dark:text-gray-100 rounded-[2px_8px_8px_8px]'
                   } shadow-[0_1px_2px_rgba(0,0,0,0.06)]`}>
                     {msg._violation ? '违规消息' : msg.content}
                   </div>
@@ -378,7 +386,7 @@ export default function DatingChatPage() {
               <div className="w-9 h-9 rounded-md bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 shadow-sm">
                 {peer?.nickname?.[0] || '?'}
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-[2px_8px_8px_8px] px-3 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+              <div className="bg-[var(--color-chat-bubble-other)] rounded-[2px_8px_8px_8px] px-3 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
                 <div className="flex items-center gap-1">
                   {[0, 1, 2].map(i => (
                     <motion.span key={i}
@@ -425,7 +433,7 @@ export default function DatingChatPage() {
       </AnimatePresence>
 
       {/* Input Bar */}
-      <div className="flex-shrink-0 bg-[#f7f7f7] dark:bg-[#1e1e1e] px-3 py-2 flex items-center gap-2 border-t border-black/5 dark:border-white/5" style={{ paddingBottom: keyboardH ? `${keyboardH - 56}px` : undefined }}>
+      <div className="flex-shrink-0 bg-[var(--color-chat-input-bg)] px-3 py-2 flex items-center gap-2 border-t border-black/5 dark:border-white/5" style={{ paddingBottom: keyboardH ? `${keyboardH - 56}px` : undefined }}>
         <button onClick={() => setShowQuickReply(v => !v)}
           className={`p-2 rounded-full transition-colors ${
             showQuickReply ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200' : 'text-gray-500 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
@@ -457,8 +465,8 @@ export default function DatingChatPage() {
 
 function ChatSkeleton({ onBack }: { onBack: () => void }) {
   return (
-    <div className="h-dvh flex flex-col bg-[#ededed] dark:bg-[#111] fixed inset-0 z-30 md:relative md:z-auto md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)]">
-      <div className="flex-shrink-0 bg-[#ededed] dark:bg-[#1a1a1a] px-4 h-12 flex items-center gap-3 border-b border-black/5 dark:border-white/5">
+    <div className="h-dvh flex flex-col bg-[var(--color-chat-bg)] fixed inset-0 z-30 md:relative md:z-auto md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)]">
+      <div className="flex-shrink-0 bg-[var(--color-chat-bg)] px-4 h-12 flex items-center gap-3 border-b border-black/5 dark:border-white/5">
         <button onClick={onBack} className="p-1 -ml-1"><FiArrowLeft className="text-xl text-gray-400" /></button>
         <div className="skeleton w-9 h-9 rounded-full" />
         <div className="skeleton h-5 w-24 rounded" />
@@ -471,7 +479,7 @@ function ChatSkeleton({ onBack }: { onBack: () => void }) {
           </div>
         ))}
       </div>
-      <div className="flex-shrink-0 bg-[#f7f7f7] dark:bg-[#1e1e1e] p-3">
+      <div className="flex-shrink-0 bg-[var(--color-chat-input-bg)] p-3">
         <div className="skeleton h-10 w-full rounded-md" />
       </div>
     </div>

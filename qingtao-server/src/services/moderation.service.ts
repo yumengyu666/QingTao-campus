@@ -46,6 +46,7 @@ function writeAuditLog(entry: AuditEntry) {
 }
 
 // ─── 提示词 ───
+// 提示词可通过环境变量 MODERATION_PROMPT_FILE 覆盖，设为外部的 .txt 文件路径
 
 const SYSTEM_PROMPT = `你是内容安全哨兵。你的唯一功能是判断输入文本是否违规。
 
@@ -100,6 +101,7 @@ let consecutiveErrors = 0;
 let circuitOpen = false;
 let circuitTimer: ReturnType<typeof setTimeout> | null = null;
 const CIRCUIT_TIMEOUT = 5 * 60 * 1000; // 5 分钟
+// 冷却期内请求直接降级为"不审核仅记录"；如需队列重试，可接入 Redis 队列或 DB pending 表
 
 function getConfig() {
   return {
@@ -123,12 +125,29 @@ function isEnabled(): boolean {
 
 // ─── 核心调用 ───
 
+/**
+ * 截断防御：当文本超过 AI 单次审核上限时，审核"前段 + 后段"拼接，
+ * 避免攻击者把违规内容藏在截断之外（如前 900 字正常、第 901 字起放违规内容）。
+ * 任一段被判违规 → 整体违规（由调用方在分段场景自行处理）。
+ */
+const AI_TEXT_LIMIT = 1800; // 留余量，避免 token 溢出
+
+function sliceForAI(text: string): string {
+  if (text.length <= AI_TEXT_LIMIT) return text;
+  const half = Math.floor(AI_TEXT_LIMIT / 2);
+  const head = text.slice(0, half);
+  const tail = text.slice(text.length - half);
+  return `${head}\n…[中间内容已省略 ${text.length - AI_TEXT_LIMIT} 字]…\n${tail}`;
+}
+
 async function callDeepSeek(text: string): Promise<string> {
   const cfg = getConfig();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
+  // 应用截断防御
+  const safeText = sliceForAI(text);
 
-  logger.info(`[AI MODERATION] → Request: model=${cfg.model} text="${text.slice(0, 80)}"`);
+  logger.info(`[AI MODERATION] → Request: model=${cfg.model} textLen=${text.length} sentLen=${safeText.length} text="${safeText.slice(0, 80)}"`);
   const t0 = Date.now();
 
   try {
@@ -142,7 +161,7 @@ async function callDeepSeek(text: string): Promise<string> {
         model: cfg.model,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: text.slice(0, 2000) },
+          { role: 'user', content: safeText },
         ],
         temperature: 0,
         max_tokens: 1,

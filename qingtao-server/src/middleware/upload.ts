@@ -163,3 +163,37 @@ export const uploadDocument = multer({
     files: 1,
   },
 });
+
+// ─── 语音上传 (WebM/Opus) ───
+
+function voiceFilter(_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) {
+  const ext = file.originalname.split('.').pop()?.toLowerCase();
+  if (ext && (ext === 'webm' || ext === 'opus' || ext === 'wav' || ext === 'mp3' || ext === 'ogg' || ext === 'm4a')) {
+    cb(null, true);
+  } else {
+    cb(new Error('语音仅支持 WebM/Opus/WAV/MP3/OGG/M4A 格式'));
+  }
+}
+
+const voiceStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const now = new Date();
+    const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const dir = path.resolve(env.UPLOAD_PATH, 'voice', yearMonth);
+    ensureDir(dir);
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = file.originalname.split('.').pop()?.toLowerCase() || 'webm';
+    cb(null, `${uuidv4()}.${ext}`);
+  },
+});
+
+export const uploadVoice = multer({
+  storage: voiceStorage,
+  fileFilter: voiceFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB for voice
+    files: 1,
+  },
+});

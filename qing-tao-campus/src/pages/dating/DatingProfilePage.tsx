@@ -47,6 +47,7 @@ export default function DatingProfilePage() {
           setWechat(p.contactWechat || '');
           setQq(p.contactQq || '');
           setAvatar(p.customAvatar || '');
+          setStats(s => ({ ...s, followerCount: p.followerCount || 0 }));
         }
         if (postsJson.code === 200) setStats(s => ({ ...s, postCount: postsJson.data?.total || 0 }));
         if (followJson.code === 200) setStats(s => ({ ...s, followingCount: (followJson.data || []).length }));
@@ -80,6 +81,8 @@ export default function DatingProfilePage() {
   }, [token]);
 
   const handleSave = async () => {
+    if (!nickname.trim()) { toast.error('请输入昵称'); return; }
+    if (nickname.trim().length > 12) { toast.error('昵称最多12字'); return; }
     setSaving(true);
     try {
       const res = await apiFetch('/api/dating/profile', {

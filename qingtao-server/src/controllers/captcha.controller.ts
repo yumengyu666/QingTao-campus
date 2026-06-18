@@ -5,6 +5,7 @@ import { success, error } from '../utils/response';
 
 interface CaptchaRecord {
   code: string;
+  mathAnswer: string;
   expires: number;
 }
 
@@ -89,28 +90,46 @@ function generateSvg(code: string): string {
   </svg>`;
 }
 
-// GET /api/captcha/generate — 返回 SVG 图片和验证码ID
+// GET /api/captcha/generate — 返回 SVG 图片+数学题和验证码ID
 export function generateCaptcha(_req: Request, res: Response, next: NextFunction) {
   try {
     const code = randomCode();
     const id = uuidv4();
     const svg = generateSvg(code);
 
-    store.set(id, { code, expires: Date.now() + 5 * 60 * 1000 });
+    // 生成数学题
+    const ops = ['+', '-', '×'];
+    const op = ops[randomInt(0, 3)];
+    let a: number, b: number, answer: number, question: string;
+    
+    if (op === '+') {
+      a = randomInt(1, 50); b = randomInt(1, 50);
+      answer = a + b;
+      question = `${a} + ${b} = ?`;
+    } else if (op === '-') {
+      a = randomInt(10, 50); b = randomInt(1, a + 1);
+      answer = a - b;
+      question = `${a} - ${b} = ?`;
+    } else {
+      a = randomInt(1, 10); b = randomInt(1, 10);
+      answer = a * b;
+      question = `${a} × ${b} = ?`;
+    }
 
-    // 返回 SVG 字符串，前端直接用 data URI 展示为图片
-    return success(res, { captchaId: id, svg });
+    store.set(id, { code, mathAnswer: String(answer), expires: Date.now() + 5 * 60 * 1000 });
+
+    return success(res, { captchaId: id, svg, question });
   } catch (err) {
     next(err);
   }
 }
 
-// 校验验证码（带 IP 重试限制）
+// 校验验证码（支持数学答案和SVG识别码）
 export function verifyCaptcha(captchaId: string, userAnswer: string, ip?: string): boolean {
   // IP 重试限制检查
   if (ip) {
     const entry = getIpAttempts(ip);
-    if (entry.count >= MAX_ATTEMPTS) return false; // 超限
+    if (entry.count >= MAX_ATTEMPTS) return false;
     entry.count++;
   }
 
@@ -120,10 +139,12 @@ export function verifyCaptcha(captchaId: string, userAnswer: string, ip?: string
     store.delete(captchaId);
     return false;
   }
-  const valid = record.code === String(userAnswer).trim().toUpperCase();
+
+  const answer = String(userAnswer).trim();
+  // 匹配 SVG 验证码值（大小写不敏感）或数学答案
+  const valid = record.code === answer.toUpperCase() || record.mathAnswer === answer;
   store.delete(captchaId);
 
-  // 成功则重置该 IP 的计数
   if (valid && ip) {
     ipAttempts.delete(ip);
   }

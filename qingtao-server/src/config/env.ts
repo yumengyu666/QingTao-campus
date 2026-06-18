@@ -77,6 +77,19 @@ function validateEnv() {
     }
   }
 
+  // JWT 过期时间格式验证
+  const jwtExpiryPattern = /^\d+[smhd]$/;
+  const accessExpires = process.env.JWT_ACCESS_EXPIRES || '15m';
+  const refreshExpires = process.env.JWT_REFRESH_EXPIRES || '7d';
+  if (!jwtExpiryPattern.test(accessExpires)) {
+    console.error(`[FATAL] JWT_ACCESS_EXPIRES has invalid format: "${accessExpires}". Use format like "15m", "2h", "7d".`);
+    process.exit(1);
+  }
+  if (!jwtExpiryPattern.test(refreshExpires)) {
+    console.error(`[FATAL] JWT_REFRESH_EXPIRES has invalid format: "${refreshExpires}". Use format like "15m", "2h", "7d".`);
+    process.exit(1);
+  }
+
   console.log(`[ENV] Loaded — NODE_ENV=${process.env.NODE_ENV || 'development'}, DATABASE_URL=***`);
 }
 
@@ -88,7 +101,7 @@ export const env = {
   DATABASE_URL: requireEnv('DATABASE_URL'),
   JWT_ACCESS_SECRET: requireEnv('JWT_ACCESS_SECRET'),
   JWT_REFRESH_SECRET: requireEnv('JWT_REFRESH_SECRET'),
-  JWT_ACCESS_EXPIRES: process.env.JWT_ACCESS_EXPIRES || '2h',
+  JWT_ACCESS_EXPIRES: process.env.JWT_ACCESS_EXPIRES || '15m',
   JWT_REFRESH_EXPIRES: process.env.JWT_REFRESH_EXPIRES || '7d',
   UPLOAD_PATH: process.env.UPLOAD_PATH || './uploads',
   MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '5242880', 10),

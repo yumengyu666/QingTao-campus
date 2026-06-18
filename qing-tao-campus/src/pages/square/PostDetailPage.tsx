@@ -4,11 +4,13 @@ import { Header } from '@/components/layout/Header';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { Skeleton } from '@/components/common/Skeleton';
 import { ImageLightbox } from '@/components/common/ImageLightbox';
-import { FiEye, FiFlag, FiSend, FiTrash2, FiEdit2, FiMessageCircle } from 'react-icons/fi';
+import { ShareButton } from '@/components/common/ShareButton';
+import { FiEye, FiFlag, FiSend, FiTrash2, FiEdit2, FiMessageCircle, FiShare2 } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { formatDate, formatTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useKeyboardAvoid } from '@/hooks/useKeyboardAvoid';
 import toast from 'react-hot-toast';
 
 export default function PostDetailPage() {
@@ -24,6 +26,7 @@ export default function PostDetailPage() {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [customReason, setCustomReason] = useState('');
+  const keyboardHeight = useKeyboardAvoid();
 
   const loadedRef = useRef(false);
 
@@ -44,11 +47,11 @@ export default function PostDetailPage() {
           poll();
         }
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => toast.error('加载帖子失败')).finally(() => setLoading(false));
     // Load comments
     apiFetch(`/api/posts/${id}/comments`).then(r => r.json()).then(json => {
       if (json.code === 200) setComments(json.data.list || []);
-    }).catch(() => {});
+    }).catch(() => { /* 评论加载失败不影响帖子详情主流程 */ });
   }, [id]);
 
   const handleSend = async () => {
@@ -88,14 +91,14 @@ export default function PostDetailPage() {
 
   return (
     <div>
-      <Header title="帖子详情" onShare={() => {
-        const url = window.location.href;
-        if (navigator.share) {
-          navigator.share({ title: post.title, url }).catch(() => {});
-        } else {
-          navigator.clipboard.writeText(url).then(() => toast.success('链接已复制')).catch(() => {});
+      <Header
+        title="帖子详情"
+        rightAction={
+          post ? (
+            <ShareButton title={post.title} />
+          ) : undefined
         }
-      }} />
+      />
 
       <div className="bg-white dark:bg-[var(--color-card)] p-4 md:rounded-xl">
         <h1 className="text-xl font-bold">{post.title}</h1>
@@ -120,6 +123,16 @@ export default function PostDetailPage() {
         <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
           <span>{formatTime(post.createdAt)}</span>
           <span className="flex items-center gap-1"><FiEye /> {post.viewCount}</span>
+          <button onClick={() => {
+            const url = window.location.href;
+            if (navigator.share) {
+              navigator.share({ title: post.title, url }).catch(() => {});
+            } else {
+              navigator.clipboard.writeText(url).then(() => toast.success('链接已复制')).catch(() => {});
+            }
+          }} className="flex items-center gap-1 text-gray-400 hover:text-indigo-500 transition-colors">
+            <FiShare2 /> 分享
+          </button>
           <button className="flex items-center gap-1 text-gray-400 hover:text-red-500 transition-colors" onClick={() => setShowReport(true)}>
             <FiFlag /> 举报
           </button>
@@ -191,7 +204,7 @@ export default function PostDetailPage() {
       </div>
 
       <div className="md:hidden h-16" />
-      <div className="fixed bottom-14 left-0 right-0 md:static bg-white dark:bg-[var(--color-card)] border-t md:border border-gray-200 dark:border-[var(--color-border)] md:rounded-xl px-4 py-3 md:mt-3 z-20">
+      <div className="fixed bottom-14 left-0 right-0 md:static bg-white dark:bg-[var(--color-card)] border-t md:border border-gray-200 dark:border-[var(--color-border)] md:rounded-xl px-4 py-3 md:mt-3 z-20" style={{ paddingBottom: keyboardHeight || undefined }}>
         <div className="flex items-center gap-2">
           <input
             type="text" placeholder="说点什么..." value={commentText}
@@ -230,7 +243,7 @@ export default function PostDetailPage() {
                 if (!finalReason) { toast.error('请选择或填写原因'); return; }
                 const res = await apiFetch('/api/reports', { method: 'POST', body: JSON.stringify({ targetType: 'post', targetId: Number(id), reason: finalReason }) });
                 const json = await res.json();
-                if (json.code === 201) { toast.success('举报已提交'); setShowReport(false); setReportReason(''); setCustomReason(''); }
+                if (json.code === 201) { toast.success('举报已提交，管理员处理后会通知你'); setShowReport(false); setReportReason(''); setCustomReason(''); }
                 else toast.error(json.message);
               }} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium">提交举报</button>
             </div>

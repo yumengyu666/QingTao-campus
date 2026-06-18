@@ -1,28 +1,40 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const startTime = Date.now();
 
-export async function healthCheck(_req: Request, res: Response) {
-  let dbOk = false;
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    dbOk = true;
-  } catch {}
+async function checkDatabase(): Promise<boolean> {
+  try { await prisma.$queryRaw`SELECT 1`; return true; } catch { return false; }
+}
 
-  const memUsage = process.memoryUsage();
+async function checkAIService(): Promise<boolean> {
+  const apiUrl = process.env.MODERATION_API_URL;
+  const apiKey = process.env.MODERATION_API_KEY;
+  return !!(apiUrl && apiKey);
+}
+
+async function checkStorage(): Promise<boolean> {
+  try {
+    const testPath = path.resolve(__dirname, '..', '..', 'uploads', '.healthcheck');
+    fs.mkdirSync(path.dirname(testPath), { recursive: true });
+    fs.writeFileSync(testPath, Date.now().toString());
+    fs.unlinkSync(testPath);
+    return true;
+  } catch { return false; }
+}
+
+export async function healthCheck(_req: Request, res: Response) {
+  const [dbOk, storageWriteable] = await Promise.all([
+    checkDatabase(),
+    checkStorage(),
+  ]);
+
+  const allOk = dbOk && storageWriteable;
+
   res.json({
-    status: dbOk ? 'ok' : 'degraded',
-    uptime: Math.floor((Date.now() - startTime) / 1000),
-    timestamp: new Date().toISOString(),
-    checks: {
-      database: dbOk ? 'connected' : 'disconnected',
-      memory: {
-        used: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
-        total: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
-        usage: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100) + '%',
-      },
-    },
+    status: allOk ? 'ok' : 'degraded',
     version: process.env.npm_package_version || '1.0.0',
   });
 }

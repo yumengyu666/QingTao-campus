@@ -7,13 +7,16 @@ type MessageHandler = (data: any) => void;
 class WsService {
   private ws: WebSocket | null = null;
   private url: string = '';
+  private pendingAuth: string | null = null;
   private handlers: Map<string, Set<MessageHandler>> = new Map();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
 
   connect(token: string, baseUrl?: string): void {
-    const host = baseUrl || `ws://${window.location.host}`;
-    this.url = `${host}/ws?token=${token}`;
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = baseUrl || `${proto}://${window.location.host}`;
+    this.url = `${host}/ws`;
+    this.pendingAuth = token;
     this.doConnect();
   }
 
@@ -29,6 +32,11 @@ class WsService {
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
+      // Send auth token as first message instead of URL query param
+      if (this.pendingAuth) {
+        this.ws?.send(JSON.stringify({ type: 'auth', token: this.pendingAuth }));
+        this.pendingAuth = null;
+      }
       this.emit('connected', {});
     };
 

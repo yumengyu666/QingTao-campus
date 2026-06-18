@@ -1,4 +1,5 @@
 import { prisma } from '../config/database';
+import { Prisma } from '@prisma/client';
 
 interface LogParams {
   userId: number;
@@ -30,7 +31,7 @@ export async function getActivityLogs(
   page = 1,
   pageSize = 50
 ) {
-  const where: any = {};
+  const where: Prisma.ActivityLogWhereInput = {};
   if (userId) where.userId = userId;
   if (action) where.action = action;
 

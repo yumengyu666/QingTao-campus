@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -20,6 +21,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 export default function TradeIntentsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const token = useAuthStore((s) => s.token);
   const [role, setRole] = useState<'buyer' | 'seller'>('buyer');
   const [intents, setIntents] = useState<any[]>([]);
@@ -119,7 +121,7 @@ export default function TradeIntentsPage() {
                 <div key={item.id} className="bg-white dark:bg-[var(--color-card)] rounded-xl p-4">
                   {/* Goods info */}
                   {item.goods ? (
-                    <div className="flex items-start gap-3 mb-3 cursor-pointer" onClick={() => navigate(`/goods/${item.goods.id}`)}>
+                    <div className="flex items-start gap-3 mb-3 cursor-pointer" onClick={() => nav(`/goods/${item.goods.id}`)}>
                       <div className="w-14 h-14 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0 overflow-hidden">
                         {item.goods.images?.[0] ? (
                           <img src={typeof item.goods.images[0] === 'string' ? item.goods.images[0] : item.goods.images[0]?.url} alt="" className="w-full h-full object-cover" />
@@ -148,7 +150,7 @@ export default function TradeIntentsPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <UserAvatar src={otherUser?.avatarUrl} nickname={otherUser?.nickname || '?'} size="xs" />
                     <span className="text-sm text-gray-600 dark:text-gray-300">{otherUser?.nickname}</span>
-                    <button onClick={() => navigate(`/messages/${otherUser?.id}`)}
+                    <button onClick={() => nav(`/messages/${otherUser?.id}`)}
                       className="ml-auto flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600">
                       <FiMessageCircle className="text-xs" /> 私信
                     </button>

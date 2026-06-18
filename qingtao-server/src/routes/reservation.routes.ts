@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth';
+import { moderateBody } from '../middleware/moderation.middleware';
 import * as ctrl from '../controllers/reservation.controller';
 
 const router = Router();
 router.use(authMiddleware);
 
-router.post('/', ctrl.createReservation);
+router.post('/', moderateBody(['message']), ctrl.createReservation);
 router.get('/', ctrl.getMyReservations);
 router.patch('/:id/accept', ctrl.acceptReservation);
 router.patch('/:id/reject', ctrl.rejectReservation);

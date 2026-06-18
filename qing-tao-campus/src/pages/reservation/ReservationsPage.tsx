@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Pagination } from '@/components/common/Pagination';
@@ -10,6 +11,7 @@ import toast from 'react-hot-toast';
 
 export default function ReservationsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [tab, setTab] = useState<'buyer' | 'seller'>('buyer');
   const [list, setList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
@@ -102,7 +104,7 @@ export default function ReservationsPage() {
             <div key={r.id} className="bg-white dark:bg-[var(--color-card)] rounded-xl p-4 shadow-sm">
               <div className="flex items-start gap-3">
                 <div
-                  onClick={() => navigate(`/goods/${r.goodsId}`)}
+                  onClick={() => nav(`/goods/${r.goodsId}`)}
                   className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-[var(--color-card-hover)] flex-shrink-0 overflow-hidden cursor-pointer"
                 >
                   {r.goods?.images ? (
@@ -150,7 +152,7 @@ export default function ReservationsPage() {
 
               {r.status === 'accepted' && (
                 <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[var(--color-border)]">
-                  <button onClick={() => navigate(`/messages/${tab === 'buyer' ? r.sellerId : r.buyerId}`)}
+                  <button onClick={() => nav(`/messages/${tab === 'buyer' ? r.sellerId : r.buyerId}`)}
                     className="w-full py-2 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm flex items-center justify-center gap-1 hover:bg-[var(--color-primary)]/20">
                     <FiMessageSquare size={14} />联系{tab === 'buyer' ? '卖家' : '买家'}
                   </button>

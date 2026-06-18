@@ -1,12 +1,15 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { CampusTag } from '@/components/common/CampusTag';
 import { ImageLightbox } from '@/components/common/ImageLightbox';
+import { ShareButton } from '@/components/common/ShareButton';
 import { Skeleton } from '@/components/common/Skeleton';
 import { CONDITION_MAP, STATUS_MAP } from '@/types/goods';
-import { formatDate, formatTime } from '@/utils/format';
+import type { Goods } from '@/types/goods';
+import { formatDate, formatRelativeTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
 import { saveBrowseHistory } from '@/pages/profile/BrowseHistoryPage';
 import { FiHeart, FiShoppingCart, FiCopy, FiCheck, FiEdit2, FiCheckCircle, FiTrash2, FiArrowDown, FiArrowUp, FiEye, FiClock, FiMessageCircle, FiFlag, FiShare2, FiCalendar, FiRefreshCw } from 'react-icons/fi';
@@ -14,6 +17,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/stores/authStore';
+import { useKeyboardAvoid } from '@/hooks/useKeyboardAvoid';
 import toast from 'react-hot-toast';
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -21,16 +25,17 @@ import 'swiper/css/pagination';
 export default function GoodsDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const currentUser = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
 
-  const [goods, setGoods] = useState<any>(null);
+  const [goods, setGoods] = useState<Goods | null>(null);
   const [loading, setLoading] = useState(true);
   const [favorited, setFavorited] = useState(false);
   const [inCart, setInCart] = useState(false);
   const [favoriteId, setFavoriteId] = useState<number | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Array<{ id: number; content: string; userId: number; createdAt: string; user?: { id: number; nickname: string; avatarUrl: string } }>>([]);
   const [commentText, setCommentText] = useState('');
   const [showContact, setShowContact] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -44,6 +49,7 @@ export default function GoodsDetailPage() {
   const [customReason, setCustomReason] = useState('');
   const [intentStatus, setIntentStatus] = useState<string | null>(null); // 'pending' | 'accepted' | null
   const [intentSending, setIntentSending] = useState(false);
+  const keyboardHeight = useKeyboardAvoid();
 
   const goodsRef = useRef<string | null>(null);
 
@@ -96,7 +102,7 @@ export default function GoodsDetailPage() {
                 }));
                 setGoods({ ...json.data });
               }
-            }).catch(() => {});
+            }).catch(() => { /* 图片审核状态查询失败不影响展示 */ });
           }
           // Save browse history
           saveBrowseHistory({
@@ -109,13 +115,13 @@ export default function GoodsDetailPage() {
           });
         }
       })
-      .catch(() => {})
+      .catch(() => toast.error('加载商品信息失败'))
       .finally(() => setLoading(false));
 
     // Load comments
     apiFetch(`/api/goods/${id}/comments`).then(r => r.json()).then(j => {
       if (j.code === 200) setComments(j.data.list || []);
-    }).catch(() => {});
+    }).catch(() => { /* 评论加载失败不影响商品详情主流程 */ });
 
     // Check favorite & cart status
     if (token) {
@@ -295,7 +301,7 @@ export default function GoodsDetailPage() {
   };
 
   const ActionButtons = () => (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       {!isOwner && (
         <button
           onClick={handleIntent}
@@ -313,7 +319,7 @@ export default function GoodsDetailPage() {
       )}
       {!isOwner && (
         <button
-          onClick={() => navigate(`/messages/${goods.userId}`)}
+          onClick={() => nav(`/messages/${goods.userId}`)}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium flex-[2] justify-center bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 active:scale-[0.97] transition-all"
         >
           <FiMessageCircle />
@@ -382,8 +388,7 @@ export default function GoodsDetailPage() {
     // 加载我的商品列表
     try {
       const res = await apiFetch(`/api/users/${goods.userId}/goods?pageSize=5`);
-      // 实际需要加载当前用户的商品来提议交换
-      const myRes = await apiFetch(`/api/users/me`);
+      // 从 authStore 获取当前用户信息
       // 简化版：直接弹窗让用户输入自己商品ID
       const myGoodsId = prompt('请输入你想用来交换的商品ID（可在你的商品列表查看）：');
       if (!myGoodsId) { setBartering(false); return; }
@@ -407,21 +412,21 @@ export default function GoodsDetailPage() {
         body: JSON.stringify({ targetType: 'goods', targetId: Number(id), reason: finalReason }),
       });
       const json = await res.json();
-      if (json.code === 201) { toast.success('举报已提交'); setShowReport(false); setReportReason(''); setCustomReason(''); }
+      if (json.code === 201) { toast.success('举报已提交，管理员处理后会通知你'); setShowReport(false); setReportReason(''); setCustomReason(''); }
       else toast.error(json.message);
     } catch { toast.error('网络错误'); }
   };
 
   return (
     <div>
-      <Header title="商品详情" onShare={() => {
-        const url = window.location.href;
-        if (navigator.share) {
-          navigator.share({ title: goods.title, url }).catch(() => {});
-        } else {
-          navigator.clipboard.writeText(url).then(() => toast.success('链接已复制')).catch(() => {});
+      <Header
+        title="商品详情"
+        rightAction={
+          goods ? (
+            <ShareButton title={goods.title} description={`¥${goods.price} · ${goods.condition ? CONDITION_MAP[goods.condition] : ''}`} />
+          ) : undefined
         }
-      }} />
+      />
       <div className="md:flex md:gap-6">
         <div className="md:w-1/2 md:flex-shrink-0">
           <div className="bg-gray-100 dark:bg-[var(--color-card)] md:rounded-xl md:overflow-hidden md:sticky md:top-4 relative">
@@ -470,7 +475,7 @@ export default function GoodsDetailPage() {
             </div>
             <div className="flex gap-4 mt-2 text-xs text-gray-400">
               <span className="inline-flex items-center gap-1"><FiEye className="text-xs" /> {goods.viewCount} 次</span>
-              <span className="inline-flex items-center gap-1"><FiClock className="text-xs" /> {formatTime(goods.createdAt)}</span>
+              <span className="inline-flex items-center gap-1"><FiClock className="text-xs" /> {formatRelativeTime(goods.createdAt)}</span>
             </div>
             {goods.campusLocation && <span className="inline-block mt-2 text-sm text-gray-500">📍 交易地点：{goods.campusLocation}</span>}
           </div>
@@ -482,13 +487,13 @@ export default function GoodsDetailPage() {
           <div className="bg-white dark:bg-[var(--color-card)] px-4 py-4 md:rounded-xl mt-2 md:mt-0">
             <h3 className="font-medium mb-3">卖家信息</h3>
             <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-2 -mx-2 transition-colors"
-              onClick={() => navigate(`/user/${goods.user?.id}`)}>
+              onClick={() => nav(`/user/${goods.user?.id}`)}>
               <UserAvatar src={goods.user?.avatarUrl} nickname={goods.user?.nickname} size="lg" />
               <div className="flex-1"><p className="font-medium">{goods.user?.nickname}</p><p className="text-xs text-gray-400">点击查看TA的主页 →</p></div>
             </div>
             {!isOwner && (
               <button
-                onClick={() => navigate(`/user/${goods.userId}`)}
+                onClick={() => nav(`/user/${goods.userId}`)}
                 className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 text-indigo-500 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
               >
                 查看TA的全部商品 →
@@ -496,7 +501,7 @@ export default function GoodsDetailPage() {
             )}
             {!isOwner && (
               <button
-                onClick={() => navigate(`/messages/${goods.userId}`)}
+                onClick={() => nav(`/messages/${goods.userId}`)}
                 className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-medium text-sm shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.97] transition-all"
               >
                 <FiMessageCircle className="text-sm" />
@@ -571,7 +576,7 @@ export default function GoodsDetailPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium">{c.user?.nickname}</span>
-                        <span className="text-[10px] text-gray-400">{formatTime(c.createdAt)}</span>
+                        <span className="text-[10px] text-gray-400">{formatRelativeTime(c.createdAt)}</span>
                         {c.status === 'pending' && <span className="text-[10px] px-1 py-0.5 rounded bg-yellow-100 text-yellow-600">审核中</span>}
                         {c.status === 'rejected' && <span className="text-[10px] px-1 py-0.5 rounded bg-red-100 text-red-500">已拒绝</span>}
                         {currentUser?.id === c.userId && (
@@ -609,7 +614,7 @@ export default function GoodsDetailPage() {
 
           {isOwner && (
             <div className="bg-white dark:bg-[var(--color-card)] px-4 py-4 md:rounded-xl mt-2 md:mt-0 space-y-2">
-              <button onClick={() => navigate(`/publish/goods/${goods.id}`)}
+              <button onClick={() => nav(`/publish/goods/${goods.id}`)}
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
                 <FiEdit2 /> 编辑商品
               </button>
@@ -640,16 +645,16 @@ export default function GoodsDetailPage() {
           <div className="hidden md:block h-4" />
         </div>
       </div>
-      <div className="md:hidden fixed bottom-14 left-0 right-0 bg-white/90 dark:bg-[var(--color-card)]/90 backdrop-blur border-t border-gray-200 dark:border-[var(--color-border)] px-4 py-3 z-20">
+      <div className="md:hidden fixed bottom-14 left-0 right-0 bg-white/90 dark:bg-[var(--color-card)]/90 backdrop-blur border-t border-gray-200 dark:border-[var(--color-border)] px-4 py-3 z-20" style={{ paddingBottom: keyboardHeight || undefined }}>
         <ActionButtons />
       </div>
       <div className="md:hidden h-20" />
 
       {/* Image Lightbox */}
       <ImageLightbox
-        images={goods ? (goods.images || []).map((img: any) => getImgSrc(img)) : []}
+        images={(goods.images || []).map((img: any) => ({ url: getImgSrc(img) }))}
         initialIndex={lightboxIndex ?? 0}
-        open={lightboxIndex !== null}
+        isOpen={lightboxIndex !== null}
         onClose={() => setLightboxIndex(null)}
       />
 

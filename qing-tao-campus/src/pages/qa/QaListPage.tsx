@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { Pagination } from '@/components/common/Pagination';
+import { EndOfList } from '@/components/common/EndOfList';
+import { EmptyState } from '@/components/common/EmptyState';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import type { ImageItem } from '@/components/common/ImageUploader';
 import { useAuthStore } from '@/stores/authStore';
@@ -24,6 +27,7 @@ const CATEGORIES = [
 
 export default function QaListPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const token = useAuthStore((s) => s.token);
   const currentUser = useAuthStore((s) => s.user);
   const [posts, setPosts] = useState<any[]>([]);
@@ -107,18 +111,17 @@ export default function QaListPage() {
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <FiHelpCircle className="text-4xl text-amber-300 mb-3" />
-            <p className="text-sm">暂无问题</p>
-            <p className="text-xs mt-1">点击右下角 + 来提问吧</p>
-          </motion.div>
+          <EmptyState
+            message="暂无问题"
+            description="点击右下角 + 来提问吧"
+            icon={<FiHelpCircle className="text-4xl text-amber-300" />}
+          />
         ) : (
           <div className="space-y-2.5">
             <AnimatePresence>
               {posts.map((p, i) => (
                 <motion.div key={p.id} initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                  onClick={() => navigate(`/qa/${p.id}`)}
+                  onClick={() => nav(`/qa/${p.id}`)}
                   className="bg-white/80 dark:bg-[var(--color-card)]/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all cursor-pointer active:scale-[0.99] border border-white/50 dark:border-[var(--color-border)]/30 group">
                   <div className="flex items-start gap-3">
                     <span className="text-2xl flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform">{p.type === 'question' ? '❓' : '💡'}</span>
@@ -144,6 +147,7 @@ export default function QaListPage() {
           </div>
         )}
         <Pagination page={page} total={total} pageSize={20} onPageChange={(p) => { setPage(p); fetchPosts(p); }} />
+        {!loading && posts.length > 0 && <EndOfList />}
       </div>
 
       {/* FAB */}

@@ -174,3 +174,37 @@ export async function uploadAvatar(req: Request, res: Response, next: NextFuncti
     next(err);
   }
 }
+
+/** POST /api/upload/voice — 上传语音 */
+export async function uploadVoice(req: Request, res: Response, next: NextFunction) {
+  try {
+    const file = (req as any).file;
+    if (!file) return error(res, '请选择语音文件');
+
+    const relativePath = file.path.split('uploads').pop()?.replace(/\\/g, '/') || `/${file.filename}`;
+    const voiceUrl = `/uploads${relativePath}`;
+
+    return success(res, { url: voiceUrl, fileName: file.originalname, size: file.size }, '上传成功', 201);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/upload/chat-file — 上传聊天文件 */
+export async function uploadChatFile(req: Request, res: Response, next: NextFunction) {
+  try {
+    const file = (req as any).file;
+    if (!file) return error(res, '请选择文件');
+
+    const relativePath = file.path.split('uploads').pop()?.replace(/\\/g, '/') || `/${file.filename}`;
+    const fileUrl = `/uploads${relativePath}`;
+
+    return success(res, {
+      url: fileUrl,
+      fileName: file.originalname,
+      fileSize: file.size,
+    }, '上传成功', 201);
+  } catch (err) {
+    next(err);
+  }
+}

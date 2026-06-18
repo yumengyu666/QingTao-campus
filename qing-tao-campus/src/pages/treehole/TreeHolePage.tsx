@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Pagination } from '@/components/common/Pagination';
 import { ImageLightbox } from '@/components/common/ImageLightbox';
+import { EndOfList } from '@/components/common/EndOfList';
+import { LazyImage } from '@/components/common/LazyImage';
+import { EmptyState } from '@/components/common/EmptyState';
 import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
 import { FiHeart, FiMessageCircle, FiSend, FiHash, FiFlag } from 'react-icons/fi';
@@ -136,7 +139,7 @@ export default function TreeHolePage() {
       });
       const json = await res.json();
       if (json.code === 200 || json.code === 201) {
-        toast.success('举报已提交');
+        toast.success('举报已提交，管理员处理后会通知你');
       } else {
         toast.error(json.message || '举报失败');
       }
@@ -216,12 +219,11 @@ export default function TreeHolePage() {
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <FiHash className="text-5xl text-indigo-300 mb-4" />
-            <p className="text-sm">树洞里空空的</p>
-            <p className="text-xs mt-1">说出你的第一句话吧</p>
-          </motion.div>
+          <EmptyState
+            message="树洞里空空的"
+            description="说出你的第一句话吧"
+            icon={<FiHash className="text-5xl text-indigo-300" />}
+          />
         ) : (
           <div className="space-y-4">
             <AnimatePresence>
@@ -246,10 +248,10 @@ export default function TreeHolePage() {
                       {/* Image grid if present */}
                       {(() => { const imgs = typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []); return imgs.length > 0 && (
                         <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(imgs.length, 3)}, 1fr)` }}>
-                          {imgs.slice(0, 3).map((img: string, idx: number) => (
-                            <img key={idx} src={img} alt="" className="w-full aspect-square object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity" loading="lazy"
-                              onClick={(e) => { e.stopPropagation(); setLightboxImages(imgs); setLightboxIndex(idx); }} />
-                          ))}
+                        {imgs.slice(0, 3).map((img: string, idx: number) => (
+                          <LazyImage key={idx} src={img} alt="" className="w-full aspect-square rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={(e) => { e.stopPropagation(); setLightboxImages(imgs); setLightboxIndex(idx); }} />
+                        ))}
                         </div>
                       ); })()}
 
@@ -305,6 +307,7 @@ export default function TreeHolePage() {
           total={total}
           onPageChange={(p) => { setPage(p); fetchPosts(p); }}
         />
+        {!loading && posts.length > 0 && <EndOfList />}
       </div>
 
       {/* Image Lightbox */}

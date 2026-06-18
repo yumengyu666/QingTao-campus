@@ -81,6 +81,7 @@ const RELOAD_INTERVAL = 5 * 60 * 1000;
 setInterval(() => { reloadWords().catch(() => {}); }, RELOAD_INTERVAL);
 
 export function containsSensitive(text: string): boolean {
+  // 注: sensitive.ts 也从本文件 re-export containsSensitive，存在循环引用但运行时不产生问题（CommonJS 模块缓存）
   if (SAFE_PHRASES.has(text)) return false;
   if (isHighRisk(text)) return true;
   return SENSITIVE_RE.test(text);
@@ -116,6 +117,29 @@ async function backgroundCheck(params: {
       prisma.user.update({
         where: { id: params.userId },
         data: { violationCount: { increment: 1 } },
+      }).then(() => {
+        // 自动封禁检查（#99）：≥3 次违规 → 禁言 1 天；≥5 次 → 禁言 7 天
+        return prisma.user.findUnique({ where: { id: params.userId }, select: { violationCount: true, violationBanUntil: true } });
+      }).then(user => {
+        if (!user) return;
+        let banDays = 0;
+        if (user.violationCount >= 5) banDays = 7;
+        else if (user.violationCount >= 3) banDays = 1;
+        
+        if (banDays > 0 && (!user.violationBanUntil || new Date(user.violationBanUntil) < new Date())) {
+          const banUntil = new Date(Date.now() + banDays * 24 * 60 * 60 * 1000);
+          prisma.user.update({
+            where: { id: params.userId },
+            data: { violationBanUntil: banUntil },
+          }).catch(() => {});
+          createNotification({
+            userId: params.userId,
+            type: 'review_result',
+            title: '账号限制通知',
+            content: `因多次发布违规内容（${user.violationCount}次），您的账号已被限制操作至 ${banUntil.toLocaleString('zh-CN')}。如有疑问请联系管理员。`,
+          }).catch(() => {});
+          logger.warn(`[MODERATION] User #${params.userId} banned for ${banDays} days (violationCount=${user.violationCount})`);
+        }
       }).catch(() => {});
 
       let title = '内容违规通知';
@@ -138,6 +162,18 @@ async function backgroundCheck(params: {
           await prisma.chatMessage.update({ where: { id: params.contentId }, data: { content: '[该消息因违规已被屏蔽]' } });
           title = '消息违规';
           content = '您发送的一条消息经AI审核判定为违规，已被屏蔽。';
+          // 通知接收方消息被屏蔽（#93）
+          prisma.chatMessage.findUnique({ where: { id: params.contentId }, select: { receiverId: true } }).then(msg => {
+            if (msg && msg.receiverId !== params.userId) {
+              createNotification({
+                userId: msg.receiverId,
+                type: 'review_result',
+                title: '消息被屏蔽',
+                content: '您收到的一条消息因违规已被系统屏蔽。',
+                relatedId: params.contentId,
+              }).catch(() => {});
+            }
+          }).catch(() => {});
           break;
       }
 
@@ -272,6 +308,7 @@ export function moderateBody(fields: string[]) {
   };
 }
 
+// 注: 当前为"先发布后审查"异步模式，存在短暂窗口期。如需同步审核可改用 moderateText() 的同步阻塞模式
 export async function afterCreate(
   contentType: 'goods' | 'post' | 'lostfound' | 'message',
   contentId: number,
@@ -279,7 +316,65 @@ export async function afterCreate(
   fields: { field: string; text: string }[],
 ) {
   for (const { field, text } of fields) {
-    if (!text || SAFE_PHRASES.has(text) || containsSensitive(text)) continue;
+    if (!text || SAFE_PHRASES.has(text)) continue;
+
+    // 词表二次命中：路由层 moderateBody 已过滤一遍，此处再命中说明
+    // 要么词表不一致（路由放行 → 这里命中），要么是变体绕过。
+    // 直接判定违规下架 + 通知，不再跳过 AI（避免内容裸奔）。
+    if (containsSensitive(text)) {
+      logger.warn(`[MODERATION] Word-list hit in afterCreate for ${contentType} #${contentId} field=${field} — soft-offline directly`);
+
+      // 累计违规计数
+      prisma.user.update({
+        where: { id: userId },
+        data: { violationCount: { increment: 1 } },
+      }).then(() => {
+        return prisma.user.findUnique({ where: { id: userId }, select: { violationCount: true, violationBanUntil: true } });
+      }).then(user => {
+        if (!user) return;
+        let banDays = 0;
+        if (user.violationCount >= 5) banDays = 7;
+        else if (user.violationCount >= 3) banDays = 1;
+        if (banDays > 0 && (!user.violationBanUntil || new Date(user.violationBanUntil) < new Date())) {
+          const banUntil = new Date(Date.now() + banDays * 24 * 60 * 60 * 1000);
+          prisma.user.update({ where: { id: userId }, data: { violationBanUntil: banUntil } }).catch(() => {});
+          createNotification({ userId, type: 'review_result', title: '账号限制通知', content: `因多次发布违规内容（${user.violationCount}次），您的账号已被限制操作至 ${banUntil.toLocaleString('zh-CN')}。` }).catch(() => {});
+        }
+      }).catch(() => {});
+
+      let title = '内容违规通知';
+      let content = `您发布的${field === 'content' ? '内容' : field}经审核判定为违规，已被下架。如有疑问请联系管理员。`;
+
+      switch (contentType) {
+        case 'goods':
+          await prisma.goods.update({ where: { id: contentId }, data: { status: 'offline' } }).catch(() => {});
+          title = '商品违规下架';
+          break;
+        case 'post':
+          await prisma.post.update({ where: { id: contentId }, data: { status: 'offline' } }).catch(() => {});
+          title = '帖子违规下架';
+          break;
+        case 'lostfound':
+          await prisma.lostFound.update({ where: { id: contentId }, data: { status: 'offline' } }).catch(() => {});
+          title = '失物信息违规下架';
+          break;
+        case 'message':
+          await prisma.chatMessage.update({ where: { id: contentId }, data: { content: '[该消息因违规已被屏蔽]' } }).catch(() => {});
+          title = '消息违规';
+          content = '您发送的一条消息经审核判定为违规，已被屏蔽。';
+          break;
+      }
+
+      await createNotification({
+        userId,
+        type: 'review_result',
+        title,
+        content,
+        relatedId: contentId,
+      }).catch(() => {});
+      continue;
+    }
+
     backgroundCheck({ text, contentType, contentId, userId, field });
   }
 }

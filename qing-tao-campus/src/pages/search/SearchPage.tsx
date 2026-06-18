@@ -1,24 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { useSearchStore } from '@/stores/searchStore';
 import { useDebounce } from '@/hooks/useUtils';
 import { Skeleton } from '@/components/common/Skeleton';
+import { EmptyState } from '@/components/common/EmptyState';
+import { LazyImage } from '@/components/common/LazyImage';
 import { apiFetch } from '@/utils/api';
 import { FiSearch, FiX, FiClock, FiTrendingUp } from 'react-icons/fi';
 import { CAMPUS_MAP } from '@/utils/constants';
 
-type SearchType = 'all' | 'goods' | 'posts' | 'lostfound';
+type SearchType = 'all' | 'goods' | 'posts' | 'lostfound' | 'qa';
 
 const typeTabs: { key: SearchType; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'goods', label: '商品' },
   { key: 'posts', label: '帖子' },
   { key: 'lostfound', label: '失物招领' },
+  { key: 'qa', label: '答疑' },
 ];
 
 export default function SearchPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [searchParams] = useSearchParams();
   const initialType = (searchParams.get('type') as SearchType) || 'all';
 
@@ -42,7 +47,7 @@ export default function SearchPage() {
     if (!debouncedKeyword.trim()) { setResults([]); setTotal(0); return; }
     setLoading(true);
     const typeParam = searchType !== 'all' ? `&type=${searchType}` : '';
-    apiFetch(`/api/search?keyword=${encodeURIComponent(debouncedKeyword)}${typeParam}`)
+    apiFetch(`/api/search?keyword=${encodeURIComponent(debouncedKeyword.toLowerCase())}${typeParam}`)
       .then(r => r.json())
       .then(j => {
         if (j.code === 200) { setResults(j.data.list || []); setTotal(j.data.total || 0); }
@@ -63,6 +68,7 @@ export default function SearchPage() {
     if (item.type === 'goods') navigate(`/goods/${item.id}`);
     else if (item.type === 'post') navigate(`/square/post/${item.id}`);
     else if (item.type === 'lostfound') navigate(`/square/lostfound/${item.id}`);
+    else if (item.type === 'qa') navigate(`/qa/${item.id}`);
     else if (item.type === 'user') navigate(`/user/${item.id}`);
   };
 
@@ -106,7 +112,7 @@ export default function SearchPage() {
           {loading ? (
             <div className="p-4"><Skeleton.List rows={3} /></div>
           ) : results.length === 0 ? (
-            <p className="text-center text-gray-400 py-12 text-sm">未找到相关结果</p>
+            <EmptyState message="未找到相关结果" description="换个关键词或切换搜索类型试试" icon={<FiSearch className="text-4xl" />} variant="compact" />
           ) : (
             results.map((item) => (
               <div key={`${item.type}-${item.id}`} onClick={() => handleResultClick(item)}
@@ -114,19 +120,17 @@ export default function SearchPage() {
                 {/* Thumbnail */}
                 {item.type === 'user' ? (
                   item.avatarUrl ? (
-                    <img src={item.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover bg-gray-100 dark:bg-[var(--color-card-hover)] flex-shrink-0"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <LazyImage src={item.avatarUrl} alt="" className="w-12 h-12 rounded-full flex-shrink-0" />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold flex-shrink-0">
                       {(item.nickname || item.username)?.[0]}
                     </div>
                   )
                 ) : item.images?.length > 0 ? (
-                  <img src={item.images[0]} alt="" className="w-12 h-12 rounded-xl object-cover bg-gray-100 dark:bg-[var(--color-card-hover)] flex-shrink-0"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <LazyImage src={item.images[0]} alt="" className="w-12 h-12 rounded-xl flex-shrink-0" />
                 ) : (
                   <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-[var(--color-card-hover)] flex items-center justify-center text-lg flex-shrink-0">
-                    {item.type === 'goods' ? '📦' : item.type === 'post' ? '📝' : '🔍'}
+                    {item.type === 'goods' ? '📦' : item.type === 'post' ? '📝' : item.type === 'lostfound' ? '🔍' : item.type === 'qa' ? '❓' : '🔍'}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -135,9 +139,10 @@ export default function SearchPage() {
                     item.type === 'goods' ? 'bg-blue-50 text-blue-600' :
                     item.type === 'post' ? 'bg-green-50 text-green-600' :
                     item.type === 'lostfound' ? 'bg-orange-50 text-orange-600' :
+                    item.type === 'qa' ? 'bg-teal-50 text-teal-600' :
                     'bg-purple-50 text-purple-600'
                   }`}>
-                    {item.type === 'goods' ? '商品' : item.type === 'post' ? '帖子' : item.type === 'lostfound' ? '失物招领' : '用户'}
+                    {item.type === 'goods' ? '商品' : item.type === 'post' ? '帖子' : item.type === 'lostfound' ? '失物招领' : item.type === 'qa' ? '答疑' : '用户'}
                   </span>
                   <span className="text-sm truncate">{item.title || item.nickname || item.username}</span>
                 </div>

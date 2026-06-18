@@ -76,3 +76,16 @@ export async function deleteNotification(req: Request, res: Response, next: Next
     return success(res, null, '已删除');
   } catch (err) { next(err); }
 }
+
+// POST /push-subscribe — 浏览器推送订阅
+export async function pushSubscribe(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { subscription } = req.body;
+    if (!subscription) return error(res, '缺少 subscription 数据');
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { pushSubscription: JSON.stringify(subscription) } as any,
+    });
+    return success(res, null, '推送已订阅');
+  } catch (err) { next(err); }
+}

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
+import { EndOfList } from '@/components/common/EndOfList';
 import { Pagination } from '@/components/common/Pagination';
 import { BackToTop } from '@/components/common/BackToTop';
 import { LazyImage } from '@/components/common/LazyImage';
@@ -19,6 +21,7 @@ type SortType = 'newest' | 'price_asc' | 'price_desc' | 'hot';
 
 export default function GoodsListPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const compareStore = useCompareStore();
   const campusStore = useCampusStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -168,7 +171,7 @@ export default function GoodsListPage() {
           {categories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setCategory(cat.id)}
+              onClick={() => setCategory(activeCategory === cat.id ? 0 : cat.id)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all ${
                 activeCategory === cat.id
                   ? 'bg-indigo-500 text-white shadow-md'
@@ -197,7 +200,7 @@ export default function GoodsListPage() {
           className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
             campusStore.campus ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 dark:bg-[var(--color-card-hover)] text-gray-500'
           }`}>
-          {campusStore.campus === 'kexue' ? '🏫 科学' : campusStore.campus === 'dongfeng' ? '🏫 东风' : '🌐 全部校区'}
+          {campusStore.campus ? `🏫 ${CAMPUS_MAP[campusStore.campus as keyof typeof CAMPUS_MAP] || campusStore.campus}` : '🌐 全部校区'}
         </button>
         <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
         {sortOptions.map((s) => (
@@ -428,7 +431,7 @@ export default function GoodsListPage() {
       )}
 
       {!loading && goods.length > 0 && total <= goods.length && (
-        <p className="text-center text-xs text-gray-300 dark:text-gray-600 py-4">—— 我是有底线的 ——</p>
+        <EndOfList />
       )}
 
       <Pagination page={page} total={total} pageSize={12} onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
@@ -443,7 +446,7 @@ export default function GoodsListPage() {
           <div className="flex gap-2">
             <button onClick={() => compareStore.clearAll()}
               className="px-3 py-1 text-xs bg-white/20 rounded-lg">清空</button>
-            <button onClick={() => navigate('/compare')}
+            <button onClick={() => nav('/compare')}
               className="px-3 py-1 text-xs bg-white text-indigo-600 rounded-lg font-medium flex items-center gap-1">
               <FiBarChart2 className="text-xs" /> 开始对比
             </button>

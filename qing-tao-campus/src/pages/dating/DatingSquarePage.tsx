@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
+import type { DatingProfile, DatingPost, DatingRequest, DailyMatch } from '@/types/dating';
 import { FiPlus, FiUserPlus, FiEdit2, FiSend, FiMail, FiTrash2, FiUsers, FiMessageCircle, FiStar, FiFlag } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function DatingSquarePage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const token = useAuthStore((s) => s.token);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<DatingPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<DatingProfile | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
-  const [editPost, setEditPost] = useState<any>(null);
+  const [editPost, setEditPost] = useState<DatingPost | null>(null);
   const [showFollowing, setShowFollowing] = useState(false);
-  const [following, setFollowing] = useState<any[]>([]);
+  const [following, setFollowing] = useState<DatingProfile[]>([]);
   const [feedFilter, setFeedFilter] = useState<'all' | 'following'>('all');
 
   // Following set (by real userId) & request state
@@ -26,7 +29,7 @@ export default function DatingSquarePage() {
   const [pendingSentIds, setPendingSentIds] = useState<Set<number>>(new Set());
 
   // Daily Match
-  const [dailyMatch, setDailyMatch] = useState<any>(null);
+  const [dailyMatch, setDailyMatch] = useState<DailyMatch | null>(null);
   const [revealing, setRevealing] = useState(false);
 
   useEffect(() => {
@@ -41,15 +44,14 @@ export default function DatingSquarePage() {
       if (pJson.code === 200) setProfile(pJson.data);
       if (postsJson.code === 200) setPosts(postsJson.data.list || []);
       if (reqJson.code === 200) {
-        // Build following set from sent requests' receiver
         const sent = reqJson.data.sent || [];
         const pendingSet = new Set<number>(
-          sent.filter((r: any) => r.status === 'pending').map((r: any) => r.receiver.userId)
+          sent.filter((r: DatingRequest) => r.status === 'pending').map((r: DatingRequest) => r.receiver?.userId ?? 0)
         );
         setPendingSentIds(pendingSet);
       }
       if (dmJson.code === 200) setDailyMatch(dmJson.data);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => toast.error('加载失败，请检查网络后重试')).finally(() => setLoading(false));
   }, [token]);
 
   // Fetch following list on profile loaded
@@ -63,7 +65,7 @@ export default function DatingSquarePage() {
       const res = await apiFetch('/api/dating/following');
       const json = await res.json();
       if (json.code === 200) {
-        const ids = new Set<number>((json.data || []).map((f: any) => f.userId));
+        const ids = new Set<number>((json.data || []).map((f: { userId: number }) => f.userId));
         setFollowingIds(ids);
       }
     } catch {}
@@ -74,11 +76,11 @@ export default function DatingSquarePage() {
       if (json.code === 200) {
         const sent = json.data.sent || [];
         const pending = new Set<number>(
-          sent.filter((r: any) => r.status === 'pending').map((r: any) => r.receiver.userId)
+          sent.filter((r: DatingRequest) => r.status === 'pending').map((r: DatingRequest) => r.receiver?.userId ?? 0)
         );
         setPendingSentIds(pending);
       }
-    } catch {}
+    } catch { /* 请求状态更新失败不影响页面使用 */ }
   };
 
   const handleFollow = async (e: React.MouseEvent, userId: number) => {
@@ -113,7 +115,7 @@ export default function DatingSquarePage() {
       const res = await apiFetch(`/api/dating/daily-match/${dailyMatch.matchId}/reveal`, { method: 'POST' });
       const json = await res.json();
       if (json.code === 200) {
-        setDailyMatch((prev: any) => ({ ...prev, revealed: true, peer: json.data.peer }));
+        setDailyMatch((prev) => prev ? { ...prev, revealed: true, peer: json.data.peer } : prev);
         toast.success(json.message);
       } else toast.error(json.message);
     } catch { toast.error('网络错误'); }
@@ -151,11 +153,16 @@ export default function DatingSquarePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 dark:from-[var(--color-bg)] dark:via-[var(--color-bg)] dark:to-[var(--color-bg)]">
-      <Header title="恋爱空间" />
+      <Header title="恋爱空间" onBack={() => nav('/')} />
+      {/* 关注系统提示 */}
+      <div className="mx-4 mt-3 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2 border border-amber-200/30 dark:border-amber-500/20">
+        <span>💡</span>
+        <span>广场关注和恋爱关注是独立的，需要在恋爱区重新关注</span>
+      </div>
 
       {/* Profile Card */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        onClick={() => navigate('/dating/profile')}
+        onClick={() => nav('/dating/profile')}
         className="mx-4 mt-4 bg-white/80 dark:bg-[var(--color-card)]/80 backdrop-blur-xl rounded-3xl p-4 flex items-center gap-3 shadow-xl shadow-pink-100/30 dark:shadow-none border border-white/50 dark:border-[var(--color-border)]/30 cursor-pointer hover:shadow-2xl transition-all active:scale-[0.98] group">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-105 transition-transform overflow-hidden">
           {profile.customAvatar ? <img src={profile.customAvatar} className="w-full h-full object-cover" alt="" /> : profile.nickname?.[0]}
@@ -196,7 +203,7 @@ export default function DatingSquarePage() {
             </div>
             <div className="flex gap-2 mt-4">
               <motion.button whileTap={{ scale: 0.95 }}
-                onClick={() => navigate(`/dating/chat/${dailyMatch.peer?.userId}`)}
+                onClick={() => nav(`/dating/chat/${dailyMatch.peer?.userId}`)}
                 className="flex-1 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl text-sm font-semibold shadow-lg shadow-amber-300/30 hover:shadow-xl transition-all">
                 💬 {dailyMatch.revealed ? '继续聊天' : '打个招呼'}
               </motion.button>
@@ -239,7 +246,7 @@ export default function DatingSquarePage() {
           <FiUsers className="text-sm" /> 我的关注
         </motion.button>
         <motion.button initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          onClick={() => navigate('/dating/messages')}
+          onClick={() => nav('/dating/messages')}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white/60 dark:bg-[var(--color-card)]/60 backdrop-blur rounded-2xl text-sm text-pink-500 font-medium hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all border border-pink-200/30 dark:border-pink-500/20">
           <FiMessageCircle className="text-sm" /> 私信
         </motion.button>
@@ -281,7 +288,7 @@ export default function DatingSquarePage() {
         ) : (
           <div className="space-y-4">
             <AnimatePresence>
-              {posts.filter((p: any) => feedFilter === 'all' || followingIds.has(p.author?.userId)).map((p, i) => {
+              {posts.filter((p) => feedFilter === 'all' || followingIds.has(p.userId)).map((p, i) => {
                 const authorUserId = p.author?.userId;
                 const isFollowing = followingIds.has(authorUserId);
                 const hasPendingRequest = pendingSentIds.has(authorUserId);
@@ -426,7 +433,7 @@ function CreatePostModal({ onClose, onCreated }: { onClose: () => void; onCreate
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
       <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25 }}
-        className="bg-white dark:bg-[var(--color-card)] rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6" onClick={e => e.stopPropagation()}>
+        className="bg-white dark:bg-[var(--color-card)] rounded-t-3xl md:rounded-3xl w-full md:max-w-md max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <h3 className="font-bold text-lg mb-4">分享心情</h3>
         <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="此刻想说什么..."
           maxLength={500} rows={4}
@@ -526,7 +533,7 @@ function RequestsModal({ onClose }: { onClose: () => void }) {
               <p className="text-sm text-gray-400 mb-4">暂无</p>
             ) : (
               <div className="space-y-2 mb-4">
-                {requests.received.map((r: any) => {
+                {requests.received.map((r: DatingRequest) => {
                   const st = formatStatus(r.status);
                   return (
                     <div key={r.id} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-[var(--color-card-hover)]/50">
@@ -561,7 +568,7 @@ function RequestsModal({ onClose }: { onClose: () => void }) {
               <p className="text-sm text-gray-400">暂无</p>
             ) : (
               <div className="space-y-2">
-                {requests.sent.map((r: any) => {
+                {requests.sent.map((r: DatingRequest) => {
                   const st = formatStatus(r.status);
                   return (
                     <div key={r.id} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-[var(--color-card-hover)]/50">
@@ -593,7 +600,7 @@ function RequestsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function EditPostModal({ post, onClose, onUpdated }: { post: any; onClose: () => void; onUpdated: () => void }) {
+function EditPostModal({ post, onClose, onUpdated }: { post: DatingPost; onClose: () => void; onUpdated: () => void }) {
   const [content, setContent] = useState(post.content || '');
   const [images, setImages] = useState<string[]>(() => {
     try { return typeof post.images === 'string' ? JSON.parse(post.images) : (post.images || []); }
@@ -624,7 +631,7 @@ function EditPostModal({ post, onClose, onUpdated }: { post: any; onClose: () =>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
       <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25 }}
-        className="bg-white dark:bg-[var(--color-card)] rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6" onClick={e => e.stopPropagation()}>
+        className="bg-white dark:bg-[var(--color-card)] rounded-t-3xl md:rounded-3xl w-full md:max-w-md max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <h3 className="font-bold text-lg mb-4">编辑帖子</h3>
         <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="此刻想说什么..."
           maxLength={500} rows={4}
@@ -668,7 +675,7 @@ function EditPostModal({ post, onClose, onUpdated }: { post: any; onClose: () =>
   );
 }
 
-function FollowingModal({ following, onClose }: { following: any[]; onClose: () => void }) {
+function FollowingModal({ following, onClose }: { following: DatingProfile[]; onClose: () => void }) {
   const [breaking, setBreaking] = useState(false);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -680,7 +687,7 @@ function FollowingModal({ following, onClose }: { following: any[]; onClose: () 
           <p className="text-sm text-gray-400 text-center py-8">还没有关注任何人</p>
         ) : (
           <div className="space-y-2">
-            {following.map((f: any) => (
+            {following.map((f) => (
               <div key={f.userId} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-[var(--color-card-hover)]/50">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-sm overflow-hidden">
                   {f.customAvatar ? <img src={f.customAvatar} className="w-full h-full object-cover" alt="" /> : f.nickname?.[0] || 'U'}

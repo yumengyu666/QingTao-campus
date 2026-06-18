@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { DEFAULT_CATEGORIES, CAMPUS_MAP } from '@/utils/constants';
@@ -40,6 +41,7 @@ export function saveBrowseHistory(goods: { id: number; title: string; price: num
 
 export default function BrowseHistoryPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [list, setList] = useState<BrowseItem[]>([]);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -105,7 +107,7 @@ export default function BrowseHistoryPage() {
             const key = getKey(h);
             return (
               <div key={key}
-                onClick={() => selectMode ? toggleSelect(key) : navigate(`/goods/${h.goodsId}`)}
+                onClick={() => selectMode ? toggleSelect(key) : nav(`/goods/${h.goodsId}`)}
                 className={`bg-white dark:bg-[var(--color-card)] rounded-xl p-4 flex items-center gap-3 ${selectMode ? 'cursor-pointer' : 'cursor-pointer active:scale-[0.98] md:hover:shadow-md transition-all'}`}>
                 {selectMode && (
                   <button onClick={(e) => { e.stopPropagation(); toggleSelect(key); }}

@@ -8,6 +8,8 @@ import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
 import { FiThumbsUp, FiCheckCircle, FiSend, FiShare2, FiFlag } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { ImageLightbox } from '@/components/common/ImageLightbox';
+import { ShareButton } from '@/components/common/ShareButton';
 
 export default function QaDetailPage() {
   const { id } = useParams();
@@ -22,6 +24,9 @@ export default function QaDetailPage() {
   const [reportReason, setReportReason] = useState('');
   const [customReason, setCustomReason] = useState('');
   const { bottomOffset } = useVisualViewport();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxImages, setLightboxImages] = useState<{ url: string }[]>([]);
 
   useEffect(() => {
     if (!id || !token) return;
@@ -83,7 +88,7 @@ export default function QaDetailPage() {
       const res = await apiFetch('/api/reports', { method: 'POST',
         body: JSON.stringify({ targetType: 'qapost', targetId: Number(id), reason: finalReason }) });
       const json = await res.json();
-      if (json.code === 201) { toast.success('举报已提交'); setShowReport(false); setReportReason(''); setCustomReason(''); }
+      if (json.code === 201) { toast.success('举报已提交，管理员处理后会通知你'); setShowReport(false); setReportReason(''); setCustomReason(''); }
       else toast.error(json.message);
     } catch { toast.error('网络错误'); }
   };
@@ -95,14 +100,14 @@ export default function QaDetailPage() {
 
   return (
     <div>
-      <Header title="问题详情" onShare={() => {
-        const url = window.location.href;
-        if (navigator.share) {
-          navigator.share({ title: post.title, url }).catch(() => {});
-        } else {
-          navigator.clipboard.writeText(url).then(() => toast.success('链接已复制')).catch(() => {});
+      <Header
+        title="问题详情"
+        rightAction={
+          post ? (
+            <ShareButton title={post.title} />
+          ) : undefined
         }
-      }} />
+      />
 
       <div className="p-4 space-y-4 pb-24">
         {/* Question */}
@@ -129,7 +134,8 @@ export default function QaDetailPage() {
           {post.images?.length > 0 && (
             <div className="mt-3 flex gap-2 flex-wrap">
               {post.images.map((img: string, i: number) => (
-                <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-xl" loading="lazy" />
+                <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity" loading="lazy"
+                  onClick={() => { setLightboxImages(post.images.map((u: string) => ({ url: u }))); setLightboxIndex(i); setLightboxOpen(true); }} />
               ))}
             </div>
           )}
@@ -161,7 +167,8 @@ export default function QaDetailPage() {
                   {a.images?.length > 0 && (
                     <div className="mt-2 flex gap-2 flex-wrap">
                       {a.images.map((img: string, i: number) => (
-                        <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg" loading="lazy" />
+                        <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" loading="lazy"
+                          onClick={() => { setLightboxImages(a.images.map((u: string) => ({ url: u }))); setLightboxIndex(i); setLightboxOpen(true); }} />
                       ))}
                     </div>
                   )}
@@ -222,6 +229,14 @@ export default function QaDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 }

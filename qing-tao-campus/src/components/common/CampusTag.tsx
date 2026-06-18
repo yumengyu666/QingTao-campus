@@ -12,9 +12,19 @@ export function CampusTag({ campus, size = 'sm' }: Props) {
 
   return (
     <span
-      className={`${sizeClass} rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium inline-flex items-center gap-1`}
+      className={`${sizeClass} rounded-full font-medium inline-flex items-center gap-1`}
+      style={{
+        background: 'var(--color-brand-primary-bg)',
+        color: 'var(--color-brand-primary-text)',
+      }}
     >
-      <span className="w-1 h-1 rounded-full bg-current opacity-60" />
+      <span
+        className="w-1 h-1 rounded-full"
+        style={{
+          backgroundColor: 'var(--color-brand-primary-text)',
+          opacity: 0.6,
+        }}
+      />
       {label}
     </span>
   );

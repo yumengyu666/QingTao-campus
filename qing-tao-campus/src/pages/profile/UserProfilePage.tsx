@@ -4,9 +4,12 @@ import { Header } from '@/components/layout/Header';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { CampusTag } from '@/components/common/CampusTag';
 import { Skeleton } from '@/components/common/Skeleton';
+import { EmptyState } from '@/components/common/EmptyState';
+import { LazyImage } from '@/components/common/LazyImage';
 import { FiCopy, FiUserPlus, FiUserCheck, FiMessageCircle } from 'react-icons/fi';
 import { DEFAULT_CATEGORIES, CAMPUS_MAP } from '@/utils/constants';
 import { STATUS_MAP } from '@/types/goods';
+import { formatTime } from '@/utils/format';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
 import toast from 'react-hot-toast';
@@ -20,10 +23,11 @@ export default function UserProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [goods, setGoods] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any>(null); // { list, avgRating, totalReviews }
+  const [notes, setNotes] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'goods' | 'posts' | 'reviews'>('goods');
+  const [tab, setTab] = useState<'goods' | 'posts' | 'notes' | 'reviews'>('goods');
 
   useEffect(() => {
     if (!id) return;
@@ -53,6 +57,14 @@ export default function UserProfilePage() {
       .then(r => r.json())
       .then(json => {
         if (json.code === 200) setPosts(json.data.list || []);
+      })
+      .catch(() => {});
+
+    // Load notes
+    apiFetch(`/api/notes?pageSize=12`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.code === 200) setNotes((json.data?.list || []).filter((n: any) => n.user?.id === parseInt(id!)));
       })
       .catch(() => {});
 
@@ -177,19 +189,46 @@ export default function UserProfilePage() {
           className={`flex-1 py-3 text-sm font-medium text-center border-b-2 transition-colors ${tab === 'posts' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-400'}`}>
           📋 帖子 ({posts.length})
         </button>
+        <button onClick={() => setTab('notes')}
+          className={`flex-1 py-3 text-sm font-medium text-center border-b-2 transition-colors ${tab === 'notes' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-400'}`}>
+          📓 笔记 ({notes.length})
+        </button>
         <button onClick={() => setTab('reviews')}
           className={`flex-1 py-3 text-sm font-medium text-center border-b-2 transition-colors ${tab === 'reviews' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-400'}`}>
           ⭐ 评价 ({reviews?.totalReviews || 0})
         </button>
       </div>
 
+      {/* Notes Tab */}
+      {tab === 'notes' && (
+        <div className="mx-4 mt-3 columns-2 gap-3">
+          {notes.length === 0 ? (
+            <EmptyState message="暂无笔记" variant="compact" />
+          ) : notes.map((n: any) => {
+            const imgs = typeof n.images === 'string' ? JSON.parse(n.images) : (n.images || []);
+            const cover = n.videoCover || imgs[n.coverIndex || 0] || imgs[0];
+            return (
+              <div key={n.id} onClick={() => navigate(`/explore/note/${n.id}`)}
+                className="break-inside-avoid mb-3 bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden shadow-sm cursor-pointer">
+                {cover ? <LazyImage src={cover} alt="" className="w-full" aspectRatio="3/4" />
+                  : <div className="aspect-[3/4] flex items-center justify-center text-3xl bg-gray-100 dark:bg-gray-700">📝</div>}
+                <div className="p-2.5">
+                  <div className="text-xs text-gray-800 dark:text-gray-200 line-clamp-2">{n.title}</div>
+                  <div className="text-[10px] text-gray-400 mt-1">❤️ {n.likeCount || 0}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Reviews Tab */}
       {tab === 'reviews' && (
         <div className="mx-4 mt-3">
           {!reviews ? (
-            <p className="text-sm text-gray-400 py-8 text-center bg-white dark:bg-[var(--color-card)] rounded-2xl">加载中...</p>
+            <Skeleton.List rows={3} />
           ) : reviews.list?.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center bg-white dark:bg-[var(--color-card)] rounded-2xl">暂无交易评价</p>
+            <EmptyState message="暂无交易评价" variant="compact" />
           ) : (
             <div className="space-y-3">
               {/* Rating Summary */}
@@ -219,7 +258,7 @@ export default function UserProfilePage() {
                       <span className="text-sm font-medium">{r.reviewer?.nickname || '匿名'}</span>
                       <div className="flex text-amber-400 text-xs">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
                     </div>
-                    <span className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-400">{formatTime(r.createdAt)}</span>
                   </div>
                   {r.comment && <p className="text-sm text-gray-600 dark:text-gray-300">{r.comment}</p>}
                   {r.goodsTitle && <p className="text-xs text-gray-400 mt-1">商品：{r.goodsTitle}</p>}
@@ -234,7 +273,7 @@ export default function UserProfilePage() {
       {tab === 'goods' && (
         <div className="mx-4 mt-3">
           {goods.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center bg-white dark:bg-[var(--color-card)] rounded-2xl">暂无商品</p>
+            <EmptyState message="暂无商品" variant="compact" />
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
               {goods.map((g) => (
@@ -242,7 +281,7 @@ export default function UserProfilePage() {
                   className="bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden cursor-pointer active:scale-95 transition-transform">
                   <div className="h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-2xl">
                     {(g.images && g.images.length > 0) ? (
-                      <img src={g.images[0]} alt="" className="w-full h-full object-cover" />
+                      <LazyImage src={g.images[0]} alt="" className="w-full h-full" />
                     ) : (
                       '📦'
                     )}
@@ -267,7 +306,7 @@ export default function UserProfilePage() {
       {tab === 'posts' && (
         <div className="mx-4 mt-3">
           {posts.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center bg-white dark:bg-[var(--color-card)] rounded-2xl">暂无帖子</p>
+            <EmptyState message="暂无帖子" variant="compact" />
           ) : (
             <div className="space-y-2">
               {posts.map((p) => (

@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     port: 5175,
-    host: true,
+    host: 'localhost', // Only expose to localhost by default; use --host for LAN access
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

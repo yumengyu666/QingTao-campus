@@ -10,26 +10,46 @@ const sizeMap = {
   lg: 'w-12 h-12 border-4',
 };
 
-export function LoadingSpinner({ fullScreen = false, size = 'md', label }: Props) {
-  const spinner = (
-    <div
-      className={`${sizeMap[size]} border-indigo-200 border-t-indigo-500 rounded-full animate-spin`}
-    />
-  );
+const dotSizeMap = {
+  sm: 'w-1.5 h-1.5',
+  md: 'w-2 h-2',
+  lg: 'w-2.5 h-2.5',
+};
 
-  if (fullScreen) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 min-h-screen bg-[var(--color-bg)] animate-fade-in">
-        {spinner}
-        {label && <p className="text-sm text-gray-400">{label}</p>}
-      </div>
-    );
-  }
+function SpinnerDots({ size = 'md' }: { size: 'sm' | 'md' | 'lg' }) {
+  return (
+    <div className="flex items-center gap-1">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className={`${dotSizeMap[size]} rounded-full bg-indigo-400 animate-bounce`}
+          style={{
+            animationDelay: `${i * 0.12}s`,
+            animationDuration: '0.8s',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function LoadingSpinner({
+  fullScreen = false,
+  size = 'md',
+  label,
+}: Props) {
+  const container = fullScreen
+    ? 'flex flex-col items-center justify-center gap-4 min-h-[60vh]'
+    : 'flex flex-col items-center justify-center gap-3 py-16';
 
   return (
-    <div className="flex flex-col items-center justify-center gap-2.5 py-12">
-      {spinner}
-      {label && <p className="text-xs text-gray-400">{label}</p>}
+    <div className={`${container} animate-fade-in`}>
+      <SpinnerDots size={size} />
+      {label && (
+        <p className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-gray-400 dark:text-gray-500`}>
+          {label}
+        </p>
+      )}
     </div>
   );
 }

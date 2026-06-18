@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import type { ImageItem } from '@/components/common/ImageUploader';
@@ -14,12 +15,13 @@ import toast from 'react-hot-toast';
 
 export default function PublishGoodsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
   const token = useAuthStore((s) => s.token);
   const keyboardHeight = useKeyboardAvoid();
 
-  const { data, setData, clear } = useDraft('publish_goods', {
+  const { data, setData, clear } = useDraft('goods', {
     title: '',
     description: '',
     price: '',
@@ -42,6 +44,25 @@ export default function PublishGoodsPage() {
   const [editLoading, setEditLoading] = useState(isEdit);
   const [categories, setCategories] = useState<{ id: number; name: string; icon: string }[]>([]);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+
+  // 页面加载时检测草稿并询问是否恢复
+  useEffect(() => {
+    if (isEdit) {
+      // 编辑模式下清除草稿
+      clear();
+      return;
+    }
+    try {
+      const stored = localStorage.getItem('draft_goods');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const hasContent = Object.values(parsed).some(v => v !== '' && v !== null && v !== undefined && v !== 0);
+        if (hasContent && !window.confirm('检测到未发布的草稿，是否恢复？')) {
+          clear();
+        }
+      }
+    } catch {}
+  }, [isEdit]);
 
   // Auto-save draft to API every 30 seconds
   useEffect(() => {
@@ -142,7 +163,7 @@ export default function PublishGoodsPage() {
       if (json.code === 200 || json.code === 201) {
         toast.success(json.message || (isEdit ? '修改成功' : '发布成功'));
         clear();
-        navigate('/profile/goods');
+        nav('/profile/goods');
       } else {
         toast.error(json.message || '提交失败');
       }

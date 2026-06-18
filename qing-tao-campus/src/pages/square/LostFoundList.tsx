@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/common/Skeleton';
+import { EndOfList } from '@/components/common/EndOfList';
+import { LazyImage } from '@/components/common/LazyImage';
 import { formatTime } from '@/utils/format';
 import { CAMPUS_MAP } from '@/utils/constants';
 import { apiFetch } from '@/utils/api';
@@ -9,6 +12,7 @@ import { FiSearch, FiMapPin } from 'react-icons/fi';
 
 export function LostFoundList() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [filter, setFilter] = useState<'all' | 'lost' | 'found'>('all');
   const [keyword, setKeyword] = useState('');
   const [items, setItems] = useState<any[]>([]);
@@ -52,13 +56,12 @@ export function LostFoundList() {
       ) : (
         <div className="px-4 md:px-0 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {items.map((item) => (
-            <div key={item.id} onClick={() => navigate(`/square/lostfound/${item.id}`)}
+            <div key={item.id} onClick={() => nav(`/square/lostfound/${item.id}`)}
               className="bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden cursor-pointer active:scale-[0.98] md:hover:shadow-md transition-all flex">
               {/* Thumbnail */}
               <div className="w-24 h-24 bg-gray-100 dark:bg-[var(--color-card-hover)] flex-shrink-0 flex items-center justify-center text-2xl">
                 {item.images?.[0] ? (
-                  <img src={item.images[0]} alt="" className="w-full h-full object-cover" loading="lazy"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <LazyImage src={item.images[0]} alt="" className="w-full h-full" />
                 ) : (
                   <span>{item.type === 'lost' ? '😢' : '😊'}</span>
                 )}
@@ -82,6 +85,7 @@ export function LostFoundList() {
           ))}
         </div>
       )}
+      {!loading && items.length > 0 && <EndOfList />}
     </div>
   );
 }

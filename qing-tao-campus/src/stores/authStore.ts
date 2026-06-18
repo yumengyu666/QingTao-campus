@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { storage } from '@/utils/storage';
+import { storage, TOKEN_KEY, USER_KEY } from '@/utils/storage';
 import type { User } from '@/types/user';
 
 interface AuthState {
@@ -46,3 +46,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     window.location.href = '/login';
   },
 }));
+
+// ─── 多标签页状态同步 (#44) ───
+// 监听 storage 事件：当其他标签页登出（清除 token）或登录（设置 token）时，
+// 当前标签页同步更新 auth 状态，避免使用过期的内存状态发请求。
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    // token 被其他标签页清除 → 同步登出（不触发 window.location.href 跳转，避免打断当前页）
+    if (e.key === TOKEN_KEY || e.key === USER_KEY) {
+      if (!e.newValue) {
+        // 其他标签页登出了
+        useAuthStore.setState({ token: null, user: null, isAuthenticated: false });
+      } else {
+        // 其他标签页登录了 → 重新读取
+        const newToken = storage.getToken();
+        const newUser = storage.getUser();
+        useAuthStore.setState({ token: newToken, user: newUser, isAuthenticated: !!(newToken && newUser) });
+      }
+    }
+  });
+}

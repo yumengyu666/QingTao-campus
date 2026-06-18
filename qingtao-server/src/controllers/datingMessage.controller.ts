@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
+import { Prisma } from '@prisma/client';
 import { success, error, paginated } from '../utils/response';
 import { createNotification } from '../services/notification.service';
+import { containsSensitive } from '../utils/sensitive';
+import { aiModerate } from '../services/moderation.service';
+import { logger } from '../utils/logger';
 
 /** GET /api/dating/messages/:userId — 获取与某人的恋爱消息 */
 export async function getMessages(req: Request, res: Response, next: NextFunction) {
@@ -79,6 +83,9 @@ export async function sendMessage(req: Request, res: Response, next: NextFunctio
     const safeType = ALLOWED_TYPES.includes(type) ? type : 'text';
     const safeContent = content.trim().replace(/<[^>]*>/g, '');
 
+    // L1 敏感词检查
+    if (containsSensitive(safeContent)) return error(res, '消息包含违规内容，请修改后重试');
+
     // 检查发送者是否被举报过（有违规记录则禁止私信）
     const sender = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { violationCount: true, violationBanUntil: true } });
     if (sender && sender.violationCount > 5 && sender.violationBanUntil && new Date(sender.violationBanUntil) > new Date()) {
@@ -119,6 +126,16 @@ export async function sendMessage(req: Request, res: Response, next: NextFunctio
         type: safeType,
       },
     });
+
+    // L2 AI 异步审核（fire-and-forget）
+    if (safeType === 'text') {
+      aiModerate(safeContent, { contentType: 'datingMessage', userId: req.user!.userId }).then(result => {
+        if (result === 'violation') {
+          logger.warn(`AI flagged datingMessage #${msg.id}, replacing content`);
+          prisma.datingMessage.update({ where: { id: msg.id }, data: { content: '[该消息因违规已被屏蔽]' } }).catch(() => {});
+        }
+      });
+    }
 
     // 通知接收方（首次未读消息才通知，防骚扰）
     const existingUnread = await prisma.datingMessage.count({
@@ -165,23 +182,22 @@ export async function getConversations(req: Request, res: Response, next: NextFu
     const pageSize = Math.min(parseInt(req.query.pageSize as string) || 30, 100);
 
     // 单条 SQL：获取每个 peer 的最后一条消息
-    const conversations = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT
+    const conversations = await prisma.$queryRaw<any[]>(
+      Prisma.sql`SELECT
         m.id, m.senderId, m.receiverId, m.content, m.type, m.createdAt, m.isRead,
-        CASE WHEN m.senderId = ? THEN m.receiverId ELSE m.senderId END as peerId
+        CASE WHEN m.senderId = ${myProfile.id} THEN m.receiverId ELSE m.senderId END as peerId
       FROM DatingMessage m
       INNER JOIN (
         SELECT
-          CASE WHEN senderId = ? THEN receiverId ELSE senderId END as _peerId,
+          CASE WHEN senderId = ${myProfile.id} THEN receiverId ELSE senderId END as _peerId,
           MAX(createdAt) as _maxTime
         FROM DatingMessage
-        WHERE senderId = ? OR receiverId = ?
+        WHERE senderId = ${myProfile.id} OR receiverId = ${myProfile.id}
         GROUP BY _peerId
-      ) latest ON latest._peerId = (CASE WHEN m.senderId = ? THEN m.receiverId ELSE m.senderId END)
+      ) latest ON latest._peerId = (CASE WHEN m.senderId = ${myProfile.id} THEN m.receiverId ELSE m.senderId END)
         AND latest._maxTime = m.createdAt
       ORDER BY m.createdAt DESC
-      LIMIT ? OFFSET ?`,
-      myProfile.id, myProfile.id, myProfile.id, myProfile.id, myProfile.id, pageSize, (page - 1) * pageSize,
+      LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`
     );
 
     if (conversations.length === 0) {
@@ -191,12 +207,11 @@ export async function getConversations(req: Request, res: Response, next: NextFu
     const peerIds = [...new Set(conversations.map((c: any) => Number(c.peerId)))];
 
     // 批量未读数
-    const unreadRows = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT senderId, COUNT(*) as unread
+    const unreadRows = await prisma.$queryRaw<any[]>(
+      Prisma.sql`SELECT senderId, COUNT(*) as unread
        FROM DatingMessage
-       WHERE receiverId = ? AND isRead = 0 AND senderId IN (${peerIds.map(() => '?').join(',')})
-       GROUP BY senderId`,
-      myProfile.id, ...peerIds,
+       WHERE receiverId = ${myProfile.id} AND isRead = 0 AND senderId IN (${Prisma.join(peerIds)})
+       GROUP BY senderId`
     );
     const unreadMap = new Map(unreadRows.map((r: any) => [Number(r.senderId), Number(r.unread)]));
 
@@ -226,11 +241,10 @@ export async function getConversations(req: Request, res: Response, next: NextFu
     });
 
     // 总数
-    const totalResult = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT COUNT(DISTINCT CASE WHEN senderId = ? THEN receiverId ELSE senderId END) as total
+    const totalResult = await prisma.$queryRaw<any[]>(
+      Prisma.sql`SELECT COUNT(DISTINCT CASE WHEN senderId = ${myProfile.id} THEN receiverId ELSE senderId END) as total
        FROM DatingMessage
-       WHERE senderId = ? OR receiverId = ?`,
-      myProfile.id, myProfile.id, myProfile.id,
+       WHERE senderId = ${myProfile.id} OR receiverId = ${myProfile.id}`
     );
     const total = Number(totalResult[0]?.total || 0);
 

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/common/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import { apiFetch } from '@/utils/api';
-import { FiHeart, FiMessageCircle, FiShoppingCart, FiX } from 'react-icons/fi';
+import { FiHeart, FiMessageCircle, FiShoppingCart, FiX, FiEye } from 'react-icons/fi';
 
 export default function MyFavoritesPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const token = useAuthStore((s) => s.token);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ export default function MyFavoritesPage() {
         <div className="p-4 grid grid-cols-2 gap-3">
           {items.map((g) => (
             <div key={g.favoriteId || g.id} className={`bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${g._offline ? 'opacity-70' : ''}`}>
-              <div className="h-32 bg-gray-100 flex items-center justify-center text-3xl cursor-pointer relative" onClick={() => navigate(`/goods/${g.id}`)}>
+              <div className="h-32 bg-gray-100 flex items-center justify-center text-3xl cursor-pointer relative" onClick={() => nav(`/goods/${g.id}`)}>
                 {g.images?.[0] ? <img src={g.images[0]} alt="" className="w-full h-full object-cover" /> : '📦'}
                 {g._offline && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -65,14 +67,20 @@ export default function MyFavoritesPage() {
                 )}
               </div>
               <div className="p-3">
-                <p className={`text-sm font-medium line-clamp-2 cursor-pointer hover:text-indigo-500 ${g._offline ? 'text-gray-400' : ''}`} onClick={() => navigate(`/goods/${g.id}`)}>{g.title}</p>
+                <p className={`text-sm font-medium line-clamp-2 cursor-pointer hover:text-indigo-500 ${g._offline ? 'text-gray-400' : ''}`} onClick={() => nav(`/goods/${g.id}`)}>{g.title}</p>
                 <div className="flex items-center justify-between mt-2">
                   <span className={`font-bold ${g._offline ? 'text-gray-400' : 'text-red-500'}`}>¥{g.price}</span>
                   {g._offline && <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">已下架</span>}
                 </div>
                 <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-gray-50 dark:border-[var(--color-border)]">
                   <button
-                    onClick={() => navigate(`/messages/${g.userId}`)}
+                    onClick={() => nav(`/goods/${g.id}`)}
+                    className="flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <FiEye className="text-[10px]" /> 详情
+                  </button>
+                  <button
+                    onClick={() => nav(`/messages/${g.userId}`)}
                     disabled={g._offline}
                     className="flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors disabled:opacity-40"
                   >

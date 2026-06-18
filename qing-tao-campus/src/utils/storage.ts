@@ -1,6 +1,6 @@
-const TOKEN_KEY = 'qingtao_token';
+export const TOKEN_KEY = 'qingtao_token';
 const REFRESH_KEY = 'qingtao_refresh';
-const USER_KEY = 'qingtao_user';
+export const USER_KEY = 'qingtao_user';
 const THEME_KEY = 'qingtao_theme';
 const SEARCH_HISTORY_KEY = 'qingtao_search_history';
 
@@ -21,7 +21,17 @@ export const storage = {
       return null;
     }
   },
-  setUser: (user: unknown) => localStorage.setItem(USER_KEY, JSON.stringify(user)),
+  setUser: (user: any) => {
+    // Only persist non-sensitive fields to localStorage
+    const safe = user ? {
+      id: user.id,
+      nickname: user.nickname,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
+      campusArea: user.campusArea,
+    } : null;
+    localStorage.setItem(USER_KEY, JSON.stringify(safe));
+  },
   removeUser: () => localStorage.removeItem(USER_KEY),
 
   getTheme: (): 'light' | 'dark' => {
@@ -39,7 +49,7 @@ export const storage = {
     }
   },
   setSearchHistory: (history: string[]) => {
-    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
   },
   clearSearchHistory: () => localStorage.removeItem(SEARCH_HISTORY_KEY),
 };

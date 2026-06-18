@@ -1,0 +1,292 @@
+/* ============================================================
+   轻淘 · 品牌色彩体系 v1.0
+   QingTao Brand Color System
+   
+   色彩架构：
+   - Brand（品牌色）：靛蓝Indigo — 平台主色调
+   - Accent（强调色）：琥珀Amber — CTA、重要操作
+   - Semantic（语义色）：绿/橙/红/青 — 状态反馈
+   - Emotional（情感色）：玫红Rose — 恋爱区专色
+   - Neutral（中性色）：灰色系 — 文本、背景、边框
+   ============================================================ */
+
+/* ==================== 品牌色：靛蓝 Indigo ==================== */
+/*
+   靛蓝（Indigo）作为平台主色调，源于郑州轻工业大学校徽蓝紫色调，
+   象征智慧、信任与青春活力。运用于：
+   - 主导航按钮                .btn-brand
+   - 侧边栏激活项              .nav-active
+   - 链接文字                  a
+   - 重点图标                  重要操作图标
+   - 加载进度条                progress bars
+   - 选中态                    selected states
+   - 主CTA按钮                 主要行为召唤按钮
+*/
+
+.c-brand-bg        { background-color: var(--color-brand-primary); }
+.c-brand-bg-light  { background-color: var(--color-brand-primary-bg); }
+.c-brand-bg-dark   { background-color: var(--color-brand-primary-dark); }
+.c-brand-text      { color: var(--color-brand-primary-text); }
+.c-brand-border    { border-color: var(--color-brand-primary); }
+
+/* 品牌渐变 */
+.brand-gradient {
+  background: linear-gradient(135deg, 
+    var(--color-indigo-500) 0%, 
+    var(--color-purple-500) 50%, 
+    var(--color-indigo-400) 100%
+  );
+}
+.brand-gradient-text {
+  background: linear-gradient(135deg, var(--color-indigo-600), var(--color-purple-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ==================== 语义色：使用场景 ==================== */
+
+/* Success 成功 — 绿色 Emerald
+   用于：成功提示、已上架、已通过、已完成、已解决、操作成功、已卖出 */
+.c-success-bg      { background-color: var(--color-success); }
+.c-success-bg-light { background-color: var(--color-success-light); }
+.c-success-text    { color: var(--color-success-text); }
+.c-success-border  { border-color: var(--color-success-border); }
+
+/* Warning 警告 — 橙色 Orange
+   用于：审核中、待处理、接近到期、需要关注、AI审核中 */
+.c-warning-bg      { background-color: var(--color-warning); }
+.c-warning-bg-light { background-color: var(--color-warning-light); }
+.c-warning-text    { color: var(--color-warning-text); }
+.c-warning-border  { border-color: var(--color-warning-border); }
+
+/* Danger 危险 — 红色 Red
+   用于：已下架、违规、被拒、删除操作、举报、封禁 */
+.c-danger-bg       { background-color: var(--color-danger); }
+.c-danger-bg-light { background-color: var(--color-danger-light); }
+.c-danger-text     { color: var(--color-danger-text); }
+.c-danger-border   { border-color: var(--color-danger-border); }
+
+/* Info 信息 — 青色 Cyan
+   用于：提示信息、帮助文档、系统消息、新手引导 */
+.c-info-bg         { background-color: var(--color-info); }
+.c-info-bg-light   { background-color: var(--color-info-light); }
+.c-info-text       { color: var(--color-info-text); }
+.c-info-border     { border-color: var(--color-info-border); }
+
+/* Love 恋爱 — 玫红 Rose
+   用于：恋爱区专用、关注按钮、心动、恋爱请求 */
+.c-love-bg         { background-color: var(--color-love); }
+.c-love-bg-light   { background-color: var(--color-love-light); }
+.c-love-text       { color: var(--color-love-dark); }
+.c-love-border     { border-color: var(--color-rose-200); }
+
+/* ==================== 交易类型标签色彩 ==================== */
+
+/* 出售 sale — 绿色标签 */
+.tag-sale {
+  background-color: var(--color-emerald-50);
+  color: var(--color-emerald-700);
+  border: 1px solid var(--color-emerald-200);
+}
+
+/* 求购 buy — 红色标签 */
+.tag-buy {
+  background-color: var(--color-red-50);
+  color: var(--color-red-700);
+  border: 1px solid var(--color-red-200);
+}
+
+/* 出租 rent — 蓝色标签 */
+.tag-rent {
+  background-color: var(--color-cyan-50);
+  color: var(--color-cyan-700);
+  border: 1px solid var(--color-cyan-200);
+}
+
+/* 求租 rent_want — 橙色标签 */
+.tag-rent-want {
+  background-color: var(--color-orange-50);
+  color: var(--color-orange-700);
+  border: 1px solid var(--color-orange-200);
+}
+
+/* ==================== 内容状态色彩 ==================== */
+
+/* 已上架/已通过 */
+.status-approved {
+  background-color: var(--color-emerald-50);
+  color: var(--color-emerald-600);
+}
+
+/* 待审核/审核中 */
+.status-pending {
+  background-color: var(--color-amber-50);
+  color: var(--color-amber-600);
+}
+
+/* 已下架/已拒绝/违规 */
+.status-offline,
+.status-rejected {
+  background-color: var(--color-red-50);
+  color: var(--color-red-600);
+}
+
+/* 已售出 */
+.status-sold {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-500);
+}
+
+/* ==================== 商品分类标签色彩（按分类映射） ==================== */
+
+/* 电子产品 — 科技蓝 */
+.cat-electronics {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+/* 书籍教材 — 森林绿 */
+.cat-books {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* 生活用品 — 暖橙 */
+.cat-daily {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+/* 服饰鞋包 — 紫罗兰 */
+.cat-fashion {
+  background-color: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+/* 运动户外 — 活力绿 */
+.cat-sports {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* 数码配件 — 靛蓝 */
+.cat-digital {
+  background-color: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+/* 美妆护肤 — 粉色 */
+.cat-beauty {
+  background-color: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}
+
+/* 食品饮料 — 黄色 */
+.cat-food {
+  background-color: #fefce8;
+  color: #a16207;
+  border: 1px solid #fef08a;
+}
+
+/* 其他 — 灰色 */
+.cat-other {
+  background-color: #f9fafb;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+/* ==================== 互动色彩 ==================== */
+
+/* 点赞/收藏 — 触发热态 */
+.like-active {
+  color: var(--color-rose-500);
+}
+.favorite-active {
+  color: var(--color-amber-500);
+}
+
+/* 关注按钮状态 */
+.follow-btn-default {
+  background-color: var(--color-brand-primary);
+  color: white;
+}
+.follow-btn-active {
+  background-color: var(--color-bg-active);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default);
+}
+
+/* 恋爱区关注 */
+.dating-follow {
+  background: linear-gradient(135deg, var(--color-rose-400), var(--color-purple-500));
+  color: white;
+}
+
+/* ==================== 公告/通知色彩 ==================== */
+
+/* 系统公告 */
+.announcement-system {
+  background: linear-gradient(135deg, var(--color-indigo-50), var(--color-purple-50));
+  border-left: 3px solid var(--color-indigo-400);
+}
+
+/* 活动通知 */
+.announcement-event {
+  background: linear-gradient(135deg, var(--color-amber-50), var(--color-orange-50));
+  border-left: 3px solid var(--color-amber-400);
+}
+
+/* 紧急通知 */
+.announcement-urgent {
+  background: linear-gradient(135deg, var(--color-red-50), var(--color-rose-50));
+  border-left: 3px solid var(--color-red-400);
+}
+
+/* ==================== 暗色模式色彩适配 ==================== */
+
+.dark .tag-sale {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.dark .tag-buy {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.dark .tag-rent {
+  background-color: rgba(6, 182, 212, 0.12);
+  color: #67e8f9;
+  border-color: rgba(6, 182, 212, 0.2);
+}
+.dark .tag-rent-want {
+  background-color: rgba(249, 115, 22, 0.12);
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.dark .status-approved {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+}
+.dark .status-pending {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+}
+.dark .status-offline,
+.dark .status-rejected {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+.dark .status-sold {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #9ca3af;
+}

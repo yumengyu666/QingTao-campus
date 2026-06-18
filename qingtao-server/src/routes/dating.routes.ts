@@ -47,8 +47,8 @@ router.delete('/relationship/:userId', ctrl.breakRelationship);
 router.get('/conversations', msgCtrl.getConversations);
 router.get('/messages/unread-count', msgCtrl.getUnreadCount);
 router.get('/messages/:userId', msgCtrl.getMessages);
-router.post('/messages/:userId', msgCtrl.sendMessage);
-router.post('/messages/:userId/typing', msgCtrl.setTyping);
+router.post('/messages/:userId', messageLimiter, msgCtrl.sendMessage);
+router.post('/messages/:userId/typing', typingLimiter, msgCtrl.setTyping);
 router.get('/messages/:userId/typing', msgCtrl.getTyping);
 
 // Daily Match — 每日缘分

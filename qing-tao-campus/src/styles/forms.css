@@ -1,0 +1,311 @@
+/* ============================================================
+   轻淘 · 表单元素样式 v1.0
+   QingTao Form Elements — Inputs, Selects, Checkboxes, Radios
+   ============================================================ */
+
+/* ==================== Input Base ==================== */
+.form-input,
+.form-textarea,
+.form-select {
+  display: block;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--input-font-size);
+  line-height: var(--input-line-height);
+  color: var(--input-text);
+  background-color: var(--input-bg);
+  border: var(--input-border-width) solid var(--input-border);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  min-height: var(--input-min-height);
+  transition: var(--input-transition);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-input:hover:not(:disabled):not(:focus),
+.form-textarea:hover:not(:disabled):not(:focus),
+.form-select:hover:not(:disabled):not(:focus) {
+  border-color: var(--input-border-hover);
+}
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  background-color: var(--input-bg-focus);
+  border-color: var(--input-border-focus);
+  box-shadow: var(--input-shadow-focus);
+}
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--input-placeholder);
+}
+.form-input:disabled,
+.form-textarea:disabled,
+.form-select:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+  background-color: var(--color-bg-disabled);
+}
+
+/* Textarea specific */
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: var(--leading-relaxed);
+}
+
+/* Select specific */
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  padding-right: var(--space-10);
+  cursor: pointer;
+}
+
+/* ==================== Form Sizes ==================== */
+.form-sm { font-size: var(--text-xs); padding: var(--space-1-5) var(--space-2); min-height: 2rem; }
+.form-lg { font-size: var(--text-base); padding: var(--space-3) var(--space-4); min-height: 3rem; }
+
+/* ==================== Form Validation States ==================== */
+.form-input.is-valid,
+.form-textarea.is-valid {
+  border-color: var(--color-success-border);
+}
+.form-input.is-valid:focus,
+.form-textarea.is-valid:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-input.is-invalid,
+.form-textarea.is-invalid {
+  border-color: var(--color-danger-border);
+}
+.form-input.is-invalid:focus,
+.form-textarea.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-error {
+  font-size: var(--text-xs);
+  color: var(--color-danger-text);
+  margin-top: var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.form-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-1);
+}
+
+/* ==================== Form Label ==================== */
+.form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1-5);
+}
+.form-label-required::after {
+  content: ' *';
+  color: var(--color-danger);
+  margin-left: 1px;
+}
+
+/* ==================== Form Group ==================== */
+.form-group {
+  margin-bottom: var(--space-4);
+}
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* ==================== Checkbox ==================== */
+.form-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  user-select: none;
+}
+.form-checkbox input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: var(--border-width-thin) solid var(--input-border);
+  border-radius: var(--radius-xs);
+  background: var(--input-bg);
+  accent-color: var(--color-brand-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--input-transition);
+}
+
+/* ==================== Radio ==================== */
+.form-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  user-select: none;
+}
+.form-radio input[type="radio"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--color-brand-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ==================== Switch / Toggle ==================== */
+.form-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  user-select: none;
+}
+.form-switch-track {
+  width: 2.75rem;
+  height: 1.5rem;
+  background: var(--color-gray-300);
+  border-radius: var(--radius-full);
+  position: relative;
+  transition: background var(--duration-quick) var(--ease-out);
+  flex-shrink: 0;
+}
+.form-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: white;
+  border-radius: var(--radius-full);
+  transition: transform var(--duration-quick) var(--ease-out);
+  box-shadow: var(--shadow-sm);
+}
+.form-switch input:checked + .form-switch-track {
+  background: var(--color-brand-primary);
+}
+.form-switch input:checked + .form-switch-track::after {
+  transform: translateX(1.25rem);
+}
+.form-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* ==================== Search Input ==================== */
+.form-search {
+  position: relative;
+}
+.form-search .form-input {
+  padding-left: var(--space-10);
+}
+.form-search-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+.form-search-clear {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+  color: var(--color-text-tertiary);
+  border: none;
+  background: none;
+}
+.form-search-clear:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-hover);
+}
+
+/* ==================== File Upload ==================== */
+.form-file {
+  position: relative;
+}
+.form-file-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.form-file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 2px dashed var(--color-border-default);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  transition: var(--input-transition);
+}
+.form-file-label:hover {
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary-text);
+  background: var(--color-brand-primary-bg);
+}
+
+/* ==================== Input Group (prepend/append) ==================== */
+.form-input-group {
+  display: flex;
+  align-items: stretch;
+}
+.form-input-group .form-input {
+  border-radius: 0;
+}
+.form-input-group > :first-child {
+  border-top-left-radius: var(--input-border-radius);
+  border-bottom-left-radius: var(--input-border-radius);
+}
+.form-input-group > :last-child {
+  border-top-right-radius: var(--input-border-radius);
+  border-bottom-right-radius: var(--input-border-radius);
+}
+.form-input-addon {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  background: var(--color-bg-overlay);
+  border: var(--input-border-width) solid var(--input-border);
+  color: var(--color-text-secondary);
+  font-size: var(--input-font-size);
+  white-space: nowrap;
+}
+
+/* ==================== Form Inline (horizontal layout) ==================== */
+@media (min-width: 640px) {
+  .form-inline {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: var(--space-4);
+    align-items: start;
+  }
+  .form-inline .form-label {
+    padding-top: var(--space-2);
+    margin-bottom: 0;
+    text-align: right;
+  }
+}

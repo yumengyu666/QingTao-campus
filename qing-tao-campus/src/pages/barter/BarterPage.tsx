@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Pagination } from '@/components/common/Pagination';
@@ -10,6 +11,7 @@ import toast from 'react-hot-toast';
 
 export default function BarterPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [tab, setTab] = useState<'sent' | 'received'>('received');
   const [list, setList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
@@ -104,7 +106,7 @@ export default function BarterPage() {
                 </div>
               )}
               {p.status === 'accepted' && (
-                <button onClick={() => navigate(`/messages/${tab === 'sent' ? p.toUserId : p.fromUserId}`)}
+                <button onClick={() => nav(`/messages/${tab === 'sent' ? p.toUserId : p.fromUserId}`)}
                   className="mt-3 w-full py-2 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm">
                   <FiMessageSquare className="inline mr-1" size={14} />联系对方商议交换细节
                 </button>

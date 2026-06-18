@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 interface Props {
   src?: string;
   nickname?: string;
@@ -28,8 +30,9 @@ export function UserAvatar({
   isOnline,
 }: Props) {
   const initial = (nickname || '?')[0];
+  const [imgError, setImgError] = useState(false);
 
-  if (src) {
+  if (src && !imgError) {
     return (
       <div className="relative flex-shrink-0">
         <img
@@ -37,6 +40,7 @@ export function UserAvatar({
           alt={nickname || ''}
           className={`${sizeMap[size]} rounded-full object-cover bg-gray-100 dark:bg-[var(--color-card-hover)] ring-2 ring-gray-100 dark:ring-gray-700`}
           loading="lazy"
+          onError={() => setImgError(true)}
         />
         {isOnline !== undefined && (
           <span

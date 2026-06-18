@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Pagination } from '@/components/common/Pagination';
+import { Skeleton } from '@/components/common/Skeleton';
+import { EndOfList } from '@/components/common/EndOfList';
 import { CampusTag } from '@/components/common/CampusTag';
 import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
@@ -13,6 +16,7 @@ const CATEGORIES = ['教材教辅', '电子产品', '运动户外', '生活用�
 
 export default function WantedListPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [list, setList] = useState<any[]>([]);
   const [category, setCategory] = useState('');
   const [campus, setCampus] = useState('');
@@ -51,11 +55,11 @@ export default function WantedListPage() {
       </div>
 
       <div className="p-4 space-y-3">
-        {loading ? <div className="text-center py-10 text-gray-400">加载中...</div> :
+        {loading ? <Skeleton.List rows={4} /> :
          list.length === 0 ? <EmptyState message="暂无求购信息" description="成为第一个发布求购的人吧" /> :
           list.map(w => (
             <motion.div key={w.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              onClick={() => navigate(`/wanted/${w.id}`)}
+              onClick={() => nav(`/wanted/${w.id}`)}
               className="bg-white dark:bg-[var(--color-card)] rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-xl flex-shrink-0">🔍</div>
@@ -75,9 +79,10 @@ export default function WantedListPage() {
             </motion.div>
           ))}
         {total > 20 && <Pagination page={page} total={total} pageSize={20} onChange={setPage} />}
+        {!loading && list.length > 0 && <EndOfList />}
       </div>
 
-      <button onClick={() => navigate('/publish/wanted')}
+      <button onClick={() => nav('/publish/wanted')}
         className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-[var(--color-primary)] text-white shadow-lg flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-transform z-30">
         <FiPlus />
       </button>

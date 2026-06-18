@@ -47,6 +47,23 @@ export function formatChatTime(dateStr: string): string {
   return `${date.getFullYear()}年${MM}月${DD}日 ${hh}:${mm}`;
 }
 
+/** 相对时间 — 1分钟内"刚刚"，1时内"X分钟前"，24时内"X小时前"，7天内"X天前"，否则用 formatDate */
+export function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHour = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  if (diffMs < 0) return '刚刚';
+  if (diffMin < 1) return '刚刚';
+  if (diffMin < 60) return `${diffMin}分钟前`;
+  if (diffHour < 24) return `${diffHour}小时前`;
+  if (diffDay < 7) return `${diffDay}天前`;
+  return formatDate(dateStr);
+}
+
 export function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   const y = date.getFullYear();

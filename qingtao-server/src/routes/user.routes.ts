@@ -9,6 +9,7 @@ import { getUserReviews } from '../controllers/trade.controller';
 const router = Router();
 
 // 具体路径必须在 /:id 前面，否则会被 /:id 吞掉
+router.get('/leaderboard', userCtrl.getLeaderboard);
 router.get('/profile/changes', authMiddleware, userCtrl.getMyProfileChanges);
 router.put('/profile', authMiddleware, moderateBody(['nickname', 'wechat', 'qq', 'bio']), userCtrl.updateProfile);
 router.put('/password', authMiddleware, sensitiveOpLimiter, userCtrl.updatePassword);

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import { success, error, paginated, notFound } from '../utils/response';
 import { aiModerate } from '../services/moderation.service';
+import { createNotification } from '../services/notification.service';
 import { logger } from '../utils/logger';
 
 /** GET /api/qa */
@@ -126,6 +127,20 @@ export async function createAnswer(req: Request, res: Response, next: NextFuncti
       include: { user: { select: { id: true, nickname: true, avatarUrl: true } } },
     });
     await prisma.qaPost.update({ where: { id: postId }, data: { answerCount: { increment: 1 } } });
+
+    // 通知提问者有人回答了问题（自问自答不通知）
+    if (post.userId !== req.user!.userId) {
+      const answerUser = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { nickname: true } });
+      createNotification({
+        userId: post.userId,
+        type: 'qa_answer',
+        title: '你的问题有了新回答',
+        content: `${answerUser?.nickname || '匿名用户'} 回答了你的问题「${post.title.slice(0, 30)}」`,
+        relatedId: answer.id,
+        relatedType: 'qa_answer',
+      }).catch(() => {});
+    }
+
     // L2 AI 异步审核（必须在 return 之前）
     aiModerate(content, { contentType: 'qa_answer', userId: req.user!.userId }).then(result => {
       if (result === 'violation') {
@@ -181,6 +196,19 @@ export async function markBest(req: Request, res: Response, next: NextFunction) 
       prisma.qaAnswer.update({ where: { id: answerId }, data: { isBest: true } }),
       prisma.qaPost.update({ where: { id: answer.postId }, data: { isResolved: true, bestAnswerId: answerId } }),
     ]);
+
+    // 通知回答者被采纳（自问自答不通知）
+    if (answer.userId !== req.user!.userId) {
+      createNotification({
+        userId: answer.userId,
+        type: 'qa_best',
+        title: '你的回答被采纳啦！',
+        content: `你的回答被采纳为「${post.title.slice(0, 30)}」的最佳答案`,
+        relatedId: answerId,
+        relatedType: 'qa_answer',
+      }).catch(() => {});
+    }
+
     return success(res, null, '已采纳');
   } catch (err) { next(err); }
 }

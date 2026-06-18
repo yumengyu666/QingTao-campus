@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { Skeleton } from '@/components/common/Skeleton';
 import { apiFetch } from '@/utils/api';
@@ -11,6 +12,7 @@ import toast from 'react-hot-toast';
 export default function WantedDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const currentUser = useAuthStore(s => s.user);
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ export default function WantedDetailPage() {
     try {
       const res = await apiFetch(`/api/wanted/${id}`, { method: 'DELETE' });
       const json = await res.json();
-      if (json.code === 200) { toast.success('已删除'); navigate('/wanted'); }
+      if (json.code === 200) { toast.success('已删除'); nav('/wanted'); }
       else toast.error(json.message);
     } catch { toast.error('网络错误'); }
   };
@@ -64,7 +66,7 @@ export default function WantedDetailPage() {
               <p className="text-xs text-gray-400">{formatTime(item.createdAt)} · {item.viewCount} 次浏览</p>
             </div>
             {!isOwner && (
-              <button onClick={() => navigate(`/messages/${item.userId}`)}
+              <button onClick={() => nav(`/messages/${item.userId}`)}
                 className="px-4 py-2 rounded-xl bg-[var(--color-primary)] text-white text-sm font-medium flex items-center gap-1">
                 <FiMessageCircle size={14} />私信
               </button>

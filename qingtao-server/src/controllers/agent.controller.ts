@@ -311,17 +311,22 @@ export async function agentChatStream(req: Request, res: Response) {
     }
 
     const { nickname, campus } = await getUserInfo(userId);
-    // SSE headers — force immediate flush, no buffering
-    res.writeHead(200, {
+    const dynamicContext = await buildDynamicContext(campus);
+
+    // SSE headers — use Express set() to preserve CORS headers set by middleware
+    res.status(200);
+    res.set({
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
+      'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
+    res.flushHeaders();
     // Disable Nagle's algorithm for real-time streaming
     if (res.socket) res.socket.setNoDelay(true);
 
-    const systemPrompt = buildSystemPrompt(nickname, campus);
+    const systemPrompt = buildSystemPrompt(nickname, campus) + 
+      (dynamicContext ? `\n\n## 当前校园动态\n${dynamicContext}` : '');
     const history = await getHistory(userId);
 
     const messages: ChatMessage[] = [
@@ -434,28 +439,190 @@ export async function clearConversation(req: Request, res: Response) {
   return res.json({ code: 200, message: '对话历史已清除', data: null });
 }
 
-// ─── POST /api/agent/feedback — 对话反馈 ───
+// ─── POST /api/agent/feedback — 对话反馈（持久化）───
 export async function submitFeedback(req: Request, res: Response) {
   try {
     const userId = (req as any).user?.userId as number;
-    const { rating, comment } = req.body; // rating: 'up' | 'down'
+    const { rating, comment, query, aiReply, conversationId } = req.body;
 
     if (!['up', 'down'].includes(rating)) {
       return res.status(400).json({ code: 400, message: '请提供有效评价', data: null });
     }
 
-    // 简单统计：记录最近一次用户消息
-    const lastUserMsg = await prisma.agentConversation.findFirst({
-      where: { userId, role: 'user' },
-      orderBy: { createdAt: 'desc' },
-      select: { content: true },
+    // 存储到数据库
+    await prisma.agentFeedback.create({
+      data: {
+        userId,
+        rating,
+        comment: comment?.slice(0, 500) || null,
+        query: query?.slice(0, 200) || null,
+        aiReply: aiReply?.slice(0, 200) || null,
+        conversationId: conversationId || null,
+      },
     });
 
-    logger.info(`Agent feedback: user=${userId} rating=${rating} query="${lastUserMsg?.content?.slice(0, 50) || ''}"`);
+    // 统计今日反馈
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [upCount, downCount] = await Promise.all([
+      prisma.agentFeedback.count({ where: { userId, rating: 'up', createdAt: { gte: today } } }),
+      prisma.agentFeedback.count({ where: { userId, rating: 'down', createdAt: { gte: today } } }),
+    ]);
 
-    return res.json({ code: 201, message: '感谢反馈！小轻会继续加油 💪', data: null });
+    logger.info(`Agent feedback: user=${userId} rating=${rating} query="${query?.slice(0, 50) || ''}"`);
+    logger.info(`Agent feedback stats for user ${userId} today: ${upCount} up, ${downCount} down`);
+
+    return res.json({ code: 201, message: '感谢反馈！小轻会继续加油 💪', data: { upCount, downCount } });
   } catch (err) {
     logger.error('[Agent Feedback] Error:', err);
     return res.status(500).json({ code: 500, message: '反馈提交失败', data: null });
+  }
+}
+
+// ─── GET /api/agent/sessions — 对话历史列表 ───
+export async function listSessions(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.userId as number;
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = Math.min(parseInt(req.query.pageSize as string) || 20, 50);
+
+    // 获取所有消息，按时间倒序
+    const messages = await prisma.agentConversation.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, role: true, content: true, createdAt: true },
+    });
+
+    // 按时间间隔分组（30分钟无消息 = 新会话）
+    const SESSION_GAP_MS = 30 * 60 * 1000;
+    const sessions: Array<{ id: string; firstQuery: string; messageCount: number; lastActive: Date }> = [];
+    let currentSession: typeof sessions[0] | null = null;
+
+    // messages 按时间倒序，所以反过来遍历
+    const reversed = [...messages].reverse();
+    for (const msg of reversed) {
+      if (!currentSession || new Date(msg.createdAt).getTime() - currentSession.lastActive.getTime() > SESSION_GAP_MS) {
+        // 新会话
+        const sessionStart = new Date(msg.createdAt);
+        currentSession = {
+          id: sessionStart.toISOString(),
+          firstQuery: msg.role === 'user' ? msg.content.slice(0, 60) : '',
+          messageCount: 0,
+          lastActive: new Date(msg.createdAt),
+        };
+        sessions.push(currentSession);
+      }
+      currentSession.messageCount++;
+      currentSession.lastActive = new Date(msg.createdAt);
+      if (!currentSession.firstQuery && msg.role === 'user') {
+        currentSession.firstQuery = msg.content.slice(0, 60);
+      }
+    }
+
+    // 如果没有用户消息，使用助手消息
+    for (const session of sessions) {
+      if (!session.firstQuery) session.firstQuery = '（无提问内容）';
+    }
+
+    // 返回倒序（最新的在前）
+    const sorted = sessions.reverse();
+    const total = sorted.length;
+    const start = (page - 1) * pageSize;
+    const rows = sorted.slice(start, start + pageSize);
+
+    return res.json({
+      code: 200,
+      data: { list: rows, total, page, pageSize },
+      message: 'ok',
+    });
+  } catch (err) {
+    logger.error('[Agent Sessions] Error:', err);
+    return res.status(500).json({ code: 500, message: '获取对话历史失败', data: null });
+  }
+}
+
+// ─── GET /api/agent/sessions/:id — 获取会话消息 ───
+export async function getSession(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.userId as number;
+    const sessionId = req.params.id as string;
+    const sessionStart = new Date(sessionId);
+    if (isNaN(sessionStart.getTime())) {
+      return res.status(400).json({ code: 400, message: '无效的会话ID', data: null });
+    }
+
+    const SESSION_GAP_MS = 30 * 60 * 1000;
+
+    // 找到该会话及后续消息
+    const allMessages = await prisma.agentConversation.findMany({
+      where: { userId, createdAt: { gte: sessionStart } },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, role: true, content: true, createdAt: true },
+    });
+
+    // 只取到下一个间隙
+    const sessionMessages: typeof allMessages = [];
+    let lastTime = sessionStart.getTime();
+    for (const msg of allMessages) {
+      const msgTime = new Date(msg.createdAt).getTime();
+      if (sessionMessages.length > 0 && msgTime - lastTime > SESSION_GAP_MS) break;
+      sessionMessages.push(msg);
+      lastTime = msgTime;
+    }
+
+    return res.json({
+      code: 200,
+      data: { messages: sessionMessages, sessionId },
+      message: 'ok',
+    });
+  } catch (err) {
+    logger.error('[Agent Session] Error:', err);
+    return res.status(500).json({ code: 500, message: '获取会话失败', data: null });
+  }
+}
+
+// ─── DELETE /api/agent/sessions/:id — 删除会话 ───
+export async function deleteSession(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.userId as number;
+    const sessionId = req.params.id as string;
+    const sessionStart = new Date(sessionId);
+    if (isNaN(sessionStart.getTime())) {
+      return res.status(400).json({ code: 400, message: '无效的会话ID', data: null });
+    }
+
+    const SESSION_GAP_MS = 30 * 60 * 1000;
+
+    // 找到该会话的所有消息 ID
+    const allMessages = await prisma.agentConversation.findMany({
+      where: { userId, createdAt: { gte: sessionStart } },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, createdAt: true },
+    });
+
+    // 找到该会话的结束位置
+    let lastTime = sessionStart.getTime();
+    const sessionIds: number[] = [];
+    for (const msg of allMessages) {
+      const msgTime = new Date(msg.createdAt).getTime();
+      if (sessionIds.length > 0 && msgTime - lastTime > SESSION_GAP_MS) break;
+      sessionIds.push(msg.id);
+      lastTime = msgTime;
+    }
+
+    if (sessionIds.length === 0) {
+      return res.status(404).json({ code: 404, message: '会话不存在', data: null });
+    }
+
+    await prisma.agentConversation.deleteMany({
+      where: { id: { in: sessionIds }, userId },
+    });
+
+    logger.info(`Agent session deleted: user=${userId} session=${sessionId} messages=${sessionIds.length}`);
+
+    return res.json({ code: 200, message: '会话已删除', data: { deleted: sessionIds.length } });
+  } catch (err) {
+    logger.error('[Agent Delete Session] Error:', err);
+    return res.status(500).json({ code: 500, message: '删除会话失败', data: null });
   }
 }

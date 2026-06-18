@@ -34,6 +34,29 @@ export function verifyRefreshToken(token: string): JwtPayload {
   return jwt.verify(token, jwtConfig.refreshSecret, { algorithms: ['HS256'] }) as JwtPayload;
 }
 
+/** 生成密码重置令牌（10分钟有效，单次使用） */
+export function generatePasswordResetToken(userId: number): string {
+  const jti = crypto.randomBytes(16).toString('hex');
+  return jwt.sign(
+    { userId, purpose: 'password-reset', jti },
+    jwtConfig.refreshSecret,
+    { expiresIn: '10m', algorithm: 'HS256' },
+  );
+}
+
+/** 验证密码重置令牌 */
+export function verifyPasswordResetToken(token: string): { userId: number; jti: string } {
+  const payload = jwt.verify(token, jwtConfig.refreshSecret, { algorithms: ['HS256'] }) as {
+    userId?: number;
+    purpose?: string;
+    jti?: string;
+  };
+  if (payload.purpose !== 'password-reset' || !payload.userId || !payload.jti) {
+    throw new Error('Invalid reset token');
+  }
+  return { userId: payload.userId, jti: payload.jti };
+}
+
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
 }

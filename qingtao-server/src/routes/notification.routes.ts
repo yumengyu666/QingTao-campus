@@ -7,6 +7,7 @@ const router = Router();
 router.get('/', authMiddleware, notifCtrl.getNotifications);
 router.get('/unread-count', authMiddleware, notifCtrl.getUnreadCount);
 router.get('/announcements', notifCtrl.getAnnouncements);
+router.post('/push-subscribe', authMiddleware, notifCtrl.pushSubscribe);
 router.patch('/read-all', authMiddleware, notifCtrl.markAllRead);
 router.patch('/batch-read', authMiddleware, notifCtrl.markBatchRead);
 router.patch('/:id/read', authMiddleware, notifCtrl.markRead);

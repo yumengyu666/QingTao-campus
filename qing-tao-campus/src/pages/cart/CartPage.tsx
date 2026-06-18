@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -12,6 +13,7 @@ import { FiTrash2, FiShoppingCart, FiCopy, FiChevronRight } from 'react-icons/fi
 
 export default function CartPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const token = useAuthStore((s) => s.token);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function CartPage() {
           }
           action={
             <button
-              onClick={() => navigate('/')}
+              onClick={() => nav('/')}
               className="px-5 py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 active:scale-95 transition-all"
             >
               去逛逛
@@ -96,7 +98,7 @@ export default function CartPage() {
               >
                 <div
                   className="w-20 h-20 rounded-xl bg-gray-100 dark:bg-[var(--color-card-hover)] overflow-hidden flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
-                  onClick={() => navigate(`/goods/${item.goodsId}`)}
+                  onClick={() => nav(`/goods/${item.goodsId}`)}
                 >
                   {item.goods?.images?.[0] ? (
                     <img
@@ -114,7 +116,7 @@ export default function CartPage() {
                 <div className="flex-1 min-w-0">
                   <h3
                     className="text-sm font-medium line-clamp-2 cursor-pointer hover:text-indigo-500 transition-colors"
-                    onClick={() => navigate(`/goods/${item.goodsId}`)}
+                    onClick={() => nav(`/goods/${item.goodsId}`)}
                   >
                     {item.goods?.title}
                   </h3>
@@ -146,10 +148,10 @@ export default function CartPage() {
                         QQ
                       </button>
                       <button
-                        onClick={() => navigate(`/messages/${item.goods?.userId}`)}
+                        onClick={() => nav(`/messages/${item.goods?.userId}`)}
                         className="text-[11px] px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 active:scale-90 transition-transform"
                       >
-                        联系
+                        联系卖家
                       </button>
                       <button
                         onClick={() => removeItem(item.id)}
@@ -167,7 +169,7 @@ export default function CartPage() {
 
           <div className="flex items-center justify-center pt-2">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => nav('/')}
               className="text-sm text-indigo-500 flex items-center gap-1 hover:text-indigo-600 transition-colors"
             >
               继续逛逛 <FiChevronRight className="text-xs" />

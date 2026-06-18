@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { validateUsername, validatePassword } from '@/utils/validators';
+import { apiFetch } from '@/utils/api';
 import { MathCaptcha } from '@/components/common/MathCaptcha';
 import { FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
@@ -36,14 +38,15 @@ export default function RegisterPage() {
     const err = validateUsername(username) || validatePassword(password);
     if (err) { toast.error(err); return; }
     if (password !== confirmPwd) { toast.error('两次密码不一致'); return; }
+    if (phone && !/^1[3-9]\d{9}$/.test(phone)) { toast.error('请输入正确的手机号'); return; }
     if (!agreed) { toast.error('请阅读并同意用户责任告知书'); return; }
     if (!captchaReady) { toast.error('请完成安全验证'); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, captchaId, captchaAnswer }),
+        body: JSON.stringify({ username, password, phone: phone || undefined, captchaId, captchaAnswer }),
       });
       const json = await res.json();
       if (json.code !== 201 && json.code !== 200) {
@@ -56,7 +59,8 @@ export default function RegisterPage() {
       const { token, refreshToken, user } = json.data;
       setAuth(token, user, refreshToken);
       toast.success('注册成功');
-      navigate('/', { replace: true });
+      const preferLg = localStorage.getItem('prefer_lg') === '1';
+      navigate(preferLg ? '/lg/' : '/', { replace: true });
     } catch {
       toast.error('网络错误');
     }
@@ -121,6 +125,16 @@ export default function RegisterPage() {
           <div className="mb-5 relative">
             <input type="password" placeholder="确认密码" value={confirmPwd}
               onChange={e => setConfirmPwd(e.target.value)}
+              className="w-full px-5 py-[15px] rounded-xl text-white text-[15px] outline-none transition-all"
+              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
+              onFocus={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.1)'; }}
+              onBlur={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
+            />
+          </div>
+
+          <div className="mb-5 relative">
+            <input type="tel" placeholder="手机号（选填，用于账号找回）" value={phone}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
               className="w-full px-5 py-[15px] rounded-xl text-white text-[15px] outline-none transition-all"
               style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
               onFocus={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255,255,255,0.1)'; }}

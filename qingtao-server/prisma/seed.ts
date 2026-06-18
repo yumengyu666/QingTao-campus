@@ -140,11 +140,6 @@ async function main() {
   }
   console.log('✅ 3 sample lostfound items');
 
-  console.log('\n🎉 Seed complete!');
-  console.log('  Admins: admin/123456, admin2/123456');
-  console.log('  Users:  zhangsan ~ chenchen / 123456');
-}
-
   // ─── Badges ───
   const badges = [
     { name: '初来乍到', icon: '🌱', description: '完成首次签到' },
@@ -173,6 +168,10 @@ async function main() {
     await prisma.topicTag.upsert({ where: { name: t.name }, update: t, create: t });
   }
   console.log(`  ✅ ${tags.length} topic tags created`);
+
+  console.log('\n🎉 Seed complete!');
+  console.log('  Admins: admin/123456, admin2/123456');
+  console.log('  Users:  zhangsan ~ chenchen / 123456');
 }
 
 main()

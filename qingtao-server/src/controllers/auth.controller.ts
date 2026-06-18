@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
-import { hashPassword, comparePassword, generateTokens, verifyRefreshToken, blacklistRefreshToken, isRefreshTokenRevoked } from '../services/auth.service';
+import { hashPassword, comparePassword, generateTokens, verifyRefreshToken, blacklistRefreshToken, isRefreshTokenRevoked, verifyPasswordResetToken } from '../services/auth.service';
 import { success, error, serverError } from '../utils/response';
 import { containsSensitive } from '../utils/sensitive';
 import { logger } from '../utils/logger';
@@ -71,7 +71,7 @@ function clearLoginAttempts(key: string): void {
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
-    const { username, password, captchaId, captchaAnswer } = req.body;
+    const { username, password, phone, captchaId, captchaAnswer } = req.body;
 
     // 验证码
     if (!captchaId || !captchaAnswer) return error(res, '请完成安全验证');
@@ -85,6 +85,9 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) return error(res, '密码需同时包含字母和数字');
     if (/[^a-zA-Z0-9一-龥_]/.test(username)) return error(res, '用户名只能包含中文、英文、数字和下划线');
     if (USERNAME_BLACKLIST.has(username.toLowerCase())) return error(res, '该用户名不可使用');
+
+    // 手机号格式校验（选填）
+    if (phone && !/^1[3-9]\d{9}$/.test(phone)) return error(res, '手机号格式不正确');
 
     // 敏感词
     if (containsSensitive(username)) return error(res, '用户名包含违规内容');
@@ -102,10 +105,11 @@ export async function register(req: Request, res: Response, next: NextFunction) 
         username,
         passwordHash,
         nickname: randomNick,
+        phone: phone || '',
       },
     });
 
-    const fp = `${req.headers['user-agent'] || ''}|${(req.ip || '').split('.').slice(0, 2).join('.')}`;
+    const fp = req.headers['user-agent'] || '';
     const tokens = generateTokens({ userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion }, fp);
 
     logger.info(`User registered: ${username} (id=${user.id})`);
@@ -155,7 +159,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     // 登录成功：清除失败计数
     clearLoginAttempts(lockKey);
 
-    const fp = `${req.headers['user-agent'] || ''}|${(req.ip || '').split('.').slice(0, 2).join('.')}`;
+    const fp = req.headers['user-agent'] || '';
     const tokens = generateTokens({ userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion }, fp);
 
     logger.info(`User login: ${username} (id=${user.id})`);
@@ -187,7 +191,7 @@ export async function refreshToken(req: Request, res: Response, next: NextFuncti
 
     // 轮换：旧Token加入黑名单，颁发新Token对
     await blacklistRefreshToken(token, user.id);
-    const fp = (payload as any).fp ? undefined : undefined; // 保留旧指纹，通过payload传递
+    const fp = (payload as any).fp || undefined; // 保留旧指纹，通过payload传递
     const tokens = generateTokens(
       { userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion },
       (payload as any).fp || undefined,
@@ -219,11 +223,9 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
       where: { username: username.trim() },
       select: { id: true, securityQuestion: { select: { id: true } } },
     });
-    if (!user) return error(res, '该用户名不存在');
-
-    // 检查是否设置了安全提问
-    if (!user.securityQuestion) {
-      return error(res, '该账号未设置安全提问，无法自助找回密码。请联系管理员');
+    if (!user || !user.securityQuestion) {
+      // 统一返回，防止用户名枚举
+      return error(res, '该账号未设置安全提问，无法自助找回密码。如需帮助请联系管理员。');
     }
 
     // 引导用户通过安全提问验证 → 返回下一步操作
@@ -237,20 +239,29 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
   }
 }
 
-// POST /api/auth/reset-password — 使用重置码设置新密码
+// POST /api/auth/reset-password — 使用重置令牌设置新密码
 export async function resetPassword(req: Request, res: Response, next: NextFunction) {
   try {
-    const { username, code, newPassword } = req.body;
-    if (!username?.trim() || !code?.trim() || !newPassword?.trim()) return error(res, '请填写所有字段');
+    const { username, resetToken, newPassword } = req.body;
+    if (!username?.trim() || !resetToken?.trim() || !newPassword?.trim()) return error(res, '请填写所有字段');
     if (newPassword.length < 6 || newPassword.length > 50) return error(res, '新密码长度需在6-50位之间');
     if (!/^(?=.*[a-zA-Z])(?=.*\d)/.test(newPassword)) return error(res, '新密码需同时包含字母和数字');
 
+    let userId: number;
+    try {
+      ({ userId } = verifyPasswordResetToken(resetToken.trim()));
+    } catch {
+      return error(res, '重置令牌无效或已过期，请重新验证安全问题');
+    }
+
     const user = await prisma.user.findUnique({ where: { username: username.trim() } });
-    if (!user) return error(res, '用户不存在');
+    if (!user || user.id !== userId) return error(res, '重置令牌无效');
     if (!user.resetCode || !user.resetCodeExpiry) return error(res, '未申请重置密码');
 
-    if (new Date() > new Date(user.resetCodeExpiry)) return error(res, '重置码已过期，请重新申请');
-    if (user.resetCode !== code.trim()) return error(res, '重置码错误');
+    if (new Date() > new Date(user.resetCodeExpiry)) return error(res, '重置令牌已过期，请重新验证安全问题');
+
+    const tokenHash = crypto.createHash('sha256').update(resetToken.trim()).digest('hex');
+    if (user.resetCode !== tokenHash) return error(res, '重置令牌无效或已使用');
 
     const passwordHash = await hashPassword(newPassword);
 
@@ -272,8 +283,20 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
   }
 }
 
-// 去除敏感字段
-function sanitizeUser(user: { id: number; username: string; nickname: string; avatarUrl: string; wechat: string; qq: string; bio: string; campusArea: string; role: string; status: string; createdAt: Date; updatedAt: Date }) {
-  const { passwordHash, ...safe } = user as any;
-  return safe;
+// 去除敏感字段 — 使用显式白名单，防止未来新增敏感字段被泄露
+function sanitizeUser(user: Record<string, unknown>) {
+  return {
+    id: user.id,
+    username: user.username,
+    nickname: user.nickname,
+    avatarUrl: user.avatarUrl,
+    wechat: user.wechat,
+    qq: user.qq,
+    bio: user.bio,
+    campusArea: user.campusArea,
+    role: user.role,
+    status: user.status,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
 }

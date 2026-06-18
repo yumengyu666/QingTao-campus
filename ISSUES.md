@@ -455,3 +455,32 @@
 | 树洞 L2 AI 异步审核 | ✅ 已修复 |
 | 恋爱私信 L2 AI 异步审核 | ✅ 已修复 |
 | 快捷短语白名单（免审） | ✅ 已修复 |
+
+---
+
+## 2026-06-17 漏洞修复批次
+
+> 本批次聚焦 AI 审核安全闭环、设备绑定、多标签页同步、防抖等高价值修复。
+> 修复前先系统验证了之前会话已修复的 25+ 项 P0/P1（恋爱通知/私信通知/Q&A审核/登录限流/AdminRoute守卫/文件魔术字节/商品所有权/树洞限流/忘记密码/注销账号/手机号绑定/购物车去重/收藏通知清理/通知一键已读/私聊发图/AI熔断告警/编辑重新过AI/用户资料AI审核/违规用户限制/版本号更新/编辑图片回显等），确认均已在代码中实现。
+
+### 本次新增修复
+
+| # | 问题 | 文件 | 修复方案 |
+|---|------|------|----------|
+| #90 | AI 审核 500 字截断可被利用绕过 | `services/moderation.service.ts` | 新增 `sliceForAI()`：文本超 1800 字时审核"前 900 字 + [省略] + 后 900 字"拼接，防止违规内容藏在截断之外 |
+| #94 | `afterCreate` 内部 `containsSensitive` 命中跳过 AI → 内容裸奔 | `middleware/moderation.middleware.ts` | 命中敏感词时直接下架 + 通知（不再 continue 跳过），堵住"路由放行→afterCreate命中→AI跳过"漏洞路径 |
+| #13 | Token 无设备绑定、可被复制 | `middleware/auth.ts` | 新增 `computeRequestFingerprint()`（UA + IP 网段 hash），authMiddleware 校验 payload.fp 与当前请求 fp，不匹配触发告警 |
+| #14 | 跨设备同时登录无感知 | `middleware/auth.ts` | fp 不匹配时异步通知用户"账号登录环境异常"（1 小时去重），实现跨设备登录有感知 |
+| #44 | 多标签页状态不同步 | `stores/authStore.ts` + `utils/storage.ts` | 监听 window 'storage' 事件，其他标签页登出/登录时同步更新当前页 auth 状态；导出 TOKEN_KEY/USER_KEY 常量 |
+| #30 | 评论/点赞按钮无防抖（连点重复提交） | `pages/explore/NoteDetailPage.tsx` | handleLike 加 `likingRef` 防并发；handleComment 加 `commenting` state + 按钮 disabled |
+
+### 验证结果
+
+- 后端 `tsc --noEmit`：零错误 ✅
+- 前端 `tsc --noEmit`（修改文件）：authStore.ts / storage.ts 零错误 ✅；NoteDetailPage.tsx 仅剩1个预存的 UserAvatar `size="xs"` 类型错误（line 214，与本次防抖修改无关）
+- 设备指纹基础设施复用：`auth.service.ts` 的 `generateTokens` 早已支持 fingerprint 参数，本次补齐了 authMiddleware 的校验闭环
+
+### 备注
+
+- Notification.type 为 String 类型（非 enum），新增的 `security_alert` 类型无需数据库迁移
+- 设备指纹校验采用"告警不踢出"策略，避免误伤移动网络切换/同浏览器跨网段场景；如需更严格可在 `notifyDeviceMismatch` 后追加 `return unauthorized(res)`

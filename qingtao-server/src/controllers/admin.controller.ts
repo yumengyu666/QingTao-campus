@@ -19,6 +19,7 @@ export async function getStats(_req: Request, res: Response, next: NextFunction)
       newUsersToday, newGoodsToday, newPostsToday,
       pendingGoods, pendingPosts, pendingProfiles,
       pendingGoodsComments, pendingPostComments, pendingLostFoundComments,
+      violationUsers,
     ] = await Promise.all([
       prisma.user.count({ where: { status: 'active' } }),
       prisma.goods.count({ where: { isDeleted: false, status: { not: 'pending' } } }),
@@ -33,7 +34,14 @@ export async function getStats(_req: Request, res: Response, next: NextFunction)
       prisma.goodsComment.count({ where: { status: 'pending' } }),
       prisma.postComment.count({ where: { status: 'pending' } }),
       prisma.lostFoundComment.count({ where: { status: 'pending' } }),
+      prisma.user.count({ where: { violationCount: { gt: 0 } } }),
     ]);
+
+    // 今日被 AI/管理员下架内容数
+    const rejectedToday = await prisma.goods.count({ where: { updatedAt: { gte: today }, status: 'offline', isDeleted: false } })
+      + await prisma.post.count({ where: { updatedAt: { gte: today }, status: 'offline', isDeleted: false } })
+      + await prisma.lostFound.count({ where: { updatedAt: { gte: today }, status: 'offline' } })
+      + await prisma.treeHolePost.count({ where: { updatedAt: { gte: today }, status: 'rejected' } });;
 
     return success(res, {
       totalUsers,
@@ -50,6 +58,9 @@ export async function getStats(_req: Request, res: Response, next: NextFunction)
       pendingPostComments,
       pendingLostFoundComments,
       pendingTotal: pendingGoods + pendingPosts + pendingProfiles + pendingGoodsComments + pendingPostComments + pendingLostFoundComments,
+      // AI 审核统计（#96）
+      rejectedToday,
+      violationUsers,
     });
   } catch (err) {
     next(err);
@@ -64,12 +75,16 @@ export async function getReviews(req: Request, res: Response, next: NextFunction
     const pageSize = Math.min(parseInt(req.query.pageSize as string) || 50, 100);
 
     // 收集所有待审项到统一数组，再做分页
+    // 每种类型最多取500条，防止内存溢出
+    const MAX_PER_TYPE = 500;
     let allItems: Array<{ id: number; reviewType: string; createdAt: Date }> = [];
 
     if (!reviewType || reviewType === 'goods') {
       const items = await prisma.goods.findMany({
         where: { status: 'pending', isDeleted: false },
         select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_PER_TYPE,
       });
       items.forEach(i => allItems.push({ id: i.id, reviewType: 'goods', createdAt: i.createdAt }));
     }
@@ -78,6 +93,8 @@ export async function getReviews(req: Request, res: Response, next: NextFunction
       const items = await prisma.post.findMany({
         where: { status: 'pending', isDeleted: false },
         select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_PER_TYPE,
       });
       items.forEach(i => allItems.push({ id: i.id, reviewType: 'posts', createdAt: i.createdAt }));
     }
@@ -86,6 +103,8 @@ export async function getReviews(req: Request, res: Response, next: NextFunction
       const items = await prisma.lostFound.findMany({
         where: { status: 'pending' },
         select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_PER_TYPE,
       });
       items.forEach(i => allItems.push({ id: i.id, reviewType: 'lostfound', createdAt: i.createdAt }));
     }
@@ -94,6 +113,8 @@ export async function getReviews(req: Request, res: Response, next: NextFunction
       const items = await prisma.profileChange.findMany({
         where: { status: 'pending' },
         select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_PER_TYPE,
       });
       items.forEach(i => allItems.push({ id: i.id, reviewType: 'profiles', createdAt: i.createdAt }));
     }
@@ -102,6 +123,8 @@ export async function getReviews(req: Request, res: Response, next: NextFunction
       const items = await prisma.goodsComment.findMany({
         where: { status: 'pending' },
         select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_PER_TYPE,
       });
       items.forEach(i => allItems.push({ id: i.id, reviewType: 'goods_comment', createdAt: i.createdAt }));
     }
@@ -110,6 +133,8 @@ export async function getReviews(req: Request, res: Response, next: NextFunction
       const items = await prisma.postComment.findMany({
         where: { status: 'pending' },
         select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_PER_TYPE,
       });
       items.forEach(i => allItems.push({ id: i.id, reviewType: 'post_comment', createdAt: i.createdAt }));
     }
@@ -118,6 +143,8 @@ export async function getReviews(req: Request, res: Response, next: NextFunction
       const items = await prisma.lostFoundComment.findMany({
         where: { status: 'pending' },
         select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_PER_TYPE,
       });
       items.forEach(i => allItems.push({ id: i.id, reviewType: 'lostfound_comment', createdAt: i.createdAt }));
     }

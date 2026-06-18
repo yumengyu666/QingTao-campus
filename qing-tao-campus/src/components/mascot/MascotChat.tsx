@@ -1,345 +1,47 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSend, FiX, FiZap, FiTrash2 } from 'react-icons/fi';
-import { apiFetch } from '@/utils/api';
-import { storage } from '@/utils/storage';
+import { useAgentChat, QUICK_QUESTIONS, renderMarkdown } from '@/hooks/useAgentChat';
 import toast from 'react-hot-toast';
-
-interface Message {
-  id: number;
-  text: string;
-  reasoning?: string | null;
-  isUser: boolean;
-  isStreaming?: boolean;
-  timestamp: Date;
-}
-
-const QUICK_QUESTIONS = [
-  { icon: '📦', label: '怎么买卖二手？' },
-  { icon: '💬', label: '广场有什么功能？' },
-  { icon: '❓', label: '校园答疑怎么用？' },
-  { icon: '🌳', label: '树洞是什么？' },
-  { icon: '📚', label: '怎么找考试资料？' },
-  { icon: '💕', label: '恋爱交友怎么玩？' },
-  { icon: '🔍', label: '怎么搜索内容？' },
-  { icon: '🛡️', label: '如何举报违规？' },
-];
-
-const WELCOME_MESSAGE: Message = {
-  id: 0,
-  text: '你好呀！我是小轻，轻淘平台的智能助手 🎓\n\n我可以帮你了解平台的各项功能。\n\n💡 默认快捷模式快速响应，需要深入分析时切换「思考」模式～\n\n直接问我问题，或者点击下面的快捷提问吧！',
-  isUser: false,
-  timestamp: new Date(),
-};
 
 interface MascotChatProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const STORAGE_KEY = 'qingtao_mascot_chat';
-
-function loadMessages(): Message[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
-  return [WELCOME_MESSAGE];
-}
-
-function saveMessages(msgs: Message[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
-  } catch {}
-}
-
 export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
-  const [messages, setMessages] = useState<Message[]>(() => loadMessages());
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showQuickQuestions, setShowQuickQuestions] = useState(() => {
-    const msgs = loadMessages();
-    return msgs.length === 1 && msgs[0].id === 0;
-  });
-  const [aiMode, setAiMode] = useState<'quick' | 'thinking'>('quick');
-  const [showReasoning, setShowReasoning] = useState<Record<number, boolean>>({});
+  const {
+    messages, input, setInput, isLoading,
+    aiMode, setAiMode, showReasoning,
+    sendMessage, handleClear, toggleReasoning,
+    inputRef,
+  } = useAgentChat();
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const msgIdRef = useRef(() => {
-    const msgs = loadMessages();
-    if (msgs.length === 1 && msgs[0].id === 0) return 1;
-    return Math.max(...msgs.map((m) => m.id)) + 1;
-  });
-  const nextId = () => ++msgIdRef.current;
-  const typingRef = useRef<ReturnType<typeof setInterval>>();
-
-  // Persist to localStorage on every message change
-  useEffect(() => {
-    saveMessages(messages);
-  }, [messages]);
+  const showQuickQuestions = messages.length === 1 && messages[0].id === 0;
 
   // Focus input when chat opens
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
 
+  // Scroll to bottom on new messages
+  const [messagesEndRef] = useState(() => ({ current: null as HTMLDivElement | null }));
   useEffect(() => {
-    if (!isOpen) {
-      clearInterval(typingRef.current);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
     }
-  }, [isOpen]);
-
-  /** Simulate typing effect: reveal text character by character */
-  const simulateTyping = useCallback((msgId: number, fullText: string, fullReasoning: string | null, callback: () => void) => {
-    const textLen = fullText.length;
-    let i = 0;
-    const speed = textLen > 100 ? 15 : 25; // ms per char
-
-    clearInterval(typingRef.current);
-    typingRef.current = setInterval(() => {
-      i++;
-      if (i <= textLen) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msgId ? { ...m, text: fullText.slice(0, i), isStreaming: true } : m
-          )
-        );
-      } else {
-        clearInterval(typingRef.current);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msgId
-              ? { ...m, text: fullText, reasoning: fullReasoning, isStreaming: false }
-              : m
-          )
-        );
-        // Auto-show reasoning on first appearance
-        if (fullReasoning) {
-          setShowReasoning((prev) => ({ ...prev, [msgId]: true }));
-        }
-        callback();
-      }
-    }, speed);
-  }, []);
-
-  /** Try real SSE streaming from backend. Falls back to non-streaming on failure. */
-  const sendMessage = useCallback(async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
-
-    setShowQuickQuestions(false);
-    clearInterval(typingRef.current);
-
-    const userMsgId = nextId();
-    const aiMsgId = nextId();
-
-    setMessages((prev) => [
-      ...prev,
-      { id: userMsgId, text: trimmed, isUser: true, timestamp: new Date() },
-      { id: aiMsgId, text: '', reasoning: null, isUser: false, isStreaming: true, timestamp: new Date() },
-    ]);
-    setInput('');
-    setIsLoading(true);
-
-    // ── Try real streaming (with 30s timeout) ──
-    let streamOk = false;
-    try {
-      const token = storage.getToken() || '';
-      const abortCtrl = new AbortController();
-      const timeoutId = setTimeout(() => abortCtrl.abort(), 30000);
-
-      const streamRes = await fetch('/api/agent/chat/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: trimmed, mode: aiMode }),
-        signal: abortCtrl.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (streamRes.ok && streamRes.body) {
-        const reader = streamRes.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let fullText = '';
-        let fullReasoning = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            const t = line.trim();
-            if (!t.startsWith('data:')) continue;
-            const raw = t.slice(5).trim();
-            if (!raw) continue;
-            try {
-              const p = JSON.parse(raw);
-              if (p.type === 'content') {
-                fullText += p.content;
-                setMessages((prev) => prev.map((m) =>
-                  m.id === aiMsgId ? { ...m, text: fullText, isStreaming: true } : m
-                ));
-              } else if (p.type === 'reasoning') {
-                fullReasoning += p.content;
-                setMessages((prev) => prev.map((m) =>
-                  m.id === aiMsgId ? { ...m, reasoning: fullReasoning, isStreaming: true } : m
-                ));
-                setShowReasoning((prev) => ({ ...prev, [aiMsgId]: true }));
-              } else if (p.type === 'done') {
-                setMessages((prev) => prev.map((m) =>
-                  m.id === aiMsgId ? { ...m, text: p.content || fullText, reasoning: p.reasoning || fullReasoning || null, isStreaming: false } : m
-                ));
-              } else if (p.type === 'error') {
-                // Backend sent error mid-stream
-                fullText = p.message || 'AI 服务暂时不可用';
-                streamOk = true; // Don't fallback — backend already responded
-                setMessages((prev) => prev.map((m) =>
-                  m.id === aiMsgId ? { ...m, text: fullText, isStreaming: false } : m
-                ));
-              }
-            } catch { /* skip */ }
-          }
-        }
-        // Stream ended normally — ensure final state
-        setMessages((prev) => prev.map((m) =>
-          m.id === aiMsgId ? { ...m, isStreaming: false, text: m.text || '收到啦～' } : m
-        ));
-        streamOk = true;
-      }
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        // Timeout — show error, don't fallback
-        setMessages((prev) => prev.map((m) =>
-          m.id === aiMsgId ? { ...m, text: '请求超时，请稍后再试 😢', isStreaming: false } : m
-        ));
-        streamOk = true; // Skip fallback — we already handled it
-      }
-      // Other errors → fall through to non-streaming
-    }
-
-    // ── Fallback: non-streaming API (with 30s timeout) ──
-    if (!streamOk) {
-      try {
-        const abortCtrl = new AbortController();
-        const timeoutId = setTimeout(() => abortCtrl.abort(), 30000);
-
-        const res = await fetch('/api/agent/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${storage.getToken() || ''}`,
-          },
-          body: JSON.stringify({ message: trimmed, mode: aiMode }),
-          signal: abortCtrl.signal,
-        });
-
-        clearTimeout(timeoutId);
-        const data = await res.json();
-
-        if (data.code === 200 && data.data?.reply) {
-          const reasoning = data.data?.reasoning || null;
-          const fullText = data.data.reply;
-          let i = 0;
-          const speed = fullText.length > 100 ? 15 : 25;
-          clearInterval(typingRef.current);
-          typingRef.current = setInterval(() => {
-            i++;
-            if (i <= fullText.length) {
-              setMessages((prev) => prev.map((m) =>
-                m.id === aiMsgId ? { ...m, text: fullText.slice(0, i), isStreaming: true } : m
-              ));
-            } else {
-              clearInterval(typingRef.current);
-              setMessages((prev) => prev.map((m) =>
-                m.id === aiMsgId ? { ...m, text: fullText, reasoning, isStreaming: false } : m
-              ));
-              if (reasoning) setShowReasoning((prev) => ({ ...prev, [aiMsgId]: true }));
-              setIsLoading(false);
-            }
-          }, speed);
-          return; // typing handles setIsLoading
-        }
-
-        // API returned error
-        setMessages((prev) => prev.map((m) =>
-          m.id === aiMsgId ? { ...m, text: data.message || '小轻不在线，请稍后再试 😢', isStreaming: false } : m
-        ));
-      } catch (err: any) {
-        // Both streaming and non-streaming failed
-        const errorMsg = err.name === 'AbortError'
-          ? '请求超时，请稍后再试 😢'
-          : '网络异常，请检查网络后重试 📡';
-        setMessages((prev) => prev.map((m) =>
-          m.id === aiMsgId ? { ...m, text: errorMsg, isStreaming: false } : m
-        ));
-      }
-    }
-
-    setIsLoading(false);
-  }, [isLoading, aiMode, nextId]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage(input);
-      }
-    },
-    [input, sendMessage]
-  );
-
-  const handleClear = useCallback(async () => {
-    clearInterval(typingRef.current);
-    await apiFetch('/api/agent/chat/clear', { method: 'POST' }).catch(() => {});
-    localStorage.removeItem(STORAGE_KEY);
-    setMessages([WELCOME_MESSAGE]);
-    setShowQuickQuestions(true);
-    setShowReasoning({});
-    msgIdRef.current = 0;
-    toast.success('对话已清除');
-  }, []);
-
-  const toggleReasoning = (msgId: number) => {
-    setShowReasoning((prev) => ({ ...prev, [msgId]: !prev[msgId] }));
   };
 
-  const renderMessageText = (text: string) => {
-    const lines = text.split('\n');
-    return lines.map((line, i) => {
-      const boldReplaced = line.replace(
-        /\*\*(.*?)\*\*/g,
-        '<strong class="font-semibold text-gray-900 dark:text-gray-100">$1</strong>'
-      );
-      if (line.trim().startsWith('>')) {
-        return (
-          <blockquote
-            key={i}
-            className="border-l-2 border-emerald-300 dark:border-emerald-600 pl-3 my-1 text-xs text-gray-500 dark:text-gray-400 italic"
-            dangerouslySetInnerHTML={{ __html: boldReplaced.replace(/^>\s?/, '') }}
-          />
-        );
-      }
-      return (
-        <p
-          key={i}
-          className={`text-sm leading-relaxed ${line.trim() ? 'mt-0.5' : 'mt-1.5'}`}
-          dangerouslySetInnerHTML={{ __html: boldReplaced }}
-        />
-      );
-    });
+  const onClear = async () => {
+    await handleClear();
+    toast.success('对话已清除');
   };
 
   return (
@@ -369,12 +71,12 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-md">
                 <svg viewBox="0 0 40 40" width="28" height="28">
                   <defs>
-                    <linearGradient id="miniGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="miniGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#22d3ee" />
                       <stop offset="100%" stopColor="#10b981" />
                     </linearGradient>
                   </defs>
-                  <ellipse cx="20" cy="24" rx="14" ry="13" fill="url(#miniGrad2)" />
+                  <ellipse cx="20" cy="24" rx="14" ry="13" fill="url(#miniGrad3)" />
                   <ellipse cx="20" cy="27" rx="9" ry="8" fill="#a7f3d0" opacity="0.6" />
                   <ellipse cx="13" cy="20" rx="5" ry="6" fill="white" />
                   <circle cx="14" cy="19" r="2.5" fill="#1e293b" />
@@ -391,7 +93,7 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
                 </p>
               </div>
               <button
-                onClick={handleClear}
+                onClick={onClear}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
                 title="清除对话"
               >
@@ -419,7 +121,7 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
                     </div>
                   )}
                   <div className="max-w-[82%]">
-                    {/* Reasoning section (thinking mode) — auto-expanded */}
+                    {/* Reasoning section */}
                     {msg.reasoning && (
                       <div className="mb-1.5">
                         <button
@@ -447,7 +149,7 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
                       </div>
                     )}
 
-                    {/* Main content */}
+                    {/* Message bubble */}
                     <div
                       className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         msg.isUser
@@ -455,24 +157,12 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
                           : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-md shadow-sm border border-gray-100 dark:border-gray-700'
                       }`}
                     >
-                      {renderMessageText(msg.text)}
+                      {renderMarkdown(msg.text)}
                       {msg.isStreaming && !msg.text && (
                         <div className="flex gap-1.5 py-1">
-                          <motion.span
-                            className="w-2 h-2 rounded-full bg-gray-400"
-                            animate={{ y: [0, -5, 0] }}
-                            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-                          />
-                          <motion.span
-                            className="w-2 h-2 rounded-full bg-gray-400"
-                            animate={{ y: [0, -5, 0] }}
-                            transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }}
-                          />
-                          <motion.span
-                            className="w-2 h-2 rounded-full bg-gray-400"
-                            animate={{ y: [0, -5, 0] }}
-                            transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }}
-                          />
+                          <motion.span className="w-2 h-2 rounded-full bg-gray-400" animate={{ y: [0, -5, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} />
+                          <motion.span className="w-2 h-2 rounded-full bg-gray-400" animate={{ y: [0, -5, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }} />
+                          <motion.span className="w-2 h-2 rounded-full bg-gray-400" animate={{ y: [0, -5, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }} />
                         </div>
                       )}
                       {msg.isStreaming && msg.text && (
@@ -491,7 +181,7 @@ export default function MascotChat({ isOpen, onClose }: MascotChatProps) {
             </div>
 
             {/* Quick Questions */}
-            {showQuickQuestions && messages.length === 1 && (
+            {showQuickQuestions && (
               <div className="px-4 py-3 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
                   <FiZap className="w-3 h-3" /> 快捷提问

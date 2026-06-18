@@ -35,70 +35,99 @@ export function initWebSocket(server: Server): void {
   }, 30_000);
 
   wss.on('connection', (ws, req) => {
-    const wsAlive = ws as WebSocket & { isAlive?: boolean };
+    const wsAlive = ws as WebSocket & { isAlive?: boolean; userId?: number };
     wsAlive.isAlive = true;
     wsAlive.on('pong', () => { wsAlive.isAlive = true; });
 
-    // 从 URL query 解析 token
-    const url = new URL(req.url || '', `http://localhost`);
-    const token = url.searchParams.get('token');
-    if (!token) {
-      ws.close(4001, 'Missing token');
-      return;
-    }
+    // Auth timeout: if no valid auth within 5 seconds, close connection
+    const authTimeout = setTimeout(() => {
+      if (!wsAlive.userId) {
+        ws.close(4001, 'Authentication timeout');
+      }
+    }, 5000);
 
-    let userId: number;
-    try {
-      const payload = jwt.verify(token, jwtConfig.accessSecret, { algorithms: ['HS256'] }) as any;
-      userId = payload.userId;
-    } catch {
-      ws.close(4001, 'Invalid token');
-      return;
-    }
+    // Wait for auth message as first message instead of URL query param
+    const authHandler = (raw: any) => {
+      let msg: { type?: string; token?: string };
+      try { msg = JSON.parse(raw.toString()); } catch { return; }
+      if (msg.type !== 'auth' || !msg.token) return;
 
-    const client: WsClient = { userId, ws, connectedAt: Date.now() };
-    if (!clients.has(userId)) clients.set(userId, new Set());
-    clients.get(userId)!.add(client);
-    logger.debug(`[WS] user#${userId} connected`);
-
-    // 广播在线状态
-    broadcastUserStatus(userId, 'online');
-
-    ws.on('message', (raw) => {
+      let userId: number;
       try {
-        const msg = JSON.parse(raw.toString());
-        handleMessage(userId, msg, ws);
-      } catch { /* ignore malformed messages */ }
-    });
+        const payload = jwt.verify(msg.token, jwtConfig.accessSecret, { algorithms: ['HS256'] }) as any;
+        userId = payload.userId;
+      } catch {
+        ws.close(4001, 'Invalid token');
+        return;
+      }
+
+      clearTimeout(authTimeout);
+      wsAlive.userId = userId;
+      ws.off('message', authHandler); // Remove auth listener
+
+      const client: WsClient = { userId, ws, connectedAt: Date.now() };
+      if (!clients.has(userId)) clients.set(userId, new Set());
+      clients.get(userId)!.add(client);
+      logger.debug(`[WS] user#${userId} connected`);
+
+      broadcastUserStatus(userId, 'online');
+
+      // Confirm connection
+      ws.send(JSON.stringify({ type: 'connected', userId }));
+
+      // Attach normal message handler
+      ws.on('message', (raw) => {
+        try {
+          const msg = JSON.parse(raw.toString());
+          handleMessage(userId, msg, ws);
+        } catch { /* ignore malformed messages */ }
+      });
+    };
+
+    ws.on('message', authHandler);
 
     ws.on('close', () => {
-      const set = clients.get(userId);
-      if (set) {
-        set.delete(client);
-        if (set.size === 0) {
-          clients.delete(userId);
-          broadcastUserStatus(userId, 'offline');
+      const uid = wsAlive.userId;
+      if (uid) {
+        const set = clients.get(uid);
+        if (set) {
+          set.forEach(c => { if (c.ws === ws) set.delete(c); });
+          if (set.size === 0) {
+            clients.delete(uid);
+            broadcastUserStatus(uid, 'offline');
+          }
         }
+        logger.debug(`[WS] user#${uid} disconnected`);
       }
-      logger.debug(`[WS] user#${userId} disconnected`);
+      clearTimeout(authTimeout);
     });
 
     ws.on('error', (err) => {
-      logger.warn(`[WS] user#${userId} error: ${err.message}`);
+      logger.warn(`[WS] user#${wsAlive.userId || '?'} error: ${err.message}`);
     });
-
-    // 确认连接成功
-    ws.send(JSON.stringify({ type: 'connected', userId }));
   });
 
   logger.info('[WS] WebSocket server ready on /ws');
 }
 
 interface WsMessage {
-  type: 'chat_message' | 'typing' | 'ping';
+  type: 'chat_message' | 'typing' | 'ping'
+    | 'call_incoming' | 'call_accepted' | 'call_rejected' | 'call_ended' | 'call_canceled'
+    | 'webrtc_offer' | 'webrtc_answer' | 'webrtc_ice'
+    | 'message_recall' | 'message_delivered' | 'message_read';
   to?: number;
   content?: string;
   messageType?: string;
+  // Call signaling fields
+  callId?: number;
+  callType?: string;
+  callerId?: number;
+  callerName?: string;
+  callerAvatar?: string;
+  sdp?: any;
+  candidate?: any;
+  roomId?: string;
+  messageId?: number;
 }
 
 // WebSocket 消息速率限制
@@ -167,6 +196,34 @@ function handleMessage(senderId: number, msg: WsMessage, ws: WebSocket): void {
       ws.send(JSON.stringify({ type: 'pong' }));
       break;
     }
+    // === Call Signaling Relay ===
+    case 'call_incoming': {
+      if (msg.to) sendToUser(msg.to, { type: 'call_incoming', callId: msg.callId, callType: msg.callType, callerId: senderId, callerName: msg.callerName, callerAvatar: msg.callerAvatar });
+      break;
+    }
+    case 'call_accepted':
+    case 'call_rejected':
+    case 'call_ended':
+    case 'call_canceled':
+    case 'webrtc_offer':
+    case 'webrtc_answer':
+    case 'webrtc_ice': {
+      if (msg.to) sendToUser(msg.to, { type: msg.type, callId: msg.callId, sdp: msg.sdp, candidate: msg.candidate, roomId: msg.roomId });
+      break;
+    }
+    // === Message status relay ===
+    case 'message_recall': {
+      if (msg.to && msg.messageId) sendToUser(msg.to, { type: 'message_recall', messageId: msg.messageId });
+      break;
+    }
+    case 'message_delivered': {
+      if (msg.to && msg.messageId) sendToUser(msg.to, { type: 'message_delivered', messageId: msg.messageId });
+      break;
+    }
+    case 'message_read': {
+      if (msg.to && msg.messageId) sendToUser(msg.to, { type: 'message_read', messageId: msg.messageId });
+      break;
+    }
   }
 }
 
@@ -195,5 +252,11 @@ function broadcastUserStatus(userId: number, status: string): void {
 
 /** 供 SSE/外部调用的推送方法 */
 export function wsPushToUser(userId: number, data: any): void {
+  const set = clients.get(userId);
+  if (!set || set.size === 0) {
+    logger.warn(`[WS-Push] user#${userId} not connected, dropping msg: ${data.type}`);
+    return;
+  }
+  logger.debug(`[WS-Push] user#${userId} ← ${data.type} (callId=${data.callId})`);
   sendToUser(userId, data);
 }

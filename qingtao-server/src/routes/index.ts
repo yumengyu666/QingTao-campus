@@ -25,7 +25,13 @@ import checkinRoutes from './checkin.routes';
 import barterRoutes from './barter.routes';
 import badgeRoutes from './badge.routes';
 import tagRoutes from './tag.routes';
-import { authMiddleware } from '../middleware/auth';
+import notesRoutes from './notes.routes';
+import videosRoutes from './videos.routes';
+import collectionsRoutes from './collections.routes';
+import callsRoutes from './calls.routes';
+import { authMiddleware, adminMiddleware } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { submitReportSchema, submitAppealSchema, reportMessageSchema, datingProfileSchema, datingPostSchema } from '../schemas';
 import { submitReport, submitAppeal, batchReview, getAuditLogs, exportCSV } from '../controllers/admin.controller';
 import { getBanners } from '../controllers/banner.controller';
 import { generateCaptcha } from '../controllers/captcha.controller';
@@ -46,7 +52,7 @@ import { getAdminLogs, adminDashboard } from '../controllers/log.controller';
 import { batchUpdateStatus, activityLogsHandler } from '../controllers/admin.extend.controller';
 import v1Routes from './v1/index';
 import debugRoutes from './debug.routes';
-import { agentChat, agentChatStream, clearConversation, submitFeedback } from '../controllers/agent.controller';
+import { agentChat, agentChatStream, clearConversation, submitFeedback, listSessions, getSession, deleteSession } from '../controllers/agent.controller';
 import { circuitBreaker } from '../middleware/circuit-breaker';
 
 const router = Router();
@@ -85,6 +91,10 @@ router.use('/checkin', checkinRoutes);
 router.use('/barter', barterRoutes);
 router.use('/badges', badgeRoutes);
 router.use('/tags', tagRoutes);
+router.use('/notes', notesRoutes);
+router.use('/videos', videosRoutes);
+router.use('/collections', collectionsRoutes);
+router.use('/calls', callsRoutes);
 
 router.get('/banners', getBanners);
 router.get('/captcha/generate', generateCaptcha);
@@ -109,22 +119,22 @@ router.get('/explore', getExplore);
 // Analytics — 趋势 + 用户分析
 router.get('/analytics/trending', getTrending);
 router.get('/analytics/user/:userId', getUserAnalytics);
-router.get('/admin/reports/stats', authMiddleware, getReportStats);
+router.get('/admin/reports/stats', authMiddleware, adminMiddleware, getReportStats);
 
 // Report — auth required but not admin
-router.post('/reports', authMiddleware, submitReport);
-router.post('/reports/appeal', authMiddleware, submitAppeal);
-router.post('/reports/messages', authMiddleware, reportMessages);
-router.post('/admin/content/batch', authMiddleware, batchReview);
-router.get('/admin/audit-logs', authMiddleware, getAuditLogs);
-router.get('/admin/export/:type', authMiddleware, exportCSV);
+router.post('/reports', authMiddleware, validate(submitReportSchema), submitReport);
+router.post('/reports/appeal', authMiddleware, validate(submitAppealSchema), submitAppeal);
+router.post('/reports/messages', authMiddleware, validate(reportMessageSchema), reportMessages);
+router.post('/admin/content/batch', authMiddleware, adminMiddleware, batchReview);
+router.get('/admin/audit-logs', authMiddleware, adminMiddleware, getAuditLogs);
+router.get('/admin/export/:type', authMiddleware, adminMiddleware, exportCSV);
 
 // Image status check — any logged-in user
 router.get('/images/status', authMiddleware, checkStatus);
 
 // Image batch review — admin only
-router.post('/admin/images/batch', authMiddleware, batchImageReview);
-router.get('/admin/stats/review', authMiddleware, getReviewStats);
+router.post('/admin/images/batch', authMiddleware, adminMiddleware, batchImageReview);
+router.get('/admin/stats/review', authMiddleware, adminMiddleware, getReviewStats);
 
 // Agent chat — 智能助手小轻 (auth required + rate limited + circuit breaker)
 import { agentLimiter } from '../middleware/rateLimiter';
@@ -133,19 +143,22 @@ router.post('/agent/chat', authMiddleware, agentLimiter, agentCircuit, agentChat
 router.post('/agent/chat/stream', authMiddleware, agentLimiter, agentCircuit, agentChatStream);
 router.post('/agent/chat/clear', authMiddleware, clearConversation);
 router.post('/agent/feedback', authMiddleware, submitFeedback);
+router.get('/agent/sessions', authMiddleware, listSessions);
+router.get('/agent/sessions/:id', authMiddleware, getSession);
+router.delete('/agent/sessions/:id', authMiddleware, deleteSession);
 
-// Sensitive word management
+// Sensitive word management — admin only
 import { getSensitiveWords, addSensitiveWord, updateSensitiveWord, deleteSensitiveWord } from '../controllers/admin.controller';
-router.get('/admin/sensitive-words', authMiddleware, getSensitiveWords);
-router.post('/admin/sensitive-words', authMiddleware, addSensitiveWord);
-router.put('/admin/sensitive-words/:id', authMiddleware, updateSensitiveWord);
-router.delete('/admin/sensitive-words/:id', authMiddleware, deleteSensitiveWord);
+router.get('/admin/sensitive-words', authMiddleware, adminMiddleware, getSensitiveWords);
+router.post('/admin/sensitive-words', authMiddleware, adminMiddleware, addSensitiveWord);
+router.put('/admin/sensitive-words/:id', authMiddleware, adminMiddleware, updateSensitiveWord);
+router.delete('/admin/sensitive-words/:id', authMiddleware, adminMiddleware, deleteSensitiveWord);
 
-// Admin dashboard + audit logs
-router.get('/admin/dashboard', authMiddleware, adminDashboard);
-router.get('/admin/audit', authMiddleware, getAdminLogs);
-router.post('/admin/batch-status', authMiddleware, batchUpdateStatus);
-router.get('/admin/activity-logs', authMiddleware, activityLogsHandler);
+// Admin dashboard + audit logs — admin only
+router.get('/admin/dashboard', authMiddleware, adminMiddleware, adminDashboard);
+router.get('/admin/audit', authMiddleware, adminMiddleware, getAdminLogs);
+router.post('/admin/batch-status', authMiddleware, adminMiddleware, batchUpdateStatus);
+router.get('/admin/activity-logs', authMiddleware, adminMiddleware, activityLogsHandler);
 
 // API v1 版本路由
 router.use('/v1', v1Routes);

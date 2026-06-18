@@ -1,0 +1,808 @@
+/* ============================================================
+   液态玻璃 · Liquid Glass Design System v2
+   iOS 26 / visionOS 风格 · 毛玻璃 + 动态光影
+   Background: #F2F2F7 (light) / #0A0A14 (dark)
+   Accent: #0066D6 | Native-level glass morphism
+   ============================================================ */
+
+/* ============================================================
+   Layer 1: Base Theme Tokens
+   ============================================================ */
+.liquid-glass {
+  color-scheme: dark;
+
+  /* ── App Background ── */
+  --color-bg-app: #0F172A;
+  --color-bg-page: #0F172A;
+
+  /* ── Surface hierarchy ── */
+  --lg-surface-0: rgba(255,255,255,0.02);
+  --lg-surface-1: rgba(255,255,255,0.04);
+  --lg-surface-2: rgba(255,255,255,0.06);
+  --lg-surface-3: rgba(255,255,255,0.08);
+  --lg-surface-4: rgba(255,255,255,0.10);
+  --lg-surface-hover: rgba(255,255,255,0.06);
+  --lg-surface-active: rgba(255,255,255,0.10);
+  --lg-surface-selected: rgba(0,102,214,0.12);
+  --lg-surface-disabled: rgba(255,255,255,0.03);
+  --lg-surface-input: rgba(255,255,255,0.07);
+  --lg-surface-input-focus: rgba(255,255,255,0.10);
+
+  /* ── Legacy surface aliases ── */
+  --color-bg-section: var(--lg-surface-1);
+  --color-bg-raised: var(--lg-surface-2);
+  --color-bg-overlay: var(--lg-surface-1);
+  --color-bg-hover: var(--lg-surface-hover);
+  --color-bg-active: var(--lg-surface-active);
+  --color-bg-selected: var(--lg-surface-selected);
+  --color-bg-disabled: var(--lg-surface-disabled);
+  --color-bg-input: var(--lg-surface-input);
+  --color-bg-input-focus: var(--lg-surface-input-focus);
+  --color-bg: var(--color-bg-app);
+  --color-bg-alt: var(--color-bg-page);
+  --color-card: var(--color-bg-section);
+  --color-card-hover: var(--color-bg-hover);
+
+  /* ── Text hierarchy ── */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: rgba(255,255,255,0.72);
+  --color-text-tertiary: rgba(255,255,255,0.50);
+  --color-text-quaternary: rgba(255,255,255,0.32);
+  --color-text-disabled: rgba(255,255,255,0.24);
+  --color-text-placeholder: rgba(255,255,255,0.40);
+  --color-text-inverse: #0F172A;
+  --color-text-link: #3399FF;
+  --color-text-link-hover: #0080FF;
+  --color-text-brand: #0066D6;
+  --color-text: var(--color-text-primary);
+
+  /* ── Border hierarchy ── */
+  --lg-border-subtle: rgba(255,255,255,0.05);
+  --lg-border-default: rgba(255,255,255,0.08);
+  --lg-border-strong: rgba(255,255,255,0.12);
+  --lg-border-hover: rgba(255,255,255,0.16);
+  --lg-border-active: rgba(255,255,255,0.22);
+  --lg-border-disabled: rgba(255,255,255,0.04);
+  --lg-border-divider: rgba(255,255,255,0.06);
+  --color-border-focus: #0066D6;
+
+  /* Legacy border aliases */
+  --color-border-default: var(--lg-border-default);
+  --color-border-light: var(--lg-border-subtle);
+  --color-border-strong: var(--lg-border-strong);
+  --color-border-hover: var(--lg-border-hover);
+  --color-border-disabled: var(--lg-border-disabled);
+  --color-border-divider: var(--lg-border-divider);
+  --color-border-input: var(--lg-border-default);
+  --color-border-input-hover: var(--lg-border-hover);
+  --color-border: var(--color-border-default);
+  --color-input-border: var(--color-border-input);
+  --color-input-bg: var(--color-bg-input);
+
+  /* ── Brand colors ── */
+  --color-brand-primary: #0066D6;
+  --color-brand-primary-light: #0080FF;
+  --color-brand-primary-dark: #004A99;
+  --color-brand-primary-bg: rgba(0, 102, 214, 0.15);
+  --color-brand-primary-text: #3399FF;
+  --color-brand-secondary: #6366f1;
+  --color-brand-accent: #FF9500;
+  --color-primary: #0066D6;
+  --color-primary-light: #0080FF;
+  --color-primary-dark: #004A99;
+  --color-accent: #FF9500;
+
+  /* ── Semantic colors ── */
+  --color-success: #34C759;
+  --color-success-light: rgba(52,199,89,0.15);
+  --color-success-text: #34C759;
+  --color-warning: #FF9500;
+  --color-warning-light: rgba(255,149,0,0.15);
+  --color-warning-text: #FF9500;
+  --color-danger: #FF3B30;
+  --color-danger-light: rgba(255,59,48,0.15);
+  --color-danger-text: #FF3B30;
+  --color-info: #0066D6;
+  --color-love: #FF3B30;
+
+  /* ── Glass morphism tokens ── */
+  --lg-glass-bg: rgba(15,23,42,0.85);
+  --lg-glass-bg-light: rgba(15,23,42,0.72);
+  --lg-glass-bg-heavy: rgba(15,23,42,0.94);
+  --lg-glass-border: rgba(255,255,255,0.10);
+  --lg-glass-border-light: rgba(255,255,255,0.06);
+  --lg-glass-border-strong: rgba(255,255,255,0.14);
+  --lg-glass-blur: blur(16px) saturate(180%);
+  --lg-glass-blur-light: blur(10px) saturate(160%);
+  --lg-glass-blur-heavy: blur(24px) saturate(200%);
+
+  /* Legacy glass aliases */
+  --color-glass-bg: var(--lg-glass-bg);
+  --color-glass-bg-strong: var(--lg-glass-bg-heavy);
+  --color-glass-border: var(--lg-glass-border);
+  --color-glass-blur: var(--lg-glass-blur);
+  --color-glass-blur-strong: var(--lg-glass-blur-heavy);
+  --color-glass: var(--color-glass-bg);
+  --color-glass-strong: var(--color-glass-bg-strong);
+
+  /* ── Shadow system ── */
+  --lg-shadow-xs: 0 1px 2px rgba(0,0,0,0.30);
+  --lg-shadow-sm: 0 2px 4px rgba(0,0,0,0.30);
+  --lg-shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+  --lg-shadow-lg: 0 8px 24px rgba(0,0,0,0.40);
+  --lg-shadow-xl: 0 12px 32px rgba(0,0,0,0.45);
+  --lg-shadow-2xl: 0 20px 48px rgba(0,0,0,0.50);
+  --lg-shadow-glow: 0 0 20px rgba(0,102,214,0.20);
+  --lg-shadow-glow-strong: 0 0 32px rgba(0,102,214,0.30);
+
+  /* Legacy shadow aliases */
+  --shadow-xs: var(--lg-shadow-xs);
+  --shadow-sm: var(--lg-shadow-sm);
+  --shadow-md: var(--lg-shadow-md);
+  --shadow-lg: var(--lg-shadow-lg);
+  --shadow-xl: var(--lg-shadow-xl);
+  --shadow-2xl: var(--lg-shadow-2xl);
+  --shadow-glow: var(--lg-shadow-glow);
+
+  /* ── Component tokens ── */
+  --btn-primary-bg: #0066D6;
+  --btn-primary-bg-hover: #0080FF;
+  --btn-primary-bg-active: #004A99;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-shadow: 0 1px 2px rgba(0,102,214,0.30);
+  --btn-primary-shadow-hover: 0 4px 12px rgba(0,102,214,0.45);
+
+  --card-bg: var(--lg-surface-1);
+  --card-bg-hover: var(--lg-surface-2);
+  --card-border: var(--lg-border-default);
+  --card-border-hover: rgba(0,102,214,0.30);
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-lg);
+
+  --skeleton-bg: var(--lg-surface-2);
+  --skeleton-shine: var(--lg-surface-3);
+
+  --tooltip-bg: rgba(255,255,255,0.94);
+  --tooltip-text: #0F172A;
+
+  /* ── Motion tokens ── */
+  --lg-duration-instant: 80ms;
+  --lg-duration-fast: 150ms;
+  --lg-duration-normal: 250ms;
+  --lg-duration-slow: 400ms;
+  --lg-ease-out: cubic-bezier(0.16,1,0.3,1);
+  --lg-ease-spring: cubic-bezier(0.175,0.885,0.32,1.275);
+  --lg-ease-emphasized: cubic-bezier(0.05,0.7,0.1,1.0);
+}
+
+/* Base reset */
+.liquid-glass body {
+  background-color: #0F172A;
+  color: #FFFFFF;
+}
+
+/* ============================================================
+   Layer 2: Glass Component Classes — Cards
+   ============================================================ */
+
+/* ── Standard Glass Card ── */
+.lg-card {
+  background: var(--lg-surface-1);
+  border: 1px solid var(--lg-border-default);
+  border-radius: 16px;
+  backdrop-filter: var(--lg-glass-blur-light);
+  -webkit-backdrop-filter: var(--lg-glass-blur-light);
+  transition: background var(--lg-duration-normal) var(--lg-ease-out),
+              border-color var(--lg-duration-normal) var(--lg-ease-out),
+              box-shadow var(--lg-duration-normal) var(--lg-ease-out),
+              transform var(--lg-duration-fast) var(--lg-ease-out);
+}
+
+/* ── Hoverable card ── */
+.lg-card-hover:hover {
+  background: var(--lg-surface-2);
+  border-color: var(--lg-border-strong);
+  box-shadow: var(--lg-shadow-md);
+  transform: translateY(-1px);
+}
+.lg-card-hover:active {
+  transform: scale(0.985);
+}
+
+/* ── Featured Card ── */
+.lg-card-featured {
+  background: linear-gradient(135deg, rgba(0,102,214,0.15), rgba(102,51,153,0.08));
+  border: 1px solid var(--lg-border-strong);
+  border-radius: 20px;
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  box-shadow: var(--lg-shadow-glow);
+}
+
+/* ── Elevated Card ── */
+.lg-card-elevated {
+  background: var(--lg-surface-2);
+  border: 1px solid var(--lg-border-strong);
+  border-radius: 18px;
+  backdrop-filter: var(--lg-glass-blur);
+  -webkit-backdrop-filter: var(--lg-glass-blur);
+  box-shadow: var(--lg-shadow-md);
+}
+
+/* ── Bordered inset group ── */
+.lg-card-group {
+  background: var(--lg-surface-1);
+  border: 1px solid var(--lg-border-default);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.lg-card-group > * + * {
+  border-top: 1px solid var(--lg-border-divider);
+}
+
+/* ============================================================
+   Layer 2: Glass Component Classes — Inputs
+   ============================================================ */
+
+.lg-input {
+  background: var(--lg-surface-input);
+  border: 1px solid var(--lg-border-default);
+  border-radius: 24px;
+  padding: 13px 18px;
+  color: #FFFFFF;
+  font-size: 15px;
+  font-family: inherit;
+  backdrop-filter: var(--lg-glass-blur-light);
+  -webkit-backdrop-filter: var(--lg-glass-blur-light);
+  outline: none;
+  transition: all var(--lg-duration-normal) var(--lg-ease-out);
+  width: 100%;
+  box-sizing: border-box;
+}
+.lg-input:focus {
+  border-color: rgba(0,102,214,0.45);
+  background: var(--lg-surface-input-focus);
+  box-shadow: 0 0 0 3px rgba(0,102,214,0.15);
+}
+.lg-input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* ── Search variant ── */
+.lg-input-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.lg-input-search:active {
+  transform: scale(0.985);
+}
+
+/* ============================================================
+   Layer 2: Glass Component Classes — Buttons
+   ============================================================ */
+
+.lg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 24px;
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  color: #FFFFFF;
+  background: var(--lg-surface-3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--lg-border-default);
+  transition: all var(--lg-duration-normal) var(--lg-ease-out);
+  user-select: none;
+}
+.lg-btn:hover {
+  background: var(--lg-surface-4);
+  border-color: var(--lg-border-hover);
+}
+.lg-btn:active {
+  transform: scale(0.96);
+  background: var(--lg-surface-active);
+}
+
+/* ── Primary button ── */
+.lg-btn-primary {
+  background: #0066D6;
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: var(--btn-primary-shadow);
+}
+.lg-btn-primary:hover {
+  background: #0080FF;
+}
+.lg-btn-primary:active {
+  background: #004A99;
+  box-shadow: none;
+}
+
+/* ── Danger button ── */
+.lg-btn-danger {
+  background: var(--color-danger);
+  border-color: transparent;
+  color: #FFFFFF;
+}
+.lg-btn-danger:hover {
+  background: rgba(255,59,48,0.85);
+}
+
+/* ── Ghost button ── */
+.lg-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-primary);
+}
+.lg-btn-ghost:hover {
+  background: var(--lg-surface-hover);
+}
+
+/* ── Icon button ── */
+.lg-btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* ── Full width ── */
+.lg-btn-full {
+  width: 100%;
+}
+
+/* ── Small size ── */
+.lg-btn-sm {
+  padding: 10px 18px;
+  font-size: 13px;
+  border-radius: 20px;
+}
+
+/* ============================================================
+   Layer 2: Glass Component Classes — Chips & Tabs
+   ============================================================ */
+
+.lg-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 16px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: none;
+  transition: all var(--lg-duration-fast) var(--lg-ease-out);
+  white-space: nowrap;
+  user-select: none;
+}
+.lg-chip-active {
+  background: rgba(0, 102, 214, 0.2);
+  color: #0066D6;
+  border: 1px solid rgba(0, 102, 214, 0.3);
+  box-shadow: 0 1px 4px rgba(0,102,214,0.15);
+}
+.lg-chip-inactive {
+  background: var(--lg-surface-2);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--lg-border-default);
+}
+.lg-chip-inactive:hover {
+  background: var(--lg-surface-3);
+  border-color: var(--lg-border-hover);
+}
+
+.lg-tab-row {
+  display: flex;
+  gap: 8px;
+}
+.lg-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  transition: all var(--lg-duration-fast) var(--lg-ease-out);
+}
+.lg-tab-active {
+  background: rgba(0, 102, 214, 0.2);
+  color: #FFFFFF;
+}
+.lg-tab-inactive:hover {
+  color: var(--color-text-secondary);
+}
+.lg-tab-inactive {
+  color: #888888;
+}
+
+/* ── Pill Tab Bar (Bottom Navigation) ── */
+.lg-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 100;
+}
+.lg-tabbar-pill {
+  display: flex;
+  gap: 2px;
+  padding: 5px;
+  width: 100%;
+  max-width: 380px;
+  height: 60px;
+  background: rgba(15,23,42,0.88);
+  border: 1px solid var(--lg-glass-border);
+  border-radius: 36px;
+  backdrop-filter: var(--lg-glass-blur);
+  -webkit-backdrop-filter: var(--lg-glass-blur);
+  box-shadow: var(--lg-shadow-lg);
+}
+.lg-tabbar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  border-radius: 26px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  transition: all var(--lg-duration-normal) var(--lg-ease-emphasized);
+  user-select: none;
+}
+.lg-tabbar-item-active {
+  background: #0066D6;
+  box-shadow: 0 2px 8px rgba(0,102,214,0.4);
+}
+.lg-tabbar-item-inactive {
+  background: transparent;
+}
+.lg-tabbar-item-inactive:hover .lg-tabbar-label-inactive {
+  color: rgba(255,255,255,0.72);
+}
+.lg-tabbar-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lg-tabbar-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.lg-tabbar-label-active {
+  color: #FFFFFF;
+}
+.lg-tabbar-label-inactive {
+  color: rgba(255,255,255,0.50);
+}
+
+/* Badge on tab bar */
+.lg-tabbar-badge {
+  position: absolute;
+  top: -3px;
+  right: -12px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #FF3B30;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(255,59,48,0.4);
+}
+
+/* ============================================================
+   Layer 2: Glass Component Classes — Misc
+   ============================================================ */
+
+/* ── Scrollbar ── */
+.liquid-glass ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+}
+.liquid-glass ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.14);
+}
+.liquid-glass ::-webkit-scrollbar {
+  width: 4px;
+}
+.liquid-glass * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+
+/* ── Selection ── */
+.liquid-glass ::selection {
+  background: rgba(0,102,214,0.35);
+  color: #FFFFFF;
+}
+
+/* ── Skeleton loading ── */
+.lg-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--lg-surface-1) 0%,
+    var(--lg-surface-2) 40%,
+    var(--lg-surface-1) 80%
+  );
+  background-size: 200% 100%;
+  animation: lg-shimmer 1.8s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes lg-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Divider ── */
+.lg-divider {
+  height: 1px;
+  background: var(--lg-border-divider);
+  border: none;
+  margin: 0;
+}
+
+/* ── Glass sheet / modal backdrop ── */
+.lg-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 200;
+}
+
+/* ── Glass bottom sheet ── */
+.lg-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--lg-glass-bg-heavy);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border: 1px solid var(--lg-glass-border);
+  border-bottom: none;
+  border-radius: 24px 24px 0 0;
+  box-shadow: var(--lg-shadow-2xl);
+  z-index: 201;
+  padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+  max-width: 430px;
+  width: 100%;
+  margin: 0 auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ── Glass dialog / modal ── */
+.lg-dialog {
+  background: var(--lg-glass-bg-heavy);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border: 1px solid var(--lg-glass-border-strong);
+  border-radius: 24px;
+  box-shadow: var(--lg-shadow-2xl);
+  padding: 24px;
+  max-width: 380px;
+  width: calc(100% - 48px);
+}
+
+/* ── Glass header ── */
+.lg-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 54px;
+  padding: 0 20px;
+  background: rgba(15,23,42,0.82);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border-bottom: 1px solid var(--lg-border-subtle);
+}
+
+/* ── Glass toast / notification ── */
+.lg-toast {
+  background: rgba(30,35,55,0.94);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border: 1px solid var(--lg-glass-border);
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: var(--lg-shadow-lg);
+  font-size: 14px;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+/* ============================================================
+   Layer 2: Glass Component Classes — Product & Profile
+   ============================================================ */
+
+.lg-product-card {
+  background: var(--lg-surface-1);
+  border: 1px solid var(--lg-border-default);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: var(--lg-glass-blur-light);
+  -webkit-backdrop-filter: var(--lg-glass-blur-light);
+  transition: all var(--lg-duration-normal) var(--lg-ease-out);
+  cursor: pointer;
+}
+.lg-product-card:active { transform: scale(0.975); }
+
+.lg-product-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.lg-tag-sell { background: #34C759; }
+.lg-tag-buy { background: #FF3B30; }
+.lg-tag-rent { background: #0066D6; }
+
+.lg-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.lg-avatar-border {
+  border: 2px solid rgba(255,255,255,0.15);
+}
+
+.lg-profile-card {
+  background: linear-gradient(135deg, rgba(0,102,214,0.12), rgba(102,51,153,0.06));
+  border: 1px solid var(--lg-border-default);
+  border-radius: 20px;
+  padding: 20px;
+  backdrop-filter: var(--lg-glass-blur);
+  -webkit-backdrop-filter: var(--lg-glass-blur);
+}
+
+.lg-quick-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.lg-quick-entry:active { transform: scale(0.92); }
+
+.lg-quick-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.lg-quick-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Layer 3: Typography Utilities
+   ============================================================ */
+
+.lg-h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.5px;
+}
+.lg-h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.lg-h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.lg-body {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.lg-caption {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+.lg-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FF9500;
+}
+/* ── Glass header ── */
+.lg-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  height: 54px;
+  padding: 0 20px;
+  flex-shrink: 0;
+  background: rgba(15,23,42,0.82);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border-bottom: 1px solid var(--lg-border-subtle);
+}
+
+/* ── Sub-page header (with back button + centered title) ── */
+.lg-sub-header {
+  justify-content: flex-start;
+}
+
+/* ── Glass background depth layer ── */
+.lg-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0,102,214,0.08), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 120%, rgba(102,51,153,0.05), transparent 70%),
+    var(--color-bg-app);
+}
+
+/* ============================================================
+   Layer 3: Advanced Interaction Patterns & Utilities
+   ============================================================ */
+
+/* ── Glass tooltip ── */
+.lg-tooltip {
+  background: rgba(30, 35, 55, 0.96);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border: 1px solid var(--lg-glass-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #FFFFFF;
+  box-shadow: var(--lg-shadow-lg);
+  max-width: 240px;
+  line-height: 1.4;
+}

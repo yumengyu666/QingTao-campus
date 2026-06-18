@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { CAMPUS_MAP } from '@/utils/constants';
@@ -8,6 +9,7 @@ import { FiX, FiTrash2, FiChevronRight } from 'react-icons/fi';
 
 export default function ComparePage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const { items, removeItem, clearAll } = useCompareStore();
 
   if (items.length === 0) {
@@ -35,7 +37,7 @@ export default function ComparePage() {
                         src={item.images?.[0] || ''}
                         alt={item.title}
                         className="w-full h-32 object-cover rounded-lg mb-2 bg-gray-100"
-                        onClick={() => navigate(`/goods/${item.id}`)}
+                        onClick={() => nav(`/goods/${item.id}`)}
                       />
                       <button
                         onClick={() => removeItem(item.id)}
@@ -82,7 +84,7 @@ export default function ComparePage() {
                 <td className="p-3 text-gray-400">🔗 详情</td>
                 {items.map(item => (
                   <td key={item.id} className="p-3 text-center">
-                    <button onClick={() => navigate(`/goods/${item.id}`)}
+                    <button onClick={() => nav(`/goods/${item.id}`)}
                       className="text-indigo-500 text-xs flex items-center justify-center gap-1">
                       查看详情 <FiChevronRight className="text-[10px]" />
                     </button>

@@ -27,7 +27,14 @@ export async function getProfile(req: Request, res: Response, next: NextFunction
   try {
     const profile = await prisma.datingProfile.findUnique({ where: { userId: req.user!.userId } });
     if (!profile) return success(res, null, '尚未创建');
-    return success(res, profile);
+    
+    // 统计关注数与粉丝数
+    const [followingCount, followerCount] = await Promise.all([
+      prisma.datingFollow.count({ where: { followerId: profile.id } }),
+      prisma.datingFollow.count({ where: { followingId: profile.id } }),
+    ]);
+    
+    return success(res, { ...profile, followingCount, followerCount });
   } catch (err) { next(err); }
 }
 

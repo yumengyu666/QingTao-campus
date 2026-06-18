@@ -6,6 +6,19 @@ import { containsSensitive } from '../utils/sensitive';
 import { createNotification } from '../services/notification.service';
 import { logger } from '../utils/logger';
 
+// GET /api/users/leaderboard — 排行榜: 按信誉分排序，取前20
+export async function getLeaderboard(req: Request, res: Response, next: NextFunction) {
+  try {
+    const top = await prisma.user.findMany({
+      where: { status: 'active' },
+      orderBy: { points: 'desc' },
+      take: 20,
+      select: { id: true, nickname: true, avatarUrl: true, points: true, level: true },
+    });
+    return success(res, top);
+  } catch (err) { next(err); }
+}
+
 // GET /api/users/:id — 用户公开信息
 export async function getUserProfile(req: Request, res: Response, next: NextFunction) {
   try {
@@ -143,19 +156,45 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
 
     await prisma.user.update({ where: { id: userId }, data });
 
-    // L2 AI 异步审核资料修改
-    const bio = data['bio'];
-    if (bio && bio.trim()) {
+    // 昵称变更时异步同步历史数据（fire-and-forget）
+    if (data.nickname) {
+      const newNickname = data.nickname;
+      (async () => {
+        try {
+          // 目前 ChatMessage/Comment 等表通过 Prisma relation JOIN 获取 nickname，
+          // 不存在 denormalized 缓存列，改名会自动生效。
+          // 此处预留：如果未来添加了 senderNickname 等缓存字段，启用以下更新：
+          // await prisma.chatMessage.updateMany({ where: { senderId: userId }, data: { senderNickname: newNickname } });
+          // await prisma.goodsComment.updateMany({ where: { userId }, data: { userNickname: newNickname } });
+          // await prisma.postComment.updateMany({ where: { userId }, data: { userNickname: newNickname } });
+          // await prisma.lostFoundComment.updateMany({ where: { userId }, data: { userNickname: newNickname } });
+          logger.info(`User #${userId} nickname updated, history sync skipped (schema uses JOINs)`);
+        } catch {}
+      })().catch(() => {});
+    }
+
+    // L2 AI 异步审核资料修改（bio + 联系方式字段）
+    const auditFields = ['bio', 'nickname', 'wechat', 'qq'] as const;
+    const auditText = auditFields
+      .map(f => data[f])
+      .filter(Boolean)
+      .join(' ');
+    if (auditText.trim()) {
       import('../services/moderation.service').then(({ aiModerate }) => {
-        aiModerate(bio, { contentType: 'user_bio', userId }).then(result => {
+        aiModerate(auditText, { contentType: 'user_profile', userId }).then(result => {
           if (result === 'violation') {
-            logger.warn(`AI flagged user #${userId} bio, clearing`);
-            prisma.user.update({ where: { id: userId }, data: { bio: '' } }).catch(() => {});
+            logger.warn(`AI flagged user #${userId} profile, clearing sensitive fields`);
+            // 清空可能违规的字段
+            const clearData: Record<string, string> = {};
+            for (const f of auditFields) {
+              if (data[f]) clearData[f] = '';
+            }
+            prisma.user.update({ where: { id: userId }, data: clearData }).catch(() => {});
             createNotification({
               userId,
               type: 'review_result',
-              title: '个人简介被重置',
-              content: '您的个人简介经审核判定为违规，已被清空。如需修改请重新编辑。',
+              title: '个人资料被重置',
+              content: '您的个人资料经审核判定包含违规内容，相关字段已被清空。如需修改请重新编辑。',
             }).catch(() => {});
           }
         });

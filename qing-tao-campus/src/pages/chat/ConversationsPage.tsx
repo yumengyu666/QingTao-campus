@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -8,10 +9,11 @@ import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
 import toast from 'react-hot-toast';
-import { FiMessageCircle, FiSearch, FiUserPlus, FiX, FiSend } from 'react-icons/fi';
+import { FiMessageCircle, FiSearch, FiUserPlus, FiX, FiSend, FiZap } from 'react-icons/fi';
 
 export default function ConversationsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const token = useAuthStore((s) => s.token);
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +22,10 @@ export default function ConversationsPage() {
 
   const fetchConversations = useCallback(() => {
     if (!token) return;
+    setLoading(true);
     apiFetch('/api/messages/conversations')
       .then(r => r.json())
-      .then(json => { if (json.code === 200) setConversations(json.data?.list || json.data || []); })
+      .then(json => { if (json.code === 200) setConversations(json.data?.list || []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [token]);
@@ -34,9 +37,9 @@ export default function ConversationsPage() {
   );
 
   return (
-    <div className="h-dvh flex flex-col bg-[#ededed] dark:bg-[#111] md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)] md:rounded-xl md:overflow-hidden">
+    <div className="h-dvh flex flex-col bg-[var(--color-chat-bg)] md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)] md:rounded-xl md:overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 bg-[#ededed] dark:bg-[#1a1a1a] px-4 pt-2 pb-3 border-b border-black/5 dark:border-white/5">
+      <div className="flex-shrink-0 bg-[var(--color-chat-bg)] px-4 pt-2 pb-3 border-b border-black/5 dark:border-white/5">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-[17px] font-semibold text-gray-900 dark:text-gray-100">消息</h1>
           <button onClick={() => setShowAddFriend(true)}
@@ -60,6 +63,28 @@ export default function ConversationsPage() {
 
       {/* List */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* 小轻AI助手 — 固定在最顶部 */}
+        {!search && (
+          <button onClick={() => nav('/agent')}
+            className="w-full flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 hover:from-indigo-100/80 hover:to-purple-100/80 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 active:scale-[0.99] transition-all border-b border-black/[0.03] dark:border-white/[0.03] block"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-md shadow-indigo-500/20">
+              <FiZap className="text-white text-xl" />
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-[16px] font-semibold text-gray-900 dark:text-gray-100">小轻助手</span>
+              </div>
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                🤖 AI智能助手，随时解答你的问题
+              </p>
+            </div>
+            <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-medium">
+              在线
+            </div>
+          </button>
+        )}
+
         {loading ? (
           <div className="px-4 mt-2"><Skeleton.Conversation rows={6} /></div>
         ) : filtered.length === 0 ? (
@@ -68,7 +93,7 @@ export default function ConversationsPage() {
             description={search ? '换个关键词试试' : '去首页逛逛，联系卖家开启对话'}
             icon={<div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mb-1 shadow-sm"><FiMessageCircle className="text-3xl text-gray-300 dark:text-gray-600" /></div>}
             action={!search && (
-              <button onClick={() => navigate('/')} className="px-5 py-2.5 bg-[#07c160] text-white rounded-md text-sm font-medium active:scale-95 transition-all">
+              <button onClick={() => nav('/')} className="px-5 py-2.5 bg-[var(--color-chat-send-btn)] text-white rounded-md text-sm font-medium active:scale-95 transition-all">
                 去逛逛
               </button>
             )}
@@ -82,7 +107,7 @@ export default function ConversationsPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.02 }}
                   whileTap={{ scale: 0.99 }}
-                  onClick={() => navigate(`/messages/${c.userId}`)}
+                  onClick={() => nav(`/messages/${c.userId}`)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] active:bg-black/[0.04] dark:active:bg-white/[0.04] transition-colors border-b border-black/[0.03] dark:border-white/[0.03]"
                 >
                   <UserAvatar src={c.avatarUrl} nickname={c.nickname || c.username} size="lg" badge={c.unread} />
@@ -119,6 +144,7 @@ export default function ConversationsPage() {
 
 function AddFriendModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -149,12 +175,12 @@ function AddFriendModal({ onClose }: { onClose: () => void }) {
             placeholder="搜索用户名..."
             className="flex-1 px-4 py-2.5 rounded-md bg-gray-100 dark:bg-gray-700 text-sm outline-none text-gray-900 dark:text-gray-100" />
           <button type="button" onClick={handleSearch} disabled={searching}
-            className="px-4 py-2.5 bg-[#07c160] text-white rounded-md text-sm font-medium disabled:opacity-50">{searching ? '...' : '搜索'}</button>
+            className="px-4 py-2.5 bg-[var(--color-chat-send-btn)] text-white rounded-md text-sm font-medium disabled:opacity-50">{searching ? '...' : '搜索'}</button>
         </div>
         {results.length > 0 ? (
           <div className="space-y-1">
             {results.map((u: any) => (
-              <div key={u.id} onClick={() => { navigate(`/messages/${u.id}`); onClose(); }}
+              <div key={u.id} onClick={() => { nav(`/messages/${u.id}`); onClose(); }}
                 className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                 <div className="w-10 h-10 rounded-md bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm">{u.nickname?.[0] || u.username?.[0]}</div>
                 <div className="flex-1 min-w-0">

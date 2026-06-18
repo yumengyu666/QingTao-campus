@@ -32,31 +32,67 @@ export function Pagination({ page, total, pageSize = 20, onPageChange }: Props) 
     }
   };
 
+  // Shared glass-friendly button style
+  const btnBase =
+    'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors';
+  const navBtn = `${btnBase} border disabled:opacity-30 disabled:cursor-not-allowed`;
+
   return (
     <div className="flex flex-col items-center gap-2 py-4">
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 dark:border-[var(--color-border)] text-gray-500 dark:text-[var(--color-text-secondary)] hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className={navBtn}
+          style={{
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text-secondary)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-bg-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <FiChevronLeft className="text-sm" />
         </button>
 
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-gray-400">
+            <span
+              key={`dots-${i}`}
+              className="w-8 h-8 flex items-center justify-center text-xs"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
               ...
             </span>
           ) : (
             <button
               key={p}
               onClick={() => onPageChange(p as number)}
-              className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+              className={btnBase}
+              style={
                 page === p
-                  ? 'bg-indigo-500 text-white shadow-sm'
-                  : 'text-gray-500 dark:text-[var(--color-text-secondary)] hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+                  ? {
+                      background: 'var(--color-brand-primary)',
+                      color: '#ffffff',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                    }
+                  : {
+                      color: 'var(--color-text-secondary)',
+                    }
+              }
+              onMouseEnter={(e) => {
+                if (page !== p) {
+                  e.currentTarget.style.background = 'var(--color-bg-hover)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (page !== p) {
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
             >
               {p}
             </button>
@@ -66,15 +102,28 @@ export function Pagination({ page, total, pageSize = 20, onPageChange }: Props) 
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 dark:border-[var(--color-border)] text-gray-500 dark:text-[var(--color-text-secondary)] hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className={navBtn}
+          style={{
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text-secondary)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-bg-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <FiChevronRight className="text-sm" />
         </button>
       </div>
 
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-gray-400">
-          共 {total} 条 · {totalPages} 页
+        <span
+          className="text-xs"
+          style={{ color: 'var(--color-text-tertiary)' }}
+        >
+          共 {total} 条 · 第 {page} / {totalPages} 页
         </span>
         <input
           type="number"
@@ -84,12 +133,24 @@ export function Pagination({ page, total, pageSize = 20, onPageChange }: Props) 
           placeholder="跳转"
           min={1}
           max={totalPages}
-          className="w-12 px-2 py-0.5 text-xs text-center rounded border border-gray-200 dark:border-[var(--color-border)] bg-white dark:bg-[var(--color-card)] outline-none focus:border-indigo-400"
+          className="w-12 px-2 py-0.5 text-xs text-center rounded border outline-none transition-colors"
+          style={{
+            borderColor: 'var(--color-border)',
+            background: 'var(--color-card)',
+            color: 'var(--color-text-primary)',
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-border-focus)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-border)';
+          }}
         />
         <button
           onClick={handleJump}
           disabled={!jumpValue}
-          className="text-xs text-indigo-500 hover:text-indigo-600 disabled:opacity-30 font-medium"
+          className="text-xs font-medium disabled:opacity-30"
+          style={{ color: 'var(--color-brand-primary)' }}
         >
           GO
         </button>

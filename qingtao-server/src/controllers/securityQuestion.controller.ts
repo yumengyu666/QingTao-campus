@@ -1,10 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import { success, error } from '../utils/response';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { generatePasswordResetToken } from '../services/auth.service';
 
-function hashAnswer(answer: string): string {
-  return crypto.createHash('sha256').update(answer.trim().toLowerCase()).digest('hex');
+async function hashAnswer(answer: string): Promise<string> {
+  return bcrypt.hash(answer.trim().toLowerCase(), 10);
+}
+
+async function verifyAnswer(answer: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(answer.trim().toLowerCase(), hash);
 }
 
 /** GET /api/users/security-questions — 获取我的安全问题（不含答案） */
@@ -31,11 +37,11 @@ export async function setQuestions(req: Request, res: Response, next: NextFuncti
 
     const data = {
       question1: question1.trim(),
-      answer1: hashAnswer(answer1),
+      answer1: await hashAnswer(answer1),
       question2: question2?.trim() || '',
-      answer2: answer2?.trim() ? hashAnswer(answer2) : '',
+      answer2: answer2?.trim() ? await hashAnswer(answer2) : '',
       question3: question3?.trim() || '',
-      answer3: answer3?.trim() ? hashAnswer(answer3) : '',
+      answer3: answer3?.trim() ? await hashAnswer(answer3) : '',
     };
 
     await prisma.securityQuestion.upsert({
@@ -55,29 +61,30 @@ export async function verifyQuestions(req: Request, res: Response, next: NextFun
     if (!username?.trim()) return error(res, '请输入用户名');
 
     const user = await prisma.user.findUnique({ where: { username: username.trim() } });
-    if (!user) return error(res, '用户不存在');
+    if (!user) return error(res, '验证失败，请检查用户名和答案');
 
     const sq = await prisma.securityQuestion.findUnique({ where: { userId: user.id } });
-    if (!sq || !sq.question1) return error(res, '该用户未设置安全问题，请联系管理员');
+    if (!sq || !sq.question1) return error(res, '该账号未设置安全问题，无法自助找回密码');
 
     // 验证答案：至少答对2题即可通过
     let correct = 0;
-    if (answer1 && sq.answer1 === hashAnswer(answer1)) correct++;
-    if (answer2 && sq.answer2 === hashAnswer(answer2)) correct++;
-    if (answer3 && sq.answer3 === hashAnswer(answer3)) correct++;
+    if (answer1 && await verifyAnswer(answer1, sq.answer1)) correct++;
+    if (answer2 && await verifyAnswer(answer2, sq.answer2)) correct++;
+    if (answer3 && await verifyAnswer(answer3, sq.answer3)) correct++;
 
-    if (correct < 2) return error(res, '至少需要答对2个问题');
+    if (correct < 2) return error(res, '验证失败，请检查答案');
 
-    // 生成密码重置码（加密安全随机数）
-    const resetCode = String(crypto.randomInt(100000, 999999));
+    // 生成短期 JWT 重置令牌（不在响应中暴露明文重置码）
+    const resetToken = generatePasswordResetToken(user.id);
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
     await prisma.user.update({
       where: { id: user.id },
-      data: { resetCode, resetCodeExpiry: new Date(Date.now() + 10 * 60 * 1000) },
+      data: { resetCode: tokenHash, resetCodeExpiry: new Date(Date.now() + 10 * 60 * 1000) },
     });
 
     return success(res, {
-      resetCode,
-      message: '验证通过，重置码有效期10分钟',
+      resetToken,
+      message: '验证通过，请在10分钟内设置新密码',
     }, '验证通过');
   } catch (err) { next(err); }
 }
@@ -87,10 +94,10 @@ export async function getUserQuestions(req: Request, res: Response, next: NextFu
   try {
     const username = req.params.username as string;
     const user = await prisma.user.findUnique({ where: { username } });
-    if (!user) return error(res, '用户不存在', 404);
+    if (!user) return error(res, '无法找回密码，请确认用户名是否正确或已设置安全问题');
 
     const sq = await prisma.securityQuestion.findUnique({ where: { userId: user.id } });
-    if (!sq || !sq.question1) return error(res, '该用户未设置安全问题');
+    if (!sq || !sq.question1) return error(res, '无法找回密码，请确认用户名是否正确或已设置安全问题');
 
     return success(res, {
       question1: sq.question1,

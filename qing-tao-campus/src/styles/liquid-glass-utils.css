@@ -1,0 +1,445 @@
+
+
+/* ============================================================
+   Layer 3: Advanced Interaction Patterns & Utilities
+   ============================================================ */
+
+/* ── Glass tooltip ── */
+.lg-tooltip {
+  background: rgba(30, 35, 55, 0.96);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border: 1px solid var(--lg-glass-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #FFFFFF;
+  box-shadow: var(--lg-shadow-lg);
+  max-width: 240px;
+  line-height: 1.4;
+}
+
+/* ── Glass popover / dropdown menu ── */
+.lg-popover {
+  background: rgba(24, 30, 50, 0.94);
+  backdrop-filter: var(--lg-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
+  border: 1px solid var(--lg-glass-border);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: var(--lg-shadow-xl);
+  min-width: 160px;
+  overflow: hidden;
+}
+.lg-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: background var(--lg-duration-fast) var(--lg-ease-out);
+}
+.lg-popover-item:hover {
+  background: var(--lg-surface-hover);
+}
+.lg-popover-item:active {
+  background: var(--lg-surface-active);
+  transform: scale(0.98);
+}
+.lg-popover-item-danger {
+  color: #FF3B30;
+}
+.lg-popover-divider {
+  height: 1px;
+  background: var(--lg-border-divider);
+  margin: 6px 8px;
+}
+
+/* ── Glass focus ring (animated glow) ── */
+.lg-focus-ring {
+  outline: none;
+  transition: box-shadow var(--lg-duration-normal) var(--lg-ease-out);
+}
+.lg-focus-ring:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 102, 214, 0.35);
+}
+
+/* ── Glass progress bar ── */
+.lg-progress {
+  height: 6px;
+  background: var(--lg-surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.lg-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0066D6, #0080FF);
+  border-radius: 3px;
+  transition: width var(--lg-duration-slow) var(--lg-ease-out);
+}
+.lg-progress-bar-indeterminate {
+  width: 40%;
+  animation: lg-progress-indeterminate 1.6s ease-in-out infinite;
+}
+@keyframes lg-progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* ── Glass pressable surface ── */
+.lg-pressable {
+  cursor: pointer;
+  user-select: none;
+  transition: transform var(--lg-duration-fast) var(--lg-ease-out),
+              background var(--lg-duration-fast) var(--lg-ease-out);
+}
+.lg-pressable:active {
+  transform: scale(0.97);
+  background: var(--lg-surface-active);
+}
+
+/* ── Glass select / dropdown ── */
+.lg-select {
+  appearance: none;
+  background: var(--lg-surface-input);
+  border: 1px solid var(--lg-border-default);
+  border-radius: 24px;
+  padding: 13px 40px 13px 18px;
+  color: #FFFFFF;
+  font-size: 15px;
+  font-family: inherit;
+  backdrop-filter: var(--lg-glass-blur-light);
+  -webkit-backdrop-filter: var(--lg-glass-blur-light);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--lg-duration-normal) var(--lg-ease-out);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+.lg-select:focus {
+  border-color: rgba(0, 102, 214, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 102, 214, 0.15);
+}
+
+/* ── Glass toggle switch ── */
+.lg-toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--lg-surface-3);
+  border: 1px solid var(--lg-border-default);
+  cursor: pointer;
+  transition: all var(--lg-duration-normal) var(--lg-ease-out);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.lg-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--lg-duration-normal) var(--lg-ease-spring);
+}
+.lg-toggle-on {
+  background: #0066D6;
+  border-color: #0066D6;
+}
+.lg-toggle-on::after {
+  transform: translateX(20px);
+}
+
+/* ── Glass notification badge ── */
+.lg-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: #FF3B30;
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+}
+.lg-badge-dot {
+  min-width: 8px;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* ── Glass checkbox ── */
+.lg-checkbox {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--lg-border-strong);
+  background: var(--lg-surface-input);
+  cursor: pointer;
+  transition: all var(--lg-duration-fast) var(--lg-ease-out);
+  flex-shrink: 0;
+  position: relative;
+}
+.lg-checkbox:checked {
+  background: #0066D6;
+  border-color: #0066D6;
+}
+.lg-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 5px;
+  height: 9px;
+  border: solid #FFFFFF;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.lg-checkbox:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 102, 214, 0.25);
+}
+
+/* ── Glass radio ── */
+.lg-radio {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--lg-border-strong);
+  background: var(--lg-surface-input);
+  cursor: pointer;
+  transition: all var(--lg-duration-fast) var(--lg-ease-out);
+  flex-shrink: 0;
+  position: relative;
+}
+.lg-radio:checked {
+  border-color: #0066D6;
+}
+.lg-radio:checked::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0066D6;
+}
+.lg-radio:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 102, 214, 0.25);
+}
+
+/* ── Glass hover glow (for interactive cards) ── */
+.lg-hover-glow {
+  transition: box-shadow var(--lg-duration-normal) var(--lg-ease-out),
+              border-color var(--lg-duration-normal) var(--lg-ease-out);
+}
+.lg-hover-glow:hover {
+  border-color: rgba(0, 102, 214, 0.25);
+  box-shadow: 0 0 24px rgba(0, 102, 214, 0.12);
+}
+
+/* ── Glass avatar group ── */
+.lg-avatar-group {
+  display: flex;
+  align-items: center;
+}
+.lg-avatar-group > * + * {
+  margin-left: -8px;
+}
+.lg-avatar-ring {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--lg-glass-bg);
+  object-fit: cover;
+  background: var(--lg-surface-2);
+}
+
+/* ── Glass empty state ── */
+.lg-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 16px;
+}
+.lg-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--lg-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--color-text-tertiary);
+}
+.lg-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.lg-empty-desc {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  max-width: 240px;
+  line-height: 1.5;
+}
+
+/* ── Glass list item ── */
+.lg-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background var(--lg-duration-fast) var(--lg-ease-out);
+  font-family: inherit;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+.lg-list-item:hover {
+  background: var(--lg-surface-hover);
+}
+.lg-list-item:active {
+  background: var(--lg-surface-active);
+}
+.lg-list-item + .lg-list-item {
+  border-top: 1px solid var(--lg-border-divider);
+}
+
+/* ── Glass key / kbd ── */
+.lg-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--lg-surface-2);
+  border: 1px solid var(--lg-border-strong);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+}
+
+/* ── Glass segmented control ── */
+.lg-segmented {
+  display: inline-flex;
+  background: var(--lg-surface-2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 1px;
+}
+.lg-segmented-item {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  transition: all var(--lg-duration-fast) var(--lg-ease-out);
+  white-space: nowrap;
+}
+.lg-segmented-item-active {
+  background: #FFFFFF;
+  color: #0F172A;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Glass swipe action ── */
+.lg-swipe-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFFFFF;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+.lg-swipe-action-danger {
+  background: #FF3B30;
+}
+.lg-swipe-action-safe {
+  background: #34C759;
+}
+.lg-swipe-action-info {
+  background: #0066D6;
+}
+
+/* ── Glass shimmer text placeholder ── */
+.lg-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--lg-surface-1) 0%,
+    var(--lg-surface-3) 40%,
+    var(--lg-surface-1) 80%
+  );
+  background-size: 200% 100%;
+  animation: lg-shimmer 1.8s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+  user-select: none;
+}
+
+/* ── Magnetic surface (subtle hover follow) ── */
+.lg-magnetic {
+  transition: transform var(--lg-duration-fast) var(--lg-ease-out);
+}
+.lg-magnetic:hover {
+  transform: translateY(-2px);
+}
+.lg-magnetic:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ── Glass scrollbar (thin, semi-transparent) ── */
+.lg-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.lg-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.lg-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--lg-surface-3);
+  border-radius: 2px;
+}
+.lg-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--lg-surface-4);
+}

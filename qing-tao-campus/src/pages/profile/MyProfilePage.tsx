@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { UserAvatar } from '@/components/common/UserAvatar';
@@ -9,7 +10,7 @@ import { apiFetch } from '@/utils/api';
 import {
   FiBox, FiFileText, FiHeart, FiUsers, FiUserPlus,
   FiClock, FiSettings, FiLogOut, FiChevronRight,
-  FiMail, FiCopy, FiCheck, FiBell, FiShield, FiAlertTriangle, FiX, FiShoppingBag,
+  FiMail, FiBell, FiShield, FiAlertTriangle, FiX, FiShoppingBag,
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -24,9 +25,9 @@ function CountBadge({ count }: { count: number }) {
 
 export default function MyProfilePage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const { user, logout } = useAuthStore();
   const unreadCount = useUnreadStore((s) => s.count);
-  const [copied, setCopied] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [stats, setStats] = useState({ followCount: 0, fansCount: 0, goodsCount: 0, postsCount: 0, favoritesCount: 0, reputationLabel: '', completedTrades: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
@@ -54,8 +55,7 @@ export default function MyProfilePage() {
           setStats((prev) => ({ ...prev, favoritesCount: favJson.data?.total || 0 }));
         }
       })
-      .catch(() => {})
-      .finally(() => setStatsLoading(false));
+      .catch(() => { /* 统计数据加载失败：非关键功能，静默降级 */ })
   }, [user?.id]);
 
   const changelog = [
@@ -89,7 +89,7 @@ export default function MyProfilePage() {
       ],
     },
     {
-      version: 'v2.4.0',
+      version: 'v2.2.0',
       date: '2026-05-31',
       items: [
         '新增求购功能，可在发布页选择"求购"',
@@ -101,7 +101,7 @@ export default function MyProfilePage() {
       ],
     },
     {
-      version: 'v2.3.0',
+      version: 'v2.1.0',
       date: '2026-05-30',
       items: [
         '用户主页上线（查看他人商品/帖子/联系方式）',
@@ -177,7 +177,7 @@ export default function MyProfilePage() {
             )}
             <div className="flex gap-4 mt-2.5 text-sm">
               <button
-                onClick={() => navigate('/profile/following')}
+                onClick={() => nav('/profile/following')}
                 className="hover:text-indigo-500 transition-colors"
               >
                 <b className="text-indigo-600">
@@ -186,7 +186,7 @@ export default function MyProfilePage() {
                 <span className="text-gray-400">关注</span>
               </button>
               <button
-                onClick={() => navigate('/profile/followers')}
+                onClick={() => nav('/profile/followers')}
                 className="hover:text-indigo-500 transition-colors"
               >
                 <b className="text-indigo-600">
@@ -198,7 +198,7 @@ export default function MyProfilePage() {
           </div>
         </div>
         <button
-          onClick={() => navigate('/profile/edit')}
+          onClick={() => nav('/profile/edit')}
           className="mt-4 w-full py-2.5 border border-indigo-200 dark:border-indigo-800 text-indigo-500 rounded-xl text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 active:scale-[0.98] transition-all"
         >
           编辑资料
@@ -214,7 +214,7 @@ export default function MyProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 * i }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(path)}
+            onClick={() => nav(path)}
             className="flex flex-col items-center gap-2 py-4 bg-white dark:bg-[var(--color-card)] rounded-xl shadow-sm active:scale-95 transition-all relative hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)]"
           >
             <div className="relative">
@@ -233,7 +233,7 @@ export default function MyProfilePage() {
       {/* Settings */}
       <div className="mx-4 mt-3 bg-white dark:bg-[var(--color-card)] rounded-2xl overflow-hidden shadow-sm">
         <button
-          onClick={() => navigate('/profile/password')}
+          onClick={() => nav('/profile/password')}
           className="w-full flex items-center justify-between px-5 py-3.5 border-b border-gray-50 dark:border-[var(--color-border)] hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)] transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -243,7 +243,7 @@ export default function MyProfilePage() {
           <FiChevronRight className="text-gray-300" />
         </button>
         <button
-          onClick={() => navigate('/profile/security')}
+          onClick={() => nav('/profile/security')}
           className="w-full flex items-center justify-between px-5 py-3.5 border-b border-gray-50 dark:border-[var(--color-border)] hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)] transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -254,7 +254,7 @@ export default function MyProfilePage() {
           <FiChevronRight className="text-gray-300" />
         </button>
         <button
-          onClick={() => navigate('/profile/notifications')}
+          onClick={() => nav('/profile/notifications')}
           className="w-full flex items-center justify-between px-5 py-3.5 border-b border-gray-50 dark:border-[var(--color-border)] hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)] transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -267,7 +267,7 @@ export default function MyProfilePage() {
           </div>
         </button>
         <button
-          onClick={() => navigate('/profile/blacklist')}
+          onClick={() => nav('/profile/blacklist')}
           className="w-full flex items-center justify-between px-5 py-3.5 border-b border-gray-50 dark:border-[var(--color-border)] hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)] transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -282,7 +282,7 @@ export default function MyProfilePage() {
               apiFetch('/api/users/me', { method: 'DELETE' })
                 .then(r => r.json())
                 .then(j => { if (j.code === 200) { useAuthStore.getState().logout(); } })
-                .catch(() => {});
+                .catch(() => toast.error('注销失败，请稍后重试'));
             }
           }}
           className="w-full flex items-center justify-between px-5 py-3.5 border-b border-gray-50 dark:border-[var(--color-border)] hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
@@ -312,24 +312,10 @@ export default function MyProfilePage() {
         </div>
         <div className="space-y-2 text-sm text-gray-500 dark:text-[var(--color-text-secondary)]">
           <p>开发者：计算机学院学生</p>
-          <div className="flex items-center justify-between">
-            <span>邮箱：2306524741@qq.com</span>
-            <button
-              onClick={async () => {
-                await navigator.clipboard.writeText('2306524741@qq.com');
-                setCopied(true);
-                toast.success('邮箱已复制');
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              className="flex items-center gap-1 text-xs text-indigo-500 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
-            >
-              {copied ? <FiCheck /> : <FiCopy />} 复制
-            </button>
-          </div>
           <p className="text-xs text-gray-300 dark:text-gray-500 leading-relaxed mt-3">
             轻淘是专为郑州轻工业大学打造的校园二手交易平台。
             覆盖科学校区和东风校区，所有发布内容均经过审核。
-            如果使用中遇到问题或有建议，欢迎邮件联系~
+            如果使用中遇到问题或有建议，欢迎通过平台反馈功能联系我们~
           </p>
         </div>
       </div>

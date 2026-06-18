@@ -1,33 +1,30 @@
 import rateLimit from 'express-rate-limit';
 import { env } from '../config/env';
 
-// 全局限制：每分钟 200 次，超出后等待窗口重置
+// 全局限制：每分钟 2000 次（开发环境放宽）
 export const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 500,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { code: 429, message: '请求过于频繁，请稍后再试', data: null },
-  skipFailedRequests: true,
 });
 
-// 登录限制：每IP每分钟N次（成功不计入限制）
+// 登录限制：每IP每分钟N次（全部计入，防止分布式攻击绕过）
 export const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: env.RATE_LOGIN_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true,
   message: { code: 429, message: '登录尝试过于频繁，请1分钟后再试', data: null },
 });
 
-// 注册限制：每分钟 5 次（成功不计入限制）
+// 注册限制：每分钟 5 次（全部计入）
 export const registerLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: env.RATE_REGISTER_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true,
   message: { code: 429, message: '注册过于频繁，请1分钟后再试', data: null },
 });
 
@@ -81,5 +78,34 @@ export const agentLimiter = rateLimit({
     if (req.user?.userId) return `agent:${req.user.userId}`;
     return `agent:ip:${req.ip}`;
   },
+});
+
+// 上传限制：每用户每分钟10次
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 429, message: '上传过于频繁，请稍后再试', data: null },
+  keyGenerator: (req) => String(req.user?.userId || req.ip),
+});
+
+// 搜索限制：每IP每分钟30次
+export const searchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 429, message: '搜索过于频繁，请稍后再试', data: null },
+});
+
+// 评论限制：每用户每分钟5次
+export const commentLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 429, message: '评论过于频繁，请稍后再试', data: null },
+  keyGenerator: (req) => String(req.user?.userId || req.ip),
 });
 

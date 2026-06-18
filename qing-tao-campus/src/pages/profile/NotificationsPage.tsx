@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/common/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import { useUnreadStore } from '@/stores/unreadStore';
-import { formatTime } from '@/utils/format';
+import { formatRelativeTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
 import toast from 'react-hot-toast';
 import { FiBell, FiTrash2, FiCheckCircle } from 'react-icons/fi';
@@ -31,6 +32,7 @@ function getNotificationLink(n: any): string | null {
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const token = useAuthStore((s) => s.token);
   const setUnreadCount = useUnreadStore((s) => s.setCount);
   const [notifs, setNotifs] = useState<any[]>([]);
@@ -183,7 +185,7 @@ export default function NotificationsPage() {
           {filteredNotifs.map((n) => {
             const link = getNotificationLink(n);
             return (
-              <div key={n.id} onClick={() => selectMode ? toggleSelect(n.id) : (markRead(n.id), link && navigate(link))}
+              <div key={n.id} onClick={() => selectMode ? toggleSelect(n.id) : (markRead(n.id), link && nav(link))}
               className={`px-4 py-3 flex items-center gap-3 ${selectMode ? 'cursor-pointer' : link ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)]' : ''} ${n.isRead ? 'bg-white dark:bg-[var(--color-card)]' : 'bg-indigo-50 dark:bg-indigo-900/20'}`}>
               {selectMode && (
                 <button onClick={() => toggleSelect(n.id)}
@@ -193,9 +195,9 @@ export default function NotificationsPage() {
               )}
               <span className="text-lg flex-shrink-0">{typeIcons[n.type] || '🔔'}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{n.title}</p>
-                {n.content && <p className="text-xs text-gray-400 mt-0.5">{n.content}</p>}
-                <p className="text-[10px] text-gray-400 mt-1">{formatTime(n.createdAt)}</p>
+                <p className="text-sm font-medium line-clamp-2">{n.title}</p>
+                {n.content && <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{n.content}</p>}
+                <p className="text-[10px] text-gray-400 mt-1">{formatRelativeTime(n.createdAt)}</p>
               </div>
               {!n.isRead && !selectMode && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
               {!selectMode && (

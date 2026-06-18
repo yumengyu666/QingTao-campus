@@ -1,0 +1,202 @@
+/* ============================================================
+   轻淘 · 可访问性增强 v1.0
+   QingTao Accessibility — WCAG 2.1 AA baseline
+   ============================================================ */
+
+/* ==================== Focus Styles ==================== */
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -1px;
+  border-color: var(--color-border-focus);
+  box-shadow: var(--input-shadow-focus);
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Remove focus for mouse users, keep for keyboard */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ==================== Skip Navigation Link ==================== */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-max);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-brand-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: top var(--duration-quick) var(--ease-out);
+  box-shadow: var(--shadow-lg);
+}
+.skip-link:focus {
+  top: var(--space-3);
+}
+
+/* ==================== Screen Reader Only ==================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ==================== Reduced Motion ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==================== High Contrast Mode ==================== */
+@media (forced-colors: active) {
+  .btn-primary,
+  .btn-danger {
+    border: 2px solid ButtonText;
+  }
+  .card {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* ==================== Color Contrast Utilities ==================== */
+/* These MUST pass WCAG AA: 4.5:1 for normal text, 3:1 for large text */
+.text-high-contrast {
+  color: var(--color-text-primary); /* #1f2937 on #fff = 14.5:1 ✓ */
+}
+.bg-high-contrast {
+  background: var(--color-bg-section); /* white */
+  color: var(--color-text-primary);
+}
+
+/* ==================== Touch Targets (WCAG 2.5.5) ==================== */
+.touch-target {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+}
+
+/* ==================== Link Underlines ==================== */
+/* All links should have underlines on hover/focus for accessibility */
+a.text-link:hover,
+a.text-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* ==================== Preferred Color Scheme ==================== */
+@media (prefers-color-scheme: dark) {
+  /* System dark mode is handled by .dark class on <html> */
+}
+
+/* ==================== Print Styles ==================== */
+@media print {
+  .skip-link,
+  .btn,
+  button,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+  }
+  a {
+    color: black;
+    text-decoration: underline;
+  }
+  .card {
+    border: 1px solid #ccc;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
+
+/* ==================== Orientation Lock Warning ==================== */
+/* For pages that work best in portrait */
+@media (orientation: landscape) and (max-height: 500px) {
+  .portrait-preferred {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    height: 100dvh;
+    text-align: center;
+    padding: var(--space-4);
+    color: var(--color-text-secondary);
+  }
+}
+
+/* ==================== Content Resize ==================== */
+/* Ensure content is readable when text is resized */
+@media (max-width: 480px) {
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+}
+
+/* ==================== ARIA States ==================== */
+[aria-disabled="true"] {
+  opacity: var(--opacity-disabled);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+[aria-expanded="true"] {
+  /* Indicates open state — can be styled per component */
+}
+
+[aria-current="page"] {
+  font-weight: var(--font-semibold);
+}
+
+[aria-selected="true"] {
+  background-color: var(--color-bg-selected);
+}
+
+/* ==================== Visibility ==================== */
+.hidden-visually {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+[hidden] {
+  display: none !important;
+}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion } from 'framer-motion';
 import { apiFetch } from '@/utils/api';
 import { formatTime } from '@/utils/format';
@@ -7,6 +8,7 @@ import { FiArrowLeft } from 'react-icons/fi';
 
 export default function DatingConversationsPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [convs, setConvs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,10 +21,10 @@ export default function DatingConversationsPage() {
   }, []);
 
   return (
-    <div className="h-dvh flex flex-col bg-[#ededed] dark:bg-[#111] md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)] md:rounded-xl md:overflow-hidden">
+    <div className="h-dvh flex flex-col bg-[var(--color-chat-bg)] md:-mx-6 md:-my-4 md:h-[calc(100dvh-2rem)] md:rounded-xl md:overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 bg-[#ededed] dark:bg-[#1a1a1a] px-4 h-12 flex items-center gap-3 border-b border-black/5 dark:border-white/5">
-        <button onClick={() => navigate('/dating')} className="p-1 -ml-1">
+      <div className="flex-shrink-0 bg-[var(--color-chat-bg)] px-4 h-12 flex items-center gap-3 border-b border-black/5 dark:border-white/5">
+        <button onClick={() => nav('/dating')} className="p-1 -ml-1">
           <FiArrowLeft className="text-xl text-gray-700 dark:text-gray-300" />
         </button>
         <h1 className="text-[17px] font-semibold text-gray-900 dark:text-gray-100">恋爱消息</h1>
@@ -59,7 +61,7 @@ export default function DatingConversationsPage() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 whileTap={{ scale: 0.99 }}
-                onClick={() => navigate(`/dating/chat/${c.userId}`)}
+                onClick={() => nav(`/dating/chat/${c.userId}`)}
                 className="flex items-center gap-3 px-4 py-2.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] active:bg-black/[0.04] dark:active:bg-white/[0.04] transition-colors border-b border-black/[0.03] dark:border-white/[0.03] cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-md bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0 overflow-hidden">
@@ -76,7 +78,7 @@ export default function DatingConversationsPage() {
                   </p>
                 </div>
                 {c.unread > 0 && (
-                  <span className="min-w-[18px] h-[18px] rounded-full bg-[#f43530] text-white text-[10px] font-bold flex items-center justify-center px-1 flex-shrink-0">
+                  <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--color-chat-badge)] text-white text-[10px] font-bold flex items-center justify-center px-1 flex-shrink-0">
                     {c.unread > 99 ? '99+' : c.unread}
                   </span>
                 )}

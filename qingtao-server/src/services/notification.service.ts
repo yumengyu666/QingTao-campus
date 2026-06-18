@@ -1,14 +1,40 @@
 import { prisma } from '../config/database';
 
+/**
+ * 通知类型分类:
+ * - goods_comment, post_comment, lostfound_comment — 评论通知
+ * - qa_answer, qa_best — 答疑通知
+ * - dating_request — 恋爱请求通知
+ * - chat_message — 私信通知
+ * - review_result — AI审核结果通知
+ * - goods_sold — 商品售出通知
+ * - announcement — 公告通知
+ * - report_result — 举报处理结果通知
+ * - follow, like — 社交互动通知
+ * - trade, barter, reservation — 交易通知
+ */
 export async function createNotification(params: {
   userId: number;
   type: string;
   title: string;
   content?: string;
   relatedId?: number;
+  relatedType?: string; // 资源类型标识，如 'goods','post','qa_answer','qa_post' 等
 }) {
-  // 去重：5分钟内同一用户+类型+关联ID不重复创建
-  if (params.relatedId) {
+  // 去重：5分钟内同一用户+类型+关联ID+资源类型不重复创建
+  if (params.relatedId && params.relatedType) {
+    const recent = await prisma.notification.findFirst({
+      where: {
+        userId: params.userId,
+        type: params.type,
+        relatedId: params.relatedId,
+        relatedType: params.relatedType,
+        createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+      },
+      select: { id: true },
+    });
+    if (recent) return recent;
+  } else if (params.relatedId) {
     const recent = await prisma.notification.findFirst({
       where: {
         userId: params.userId,
@@ -28,6 +54,7 @@ export async function createNotification(params: {
       title: params.title,
       content: params.content || '',
       relatedId: params.relatedId || null,
+      relatedType: params.relatedType || null,
     },
   });
 
@@ -37,6 +64,8 @@ export async function createNotification(params: {
     pushToUser(params.userId, 'notification', {
       type: params.type, title: params.title,
       content: params.content || '',
+      relatedId: params.relatedId,
+      relatedType: params.relatedType,
     });
   } catch {}
 
@@ -79,6 +108,7 @@ export async function broadcastAnnouncement(title: string, content: string, crea
           title,
           content: content || '',
           relatedId: announcement.id,
+          relatedType: 'announcement',
         })),
       });
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import { apiFetch } from '@/utils/api';
@@ -9,6 +10,7 @@ const CATEGORIES = ['教材教辅', '电子产品', '运动户外', '生活用�
 
 export default function PublishWantedPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [campus, setCampus] = useState('');
@@ -26,7 +28,7 @@ export default function PublishWantedPage() {
         body: JSON.stringify({ title: title.trim(), category, campus, budget: budget ? parseFloat(budget) : null, description, images }),
       });
       const json = await res.json();
-      if (json.code === 201) { toast.success('发布成功'); navigate('/wanted'); }
+      if (json.code === 201) { toast.success('发布成功'); nav('/wanted'); }
       else toast.error(json.message);
     } catch { toast.error('网络错误'); }
     finally { setPublishing(false); }

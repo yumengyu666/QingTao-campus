@@ -2,6 +2,61 @@ import { storage } from './storage';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// ─── 类型化 API 响应 ───
+
+/** 服务端统一响应格式 */
+export interface APIResponse<T = unknown> {
+  code: number;
+  message?: string;
+  data: T;
+  total?: number;
+  page?: number;
+  pageSize?: number;
+}
+
+/** 分页响应 */
+export interface PaginatedResponse<T> extends APIResponse<T[]> {
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// ─── 类型化 API 请求 ───
+
+/** GET 请求（自动 JSON 解析 + 类型推导） */
+export async function apiGet<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
+  const res = await apiFetch(url, { ...options, method: 'GET' });
+  return res.json();
+}
+
+/** POST 请求（自动 JSON 解析 + 类型推导） */
+export async function apiPost<T>(url: string, body?: unknown, options?: RequestInit): Promise<APIResponse<T>> {
+  const res = await apiFetch(url, {
+    ...options,
+    method: 'POST',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.json();
+}
+
+/** PUT 请求（自动 JSON 解析 + 类型推导） */
+export async function apiPut<T>(url: string, body?: unknown, options?: RequestInit): Promise<APIResponse<T>> {
+  const res = await apiFetch(url, {
+    ...options,
+    method: 'PUT',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.json();
+}
+
+/** DELETE 请求（自动 JSON 解析 + 类型推导） */
+export async function apiDelete<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
+  const res = await apiFetch(url, { ...options, method: 'DELETE' });
+  return res.json();
+}
+
+// ─── 底层 fetch 封装 ───
+
 // 统一 fetch 封装：自动附加 Token + 401/封号处理 + GET 请求自动重试
 export async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
   const token = storage.getToken();
@@ -49,7 +104,9 @@ export async function apiFetch(url: string, options?: RequestInit): Promise<Resp
             return fetch(fullUrl, { ...options, headers });
           }
         }
-      } catch {}
+      } catch (refreshErr) {
+        if (import.meta.env.DEV) console.warn('[api] Token refresh failed:', refreshErr);
+      }
     }
     storage.removeToken();
     storage.removeUser();

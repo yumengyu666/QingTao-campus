@@ -10,7 +10,7 @@ export async function getCartList(req: Request, res: Response, next: NextFunctio
       include: {
         goods: {
           include: {
-            user: { select: { id: true, nickname: true, wechat: true, qq: true } },
+            user: { select: { id: true, nickname: true } },
           },
         },
       },

@@ -32,6 +32,7 @@ model User {
   lastActiveAt  DateTime?                          // 最后活跃时间（用于在线状态判断）
   points        Int       @default(0)              // 积分
   level         Int       @default(1)              // 等级 = floor(sqrt(points/10))
+  pushSubscription String?                         // 浏览器推送订阅 JSON
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -71,6 +72,12 @@ model User {
   tradeReviewsReceived TradeReview[]  @relation("ReviewTargetUser")
   tradeReviewsGiven    TradeReview[]  @relation("ReviewAuthor")
   auditLogs            AuditLog[]
+  callRecordsAsCaller  CallRecord[]       @relation("CallCaller")
+  callRecordsAsCallee  CallRecord[]       @relation("CallCallee")
+  stickerPacks         StickerPack[]
+  conversationSettings  ConversationSetting[]
+  shortVideos          ShortVideo[]
+  videoComments        VideoComment[]
 
   @@index([username])
   @@index([role, status])
@@ -209,7 +216,7 @@ model Favorite {
   @@unique([userId, goodsId])
 }
 
-// ==================== 帖子 ====================
+// ==================== 帖子/笔记 ====================
 
 model Post {
   id             Int       @id @default(autoincrement())
@@ -217,9 +224,21 @@ model Post {
   title          String
   content        String?
   images         String    @default("[]")          // JSON array
+  postType       String    @default("note")        // note | video — 笔记类型
+  videoUrl       String?                           // 视频笔记URL
+  videoCover     String?                           // 视频封面
+  videoDuration  Int?                              // 视频时长(秒)
+  location       String?                           // 位置/地点
+  coverIndex     Int       @default(0)             // 封面图索引
   status         String    @default("pending")     // pending | approved | rejected
   viewCount      Int       @default(0)
+  likeCount      Int       @default(0)             // 点赞数(冗余)
+  commentCount   Int       @default(0)             // 评论数(冗余)
+  shareCount     Int       @default(0)             // 分享数
+  saveCount      Int       @default(0)             // 收藏数
   isDeleted      Boolean   @default(false)
+  isPinned       Boolean   @default(false)         // 置顶(作者)
+  isFeatured     Boolean   @default(false)         // 精选推荐(管理员)
   reviewedBy     Int?
   reviewComment  String    @default("")
   createdAt      DateTime  @default(now())
@@ -228,8 +247,55 @@ model Post {
   user           User           @relation("PostUser", fields: [userId], references: [id], onDelete: Cascade)
   reviewer       User?          @relation("PostReviewer", fields: [reviewedBy], references: [id])
   comments       PostComment[]
+  likes          PostLike[]
+  saves          PostSave[]
+  tags           PostTag[]
 
   @@index([status, createdAt])
+  @@index([userId])
+  @@index([postType, status])
+  @@index([likeCount])
+}
+
+model PostLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model PostSave {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  postId       Int
+  collectionId Int?                               // 所属收藏夹(可选)
+  createdAt    DateTime @default(now())
+
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  collection   PostCollection? @relation(fields: [collectionId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([collectionId])
+}
+
+model PostCollection {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  isPublic  Boolean  @default(true)
+  coverUrl  String?
+  postCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  saves     PostSave[]
+
   @@index([userId])
 }
 
@@ -238,14 +304,20 @@ model PostComment {
   postId         Int
   userId         Int
   content        String
+  replyToId      Int?                           // 回复的评论ID(二级评论)
   status         String   @default("pending")
   reviewComment  String   @default("")
+  likeCount      Int      @default(0)
   createdAt      DateTime @default(now())
 
   post           Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  replyTo        PostComment?  @relation("CommentReply", fields: [replyToId], references: [id])
+  replies        PostComment[] @relation("CommentReply")
+
   @@index([postId, createdAt])
+  @@index([replyToId])
 }
 
 // ==================== 失物招领 ====================
@@ -299,10 +371,11 @@ model LostFoundComment {
 model Notification {
   id         Int       @id @default(autoincrement())
   userId     Int
-  type       String                            // review_result | new_follower | goods_sold | announcement
+  type       String                            // review_result | new_follower | goods_sold | announcement | chat_message | dating_request | qa_answer | qa_best | ...
   title      String
   content    String    @default("")
   relatedId  Int?
+  relatedType String?                          // goods | post | qa_post | qa_answer | dating_request | chat_message 等资源类型
   isRead     Boolean   @default(false)
   createdAt  DateTime  @default(now())
 
@@ -327,6 +400,7 @@ model Review {
   target      User      @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: Cascade)
 
   @@unique([goodsId, reviewerId])
+  @@index([targetId])
 }
 
 // ==================== 举报 ====================
@@ -345,6 +419,7 @@ model Report {
   handler     User?     @relation("ReportHandler", fields: [handledBy], references: [id])
 
   @@index([status, createdAt])
+  @@index([reporterId])
 }
 
 // ==================== 公告 ====================
@@ -397,15 +472,111 @@ model ChatMessage {
   senderId       Int
   receiverId     Int
   content        String
-  type           String   @default("text")       // text | image | emoji
+  type           String   @default("text")       // text | image | emoji | voice | video | file | location | card | system
   imageStatus    String?                         // pending | approved | rejected
   isRead         Boolean  @default(false)
+  isDelivered    Boolean  @default(false)
   readAt         DateTime?
   createdAt      DateTime @default(now())
+
+  // === 消息高级功能 ===
+  replyToId      Int?                           // 引用回复的消息ID
+  recalledAt     DateTime?                      // 撤回时间，null=未撤回
+
+  // === 语音消息 ===
+  voiceUrl       String?                        // 语音文件URL (.webm/.opus)
+  voiceDuration  Int?                           // 语音时长(秒)
+
+  // === 文件消息 ===
+  fileUrl        String?                        // 文件URL
+  fileName       String?                        // 文件名
+  fileSize       Int?                           // 文件大小(bytes)
+
+  // === 位置消息 ===
+  latitude       Float?                         // 纬度
+  longitude      Float?                         // 经度
+  locationName   String?                        // 位置名称/地址
+
+  // === 名片消息 ===
+  cardUserId     Int?                           // 名片指向的用户ID
+
   sender         User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   receiver       User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  // 自引用：消息回复链
+  replyTo        ChatMessage?  @relation("MessageReply", fields: [replyToId], references: [id])
+  repliedMessages ChatMessage[] @relation("MessageReply")
+
   @@index([senderId, receiverId, createdAt])
   @@index([receiverId, isRead])
+  @@index([replyToId])
+}
+
+// ==================== 会话设置 ====================
+
+model ConversationSetting {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  peerId    Int
+  isPinned  Boolean  @default(false)          // 置顶
+  isMuted   Boolean  @default(false)          // 免打扰
+  muteUntil DateTime?                         // 免打扰截止时间(null=永久)
+  bgImage   String?                           // 聊天背景图URL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, peerId])
+  @@index([userId])
+}
+
+// ==================== 通话记录 ====================
+
+model CallRecord {
+  id        Int      @id @default(autoincrement())
+  callerId  Int
+  calleeId  Int
+  callType  String   // audio | video
+  status    String   // missed | rejected | canceled | completed
+  duration  Int?     // 通话时长(秒)
+  startTime DateTime @default(now())
+  endTime   DateTime?
+
+  caller    User     @relation("CallCaller", fields: [callerId], references: [id], onDelete: Cascade)
+  callee    User     @relation("CallCallee", fields: [calleeId], references: [id], onDelete: Cascade)
+
+  @@index([callerId, calleeId])
+  @@index([calleeId])
+  @@index([startTime])
+}
+
+// ==================== 表情包 ====================
+
+model StickerPack {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  coverUrl  String   @default("")
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stickers  Sticker[]
+
+  @@index([userId])
+  @@index([isSystem])
+}
+
+model Sticker {
+  id        Int      @id @default(autoincrement())
+  packId    Int
+  url       String
+  sortOrder Int      @default(0)
+
+  pack      StickerPack @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  @@index([packId])
 }
 
 // ==================== 拉黑 ====================
@@ -558,6 +729,7 @@ model QaAnswer {
   post           QaPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([postId, likeCount])
+  @@index([userId])
 }
 
 model QaVote {
@@ -566,9 +738,8 @@ model QaVote {
   userId         Int
   createdAt      DateTime @default(now())
   @@unique([answerId, userId])
+  @@index([userId])
 }
-
-// ==================== 树洞 ====================
 
 model TreeHolePost {
   id             Int      @id @default(autoincrement())
@@ -577,10 +748,14 @@ model TreeHolePost {
   images         String   @default("[]")
   likeCount      Int      @default(0)
   commentCount   Int      @default(0)
+  status         String   @default("pending") // pending | approved | rejected
   isDeleted      Boolean  @default(false)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt @default(now())
   comments       TreeHoleComment[]
+  likes          TreeHoleLike[]
   @@index([createdAt])
+  @@index([status])
 }
 
 model TreeHoleComment {
@@ -592,6 +767,17 @@ model TreeHoleComment {
   createdAt      DateTime @default(now())
   post           TreeHolePost @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@index([postId, createdAt])
+}
+
+// 树洞点赞记录（持久化防刷，#38）
+model TreeHoleLike {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  clientIp  String                                  // IP 地址（游客身份标识）
+  createdAt DateTime @default(now())
+  post      TreeHolePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([clientIp, postId])                      // 同一IP对同一帖子只能点赞一次
+  @@index([postId])
 }
 
 // ==================== 考试资料 ====================
@@ -781,6 +967,8 @@ model WantedItem {
   @@index([campus])
   @@index([userId])
   @@index([createdAt])
+  @@index([category, campus])
+  @@index([campus, createdAt])
 }
 
 // ==================== 每日签到 ====================
@@ -812,24 +1000,50 @@ model BarterProposal {
   @@unique([fromGoodsId, toGoodsId])
   @@index([fromUserId, status])
   @@index([toUserId, status])
+  @@index([status, createdAt])
+  @@index([fromGoodsId])
+  @@index([toGoodsId])
 }
 
 // ==================== 话题标签 ====================
 
 model TopicTag {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  color     String    @default("#6366f1")
-  postCount Int       @default(0)
-  createdAt DateTime  @default(now())
+  id            Int       @id @default(autoincrement())
+  name          String    @unique
+  color         String    @default("#6366f1")
+  coverUrl      String?                           // 话题封面
+  description   String?                           // 话题描述
+  postCount     Int       @default(0)
+  followerCount Int       @default(0)
+  isOfficial    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  posts         PostTag[]
+  follows       TagFollow[]
 
   @@index([postCount])
+  @@index([followerCount])
+}
+
+model TagFollow {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tagId     Int
+  createdAt DateTime @default(now())
+
+  tag       TopicTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tagId])
+  @@index([tagId])
 }
 
 model PostTag {
   id     Int @id @default(autoincrement())
   postId Int
   tagId  Int
+
+  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    TopicTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([postId, tagId])
   @@index([tagId])
@@ -859,15 +1073,33 @@ model UserBadge {
 // ==================== Agent 对话记忆 ====================
 
 model AgentConversation {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  role      String
-  content   String
-  createdAt DateTime  @default(now())
-  expiresAt DateTime
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  role           String
+  content        String
+  conversationId String?
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
 
   @@index([userId, createdAt])
   @@index([expiresAt])
+  @@index([userId, conversationId])
+}
+
+// ==================== Agent 反馈 ====================
+
+model AgentFeedback {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  rating         String    // 'up' | 'down'
+  comment        String?
+  query          String?   // 用户当时的问题（截取前200字）
+  aiReply        String?   // AI当时的回复（截取前200字）
+  conversationId String?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([rating])
 }
 
 // ==================== 用户行为日志 ====================
@@ -885,4 +1117,93 @@ model ActivityLog {
   @@index([userId, createdAt])
   @@index([action])
   @@index([createdAt])
+}
+
+// ==================== 短视频(抖音模式) ====================
+
+model ShortVideo {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  videoUrl      String                            // 视频文件URL
+  coverUrl      String                            // 封面图URL
+  description   String?                           // 视频描述
+  duration      Int                               // 视频时长(秒)
+  width         Int       @default(1080)
+  height        Int       @default(1920)
+  size          Int?                              // 文件大小(bytes)
+
+  musicTitle    String?                           // 背景音乐名称
+  musicArtist   String?                           // 音乐作者
+  musicUrl      String?                           // 音乐URL(可选)
+
+  viewCount     Int       @default(0)
+  likeCount     Int       @default(0)
+  commentCount  Int       @default(0)
+  shareCount    Int       @default(0)
+  saveCount     Int       @default(0)
+
+  status        String    @default("pending")     // pending | approved | rejected
+  isFeatured    Boolean   @default(false)         // 精选视频
+  isDeleted     Boolean   @default(false)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes         VideoLike[]
+  comments      VideoComment[]
+  tags          VideoTag[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([viewCount])
+}
+
+model VideoLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  videoId   Int
+  createdAt DateTime @default(now())
+
+  video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+}
+
+model VideoComment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  videoId   Int
+  content   String
+  status    String   @default("pending")
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     ShortVideo  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId, createdAt])
+}
+
+model VideoHistory {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  videoId       Int
+  watchDuration Int      @default(0)   // 观看时长(秒)
+  watchedAt     DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([userId, watchedAt])
+}
+
+model VideoTag {
+  id      Int    @id @default(autoincrement())
+  videoId Int
+  tagName String
+
+  video   ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([tagName])
+  @@index([videoId])
 }

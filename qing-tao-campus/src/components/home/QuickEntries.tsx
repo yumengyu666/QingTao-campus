@@ -1,27 +1,60 @@
-import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiRefreshCw, FiCalendar } from 'react-icons/fi';
+import { motion } from "framer-motion";
+import { useAppNavigate } from "@/hooks/useAppNavigate";
 
 const entries = [
-  { label: '求购专区', icon: '🔍', path: '/wanted', color: 'from-amber-400 to-orange-400', desc: '发布求购' },
-  { label: '预约管理', icon: '📅', path: '/reservations', color: 'from-blue-400 to-cyan-400', desc: '预约看货' },
-  { label: '物品交换', icon: '🔄', path: '/barter', color: 'from-green-400 to-emerald-400', desc: '以物易物' },
-  { label: '每日签到', icon: '🎁', path: '/', color: 'from-pink-400 to-rose-400', desc: '连续签到' },
+  { label: "求购专区", icon: "🔍", path: "/wanted", color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
+  { label: "预约管理", icon: "📅", path: "/reservations", color: "#3B82F6", bg: "rgba(59,130,246,0.10)" },
+  { label: "物品交换", icon: "🔄", path: "/barter", color: "#10B981", bg: "rgba(16,185,129,0.10)" },
+  { label: "交友", icon: "💕", path: "/dating", color: "#EC4899", bg: "rgba(236,72,153,0.10)" },
+  { label: "答疑", icon: "❓", path: "/qa", color: "#6366F1", bg: "rgba(99,102,241,0.10)" },
+  { label: "AI助手", icon: "🤖", path: "/agent", color: "#8B5CF6", bg: "rgba(139,92,246,0.10)" },
 ];
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 16, scale: 0.96 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
 export function QuickEntries() {
-  const navigate = useNavigate();
+  const nav = useAppNavigate();
 
   return (
-    <div className="grid grid-cols-4 gap-2 px-4 py-3">
-      {entries.map(e => (
-        <button key={e.label} onClick={() => navigate(e.path)}
-          className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-[var(--color-card-hover)] transition-colors">
-          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${e.color} flex items-center justify-center text-xl shadow-md`}>
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="grid grid-cols-3 gap-2.5 px-4 py-3"
+    >
+      {entries.map((e) => (
+        <motion.button
+          key={e.label}
+          variants={item}
+          whileTap={{ scale: 0.90 }}
+          onClick={() => nav(e.path)}
+          className="lg-quick-entry"
+        >
+          <div
+            className="lg-quick-icon shadow-sm"
+            style={{ background: e.bg }}
+          >
             {e.icon}
           </div>
-          <span className="text-xs font-medium text-gray-700 dark:text-[var(--color-text)]">{e.label}</span>
-        </button>
+          <span className="lg-quick-label">{e.label}</span>
+        </motion.button>
       ))}
-    </div>
+    </motion.div>
   );
 }

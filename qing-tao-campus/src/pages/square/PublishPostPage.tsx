@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import type { ImageItem } from '@/components/common/ImageUploader';
@@ -10,6 +11,7 @@ import toast from 'react-hot-toast';
 
 export default function PublishPostPage() {
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
@@ -62,7 +64,7 @@ export default function PublishPostPage() {
       if (json.code === 200 || json.code === 201) {
         clearDraft();
         toast.success(json.message || (isEdit ? '修改成功' : '发布成功'));
-        navigate('/square');
+        nav('/square');
       } else {
         toast.error(json.message || '提交失败');
       }
