@@ -1,32 +1,32 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
-.vite/
-.env
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
-logs/
-uploads/
-.claude/
-
-# Sensitive credentials
-ADMIN_CREDENTIALS.md
-
-# Auto-generated test/debug files
-*_test.ts
-*_seed.ts
-*_routes.ts
-debug_*.ts
-test_*.ts
-
-# Auto-generated reports/docs
-TEST_REPORT*.md
-.workbuddy/
-
-# Archive files
 *.tar.gz
-populate-prod.js
+*.zip
 
-# Audit logs
+# Logs
+logs/
 audit-logs/
+
+# Uploads
+uploads/
+
+# Build artifacts
+houduangoujian/
+qianduan构建/
+新建文件夹/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local

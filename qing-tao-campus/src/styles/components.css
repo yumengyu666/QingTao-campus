@@ -271,3 +271,50 @@
 .skeleton-avatar { border-radius: var(--radius-full); }
 .skeleton-image { aspect-ratio: 1; }
 .skeleton-card { height: 180px; }
+
+
+
+/* ============================================================ */
+/* Mobile Touch Feedback — global active:scale for all tappables */
+/* ============================================================ */
+
+/* Universal tap feedback: applies to all clickable elements */
+button:active, 
+[role="button"]:active,
+a:active,
+.btn:active,
+.card-interactive:active,
+.cursor-pointer:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}
+
+/* Prevent scale on disabled elements */
+button:disabled:active,
+[aria-disabled="true"]:active {
+  transform: none;
+}
+
+/* Ripple effect for primary buttons */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 10%, transparent 10%);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.btn-primary:active::after {
+  opacity: 1;
+  transform: scale(4);
+  transition: opacity 0s, transform 0.4s;
+}
+
+/* Smooth press on list items */
+li:active,
+[class*="hover:bg"]:active {
+  transform: scale(0.985);
+  transition: transform 0.1s ease-out;
+  background-color: var(--color-bg-active, rgba(0,0,0,0.05));
+}

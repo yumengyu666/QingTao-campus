@@ -94,7 +94,7 @@ export default function AdminDashboard() {
       <div className="space-y-2 mb-4">
         {banners.map((b) => (
           <div key={b.id} className="flex items-center gap-3 bg-white dark:bg-[var(--color-card)] rounded-xl p-3">
-            <img src={b.imageUrl} alt="" className="w-16 h-10 rounded object-cover bg-gray-100" />
+            <img src={b.imageUrl} alt="" className="w-16 h-10 rounded object-cover bg-gray-100" loading="lazy" decoding="async" />
             <div className="flex-1 min-w-0">
               <p className="text-sm truncate">{b.imageUrl}</p>
               <p className="text-xs text-gray-400">排序：{b.sortOrder} | {b.isActive ? '启用' : '停用'}</p>

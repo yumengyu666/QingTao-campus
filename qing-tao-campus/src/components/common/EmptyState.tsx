@@ -1,5 +1,6 @@
 import { FiInbox } from 'react-icons/fi';
 import { motion } from 'framer-motion';
+import { memo } from 'react';
 
 interface Props {
   message?: string;
@@ -14,7 +15,7 @@ const containerVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
 
@@ -23,11 +24,11 @@ const iconVariants = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.5, delay: 0.1, ease: [0.175, 0.885, 0.32, 1.275] },
+    transition: { duration: 0.5, delay: 0.1, ease: [0.175, 0.885, 0.32, 1.275] as const },
   },
 };
 
-export function EmptyState({
+export const EmptyState = memo(function EmptyState({
   message = '暂无数据',
   description,
   icon,
@@ -38,8 +39,8 @@ export function EmptyState({
   const isSubtle = variant === 'subtle';
   const isGlass = variant === 'glass';
 
-  const paddingY = isCompact ? 'py-8' : 'py-16 md:py-24';
-  const iconSize = isCompact ? 'w-14 h-14' : 'w-20 h-20 md:w-24 md:h-24';
+  const paddingY = isCompact ? 'py-6' : 'py-10 md:py-20';
+  const iconSize = isCompact ? 'w-14 h-14' : 'w-16 h-16 md:w-20 md:h-20';
   const iconTextSize = isCompact ? 'text-2xl' : 'text-3xl md:text-4xl';
 
   // ── Glass variant: wrapped in a subtle glass card ──
@@ -169,4 +170,4 @@ export function EmptyState({
       {action && <div className="mt-5">{action}</div>}
     </motion.div>
   );
-}
+});

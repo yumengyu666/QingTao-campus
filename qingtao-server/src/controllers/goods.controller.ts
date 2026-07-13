@@ -75,7 +75,7 @@ export async function getGoodsDetail(req: Request, res: Response, next: NextFunc
     const isAdmin = req.user?.role === 'admin';
 
     if (goods.isDeleted && !isOwner && !isAdmin) return notFound(res, '商品不存在');
-    if (!isOwner && !isAdmin && !['approved', 'sold', 'offline'].includes(goods.status)) return notFound(res, '商品不存在');
+    if (!isOwner && !isAdmin && !['approved', 'sold', 'reserved'].includes(goods.status)) return notFound(res, '商品不存在');
 
     // 浏览量
     if (!isOwner) {

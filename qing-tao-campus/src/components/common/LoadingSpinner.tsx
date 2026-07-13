@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 interface Props {
   fullScreen?: boolean;
   size?: 'sm' | 'md' | 'lg';
@@ -38,6 +40,13 @@ export function LoadingSpinner({
   size = 'md',
   label,
 }: Props) {
+  const [showSlow, setShowSlow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const container = fullScreen
     ? 'flex flex-col items-center justify-center gap-4 min-h-[60vh]'
     : 'flex flex-col items-center justify-center gap-3 py-16';
@@ -48,6 +57,11 @@ export function LoadingSpinner({
       {label && (
         <p className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-gray-400 dark:text-gray-500`}>
           {label}
+        </p>
+      )}
+      {showSlow && (
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 animate-fade-in">
+          加载时间较长，请耐心等待...
         </p>
       )}
     </div>

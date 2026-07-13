@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { NetworkStatus } from '@/components/common/NetworkStatus';
 import { SkipToContent } from '@/components/common/SkipToContent';
+import OfflineBar from '@/components/common/OfflineBar';
 import { AppRouter } from '@/router';
 import { useInit } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
@@ -97,6 +98,7 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <SkipToContent />
+          <OfflineBar />
           <NetworkStatus />
           <AppInit />
           <WebSocketInit />

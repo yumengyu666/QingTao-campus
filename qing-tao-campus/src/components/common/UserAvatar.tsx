@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 
 interface Props {
   src?: string;
@@ -22,7 +22,7 @@ const badgeSizeMap = {
   xl: 'w-5 h-5',
 };
 
-export function UserAvatar({
+export const UserAvatar = memo(function UserAvatar({
   src,
   nickname,
   size = 'md',
@@ -39,7 +39,7 @@ export function UserAvatar({
           src={src}
           alt={nickname || ''}
           className={`${sizeMap[size]} rounded-full object-cover bg-gray-100 dark:bg-[var(--color-card-hover)] ring-2 ring-gray-100 dark:ring-gray-700`}
-          loading="lazy"
+          loading="lazy" decoding="async"
           onError={() => setImgError(true)}
         />
         {isOnline !== undefined && (
@@ -79,4 +79,4 @@ export function UserAvatar({
       )}
     </div>
   );
-}
+});

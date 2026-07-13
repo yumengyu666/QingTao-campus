@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/common/Skeleton';
+import CelebrationEffect from '@/components/common/CelebrationEffect';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import { apiFetch } from '@/utils/api';
-import { FiHeart, FiMessageCircle, FiShoppingCart, FiX, FiEye } from 'react-icons/fi';
+import { FiHeart, FiMessageCircle, FiShoppingCart, FiX, FiEye, FiCompass } from 'react-icons/fi';
 
 export default function MyFavoritesPage() {
   const navigate = useNavigate();
@@ -17,6 +18,10 @@ export default function MyFavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [addingCart, setAddingCart] = useState<Set<number>>(new Set());
 
+  // Celebration effect for unfavorite
+  const [removeCelebrate, setRemoveCelebrate] = useState(false);
+  const [removeOrigin, setRemoveOrigin] = useState({ x: 0, y: 0 });
+
   const fetchFavorites = () => {
     setLoading(true);
     apiFetch('/api/favorites', { headers: { Authorization: `Bearer ${token}` } })
@@ -25,9 +30,12 @@ export default function MyFavoritesPage() {
   };
   useEffect(() => { fetchFavorites(); }, []);
 
-  const removeFavorite = async (favoriteId: number) => {
+  const removeFavorite = async (favoriteId: number, e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setRemoveOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
     await apiFetch(`/api/favorites/${favoriteId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     toast.success('已取消收藏');
+    setRemoveCelebrate(true);
     fetchFavorites();
   };
 
@@ -53,13 +61,13 @@ export default function MyFavoritesPage() {
     <div>
       <Header title="我的收藏" rightAction={!loading && items.length > 0 ? <span className="text-xs text-gray-400 font-normal">{items.length} 件</span> : undefined} />
       {loading ? <div className="p-4"><Skeleton.Grid count={4} cols={2} /></div>
-      : items.length === 0 ? <EmptyState message="还没有收藏商品" icon={<FiHeart className="text-5xl mb-4" />} />
+      : items.length === 0 ? <EmptyState message="还没有收藏商品" icon={<FiHeart className="text-5xl mb-4" />} description="浏览商品时点击收藏，方便以后查看" action={<button onClick={() => nav('/goods')} className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-500 text-white text-sm font-medium rounded-xl hover:bg-indigo-600 active:scale-95 transition-all shadow-md shadow-indigo-500/20"><FiCompass size={15} />去发现好物</button>} />
       : (
         <div className="p-4 grid grid-cols-2 gap-3">
           {items.map((g) => (
             <div key={g.favoriteId || g.id} className={`bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${g._offline ? 'opacity-70' : ''}`}>
               <div className="h-32 bg-gray-100 flex items-center justify-center text-3xl cursor-pointer relative" onClick={() => nav(`/goods/${g.id}`)}>
-                {g.images?.[0] ? <img src={g.images[0]} alt="" className="w-full h-full object-cover" /> : '📦'}
+                {g.images?.[0] ? <img src={g.images[0]} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : '📦'}
                 {g._offline && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                     <span className="text-white text-sm font-bold bg-black/60 px-3 py-1 rounded-full">已下架</span>
@@ -94,7 +102,7 @@ export default function MyFavoritesPage() {
                     <FiShoppingCart className="text-[10px]" /> {addingCart.has(g.id) ? '...' : '加购'}
                   </button>
                   <button
-                    onClick={() => removeFavorite(g.favoriteId)}
+                    onClick={(e) => removeFavorite(g.favoriteId, e)}
                     className="ml-auto p-1.5 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <FiX className="text-xs" />
@@ -105,6 +113,12 @@ export default function MyFavoritesPage() {
           ))}
         </div>
       )}
+
+      <CelebrationEffect
+        trigger={removeCelebrate}
+        origin={removeOrigin}
+        intensity="small"
+      />
     </div>
   );
 }

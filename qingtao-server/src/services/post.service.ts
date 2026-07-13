@@ -126,3 +126,33 @@ export async function deletePostComment(commentId: number) {
 export async function findPostCommentById(commentId: number) {
   return prisma.postComment.findUnique({ where: { id: commentId } });
 }
+
+// ─── 点赞 ───
+
+/** 查询用户是否已点赞该帖子 */
+export async function findPostLike(postId: number, userId: number) {
+  return prisma.postLike.findUnique({ where: { userId_postId: { userId, postId } } });
+}
+
+/** 切换帖子点赞状态，返回 { liked, likeCount } */
+export async function togglePostLike(postId: number, userId: number) {
+  const existing = await findPostLike(postId, userId);
+  if (existing) {
+    await Promise.all([
+      prisma.postLike.delete({ where: { id: existing.id } }),
+      prisma.post.update({ where: { id: postId }, data: { likeCount: { decrement: 1 } } }),
+    ]);
+    return { liked: false, likeCount: undefined as number | undefined };
+  }
+  await Promise.all([
+    prisma.postLike.create({ data: { userId, postId } }),
+    prisma.post.update({ where: { id: postId }, data: { likeCount: { increment: 1 } } }),
+  ]);
+  const post = await prisma.post.findUnique({ where: { id: postId }, select: { likeCount: true } });
+  return { liked: true, likeCount: post?.likeCount };
+}
+
+/** 简易评论点赞（仅计数，不作用户去重） */
+export async function incrementCommentLike(commentId: number) {
+  await prisma.postComment.update({ where: { id: commentId }, data: { likeCount: { increment: 1 } } });
+}

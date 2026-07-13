@@ -45,10 +45,11 @@ describe('storage', () => {
       expect(storage.getUser()).toBeNull();
     });
 
-    it('stores and retrieves user object', () => {
-      const user = { id: 1, username: 'test', nickname: 'Test' };
+    it('stores and retrieves user object (safe fields only)', () => {
+      const user = { id: 1, username: 'test', nickname: 'Test', role: 'user' };
       storage.setUser(user);
-      expect(storage.getUser()).toEqual(user);
+      // setUser strips sensitive fields like username for security
+      expect(storage.getUser()).toEqual({ id: 1, nickname: 'Test', role: 'user' });
     });
 
     it('removes user', () => {

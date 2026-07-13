@@ -3,8 +3,9 @@
    Native dark glass — subtle contrast, deep atmosphere
    ============================================================ */
 
-/* Applied when .dark class is on <html> and inside .lg-root */
-.dark .lg-root {
+/* Applied when .dark class is on <html> and inside .lg-root.
+   The .dark class is toggled on <html> by the theme system (DarkModeToggle/themeStore). */
+.lg-root.dark, .dark .lg-root {
   color-scheme: dark;
 
   --color-bg-app: #0A0A14;
@@ -69,7 +70,7 @@
 .dark .lg-root .text-gray-600 { color: #9CA3AF !important; }
 .dark .lg-root .text-gray-500 { color: #6B7280 !important; }
 .dark .lg-root .text-gray-400 { color: #6B7280 !important; }
-.dark .lg-root .text-black { color: #E8ECF1 !important; }
+.dark .lg-root .text-black { color: #F8FAFC !important; }
 
 /* ── Colored buttons keep white text ── */
 .dark .lg-root button.bg-indigo-500 .text-white,
@@ -96,10 +97,10 @@
 .dark .lg-root .bg-white\/85,
 .dark .lg-root .bg-white\/90,
 .dark .lg-root .bg-white\/95 {
-  background: rgba(30,35,55,0.60) !important;
+  background: var(--lg-glass-bg) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  border: 1px solid var(--lg-glass-border) !important;
 }
 
 /* ── Header glass ── */
@@ -152,8 +153,9 @@
   border: 1px solid rgba(255,255,255,0.08) !important;
 }
 
-/* ── Forms / rounded-xl ── */
-.dark .lg-root .rounded-xl {
+/* ── Forms / glass section containers ── */
+.dark .lg-root section.rounded-xl,
+.dark .lg-root .glass-section.rounded-xl {
   background: rgba(30,35,55,0.50) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
@@ -170,12 +172,14 @@
   background: #1A1A2E !important;
 }
 .dark .lg-root .bg-white\/70 {
-  background: rgba(255,255,255,0.05) !important;
+  background: var(--lg-surface-hover);
 }
 
-/* ── Sticky bottom bars ── */
-.dark .lg-root .sticky.bottom-0,
-.dark .lg-root .fixed.bottom-0 {
+/* ── Sticky bottom nav bars only ── */
+.dark .lg-root nav.sticky.bottom-0,
+.dark .lg-root nav.fixed.bottom-0,
+.dark .lg-root .bottom-nav.sticky.bottom-0,
+.dark .lg-root .bottom-nav.fixed.bottom-0 {
   background: rgba(10,10,20,0.85) !important;
   backdrop-filter: blur(24px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
@@ -197,7 +201,7 @@
 
 /* ── Hover states ── */
 .dark .lg-root .hover\:bg-black\/5:hover {
-  background: rgba(255,255,255,0.05) !important;
+  background: var(--lg-surface-hover);
 }
 
 /* ── Selection ── */

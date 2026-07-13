@@ -57,7 +57,12 @@ export async function getPostDetail(req: Request, res: Response, next: NextFunct
       const viewKey = `post:${id}:${viewerIp}`;
       if (!viewDedup.has(viewKey)) { viewDedup.set(viewKey, Date.now()); await postSvc.incrementPostView(id); }
     }
-    return success(res, { ...post, images: postSvc.normalizePostImages(post.images) });
+    let isLiked = false;
+    if (req.user?.userId) {
+      const likeRecord = await postSvc.findPostLike(post.id, req.user.userId);
+      isLiked = !!likeRecord;
+    }
+    return success(res, { ...post, images: postSvc.normalizePostImages(post.images), isLiked });
   } catch (err) { next(err); }
 }
 
@@ -100,7 +105,8 @@ export async function getPostComments(req: Request, res: Response, next: NextFun
     if (!post || post.isDeleted) return notFound(res, '帖子不存在');
     const page = parseInt(req.query.page as string) || 1;
     const [list, total] = await postSvc.findPostComments(postId, req.user?.userId, page);
-    return paginated(res, list, total, page, 20);
+    const commentsWithLike = list.map(c => ({ ...c, isLiked: false })); // 简易点赞模式，无用户去重
+    return paginated(res, commentsWithLike, total, page, 20);
   } catch (err) { next(err); }
 }
 
@@ -137,5 +143,29 @@ export async function deletePostComment(req: Request, res: Response, next: NextF
     if (comment.userId !== req.user!.userId && req.user!.role !== 'admin') return error(res, '无权操作', 403);
     await postSvc.deletePostComment(commentId);
     return success(res, null, '已删除');
+  } catch (err) { next(err); }
+}
+
+// POST /api/posts/:id/like
+export async function togglePostLike(req: Request, res: Response, next: NextFunction) {
+  try {
+    const postId = parseInt(req.params.id as string);
+    if (isNaN(postId)) return error(res, '无效的帖子ID');
+    const post = await postSvc.findPostById(postId);
+    if (!post || post.isDeleted) return notFound(res, '帖子不存在');
+    const { liked, likeCount } = await postSvc.togglePostLike(postId, req.user!.userId);
+    return success(res, { liked, likeCount }, liked ? '已点赞' : '已取消点赞');
+  } catch (err) { next(err); }
+}
+
+// POST /api/posts/:id/comments/:commentId/like
+export async function toggleCommentLike(req: Request, res: Response, next: NextFunction) {
+  try {
+    const commentId = parseInt(req.params.commentId as string);
+    if (isNaN(commentId)) return error(res, '无效的评论ID');
+    const comment = await postSvc.findPostCommentById(commentId);
+    if (!comment) return notFound(res, '评论不存在');
+    await postSvc.incrementCommentLike(commentId);
+    return success(res, { likeCount: comment.likeCount + 1 }, '已点赞');
   } catch (err) { next(err); }
 }

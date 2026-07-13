@@ -171,7 +171,8 @@ export function AppRouter() {
         <Route path="users" element={<LazyLoad><AdminUsersPage /></LazyLoad>} />
       </Route>
 
-      {/* 液态玻璃主题路由 — 与原版相同页面，用 LiquidGlassLayout 包裹 */}
+      {/* 液态玻璃主题路由 — 与原版路由镜像维护。
+          ⚠️ 新增页面时需同时更新两处路由块 + LiquidGlassLayout.getPageTitle() (#30, #97) */}
       <Route path="/lg" element={<ProtectedRoute><LiquidGlassLayout /></ProtectedRoute>}>
         <Route index element={<LazyLoad><HomePage /></LazyLoad>} />
         <Route path="goods" element={<LazyLoad><GoodsListPage /></LazyLoad>} />

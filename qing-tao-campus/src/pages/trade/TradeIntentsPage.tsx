@@ -16,7 +16,6 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   accepted: { label: '已接受', color: 'bg-green-100 text-green-700' },
   rejected: { label: '已拒绝', color: 'bg-red-100 text-red-500' },
   completed: { label: '已完成', color: 'bg-blue-100 text-blue-700' },
-  rejected: { label: '已拒绝', color: 'bg-red-100 text-red-500' },
 };
 
 export default function TradeIntentsPage() {
@@ -124,7 +123,7 @@ export default function TradeIntentsPage() {
                     <div className="flex items-start gap-3 mb-3 cursor-pointer" onClick={() => nav(`/goods/${item.goods.id}`)}>
                       <div className="w-14 h-14 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0 overflow-hidden">
                         {item.goods.images?.[0] ? (
-                          <img src={typeof item.goods.images[0] === 'string' ? item.goods.images[0] : item.goods.images[0]?.url} alt="" className="w-full h-full object-cover" />
+                          <img src={typeof item.goods.images[0] === 'string' ? item.goods.images[0] : item.goods.images[0]?.url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
                         )}

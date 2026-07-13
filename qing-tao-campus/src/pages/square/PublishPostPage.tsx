@@ -4,9 +4,12 @@ import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import type { ImageItem } from '@/components/common/ImageUploader';
+import { CharCounter } from '@/components/common/CharCounter';
+import { FormField } from '@/components/common/FormField';
 import { Skeleton } from '@/components/common/Skeleton';
 import { useDraft } from '@/hooks/useDraft';
 import { apiFetch } from '@/utils/api';
+import { classifyError, getErrorMessage } from '@/utils/errorHandler';
 import toast from 'react-hot-toast';
 
 export default function PublishPostPage() {
@@ -23,6 +26,7 @@ export default function PublishPostPage() {
   const [content, setContent] = useState(draft.content);
   const [images, setImages] = useState<ImageItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const [editLoading, setEditLoading] = useState(isEdit);
 
   // Save draft on change
@@ -63,13 +67,16 @@ export default function PublishPostPage() {
       const json = await res.json();
       if (json.code === 200 || json.code === 201) {
         clearDraft();
+        setSubmitError(false);
         toast.success(json.message || (isEdit ? '修改成功' : '发布成功'));
         nav('/square');
       } else {
         toast.error(json.message || '提交失败');
+        setSubmitError(true);
       }
-    } catch {
-      toast.error('网络错误');
+    } catch (err) {
+      toast.error(getErrorMessage(classifyError(err)));
+      setSubmitError(true);
     }
     setSubmitting(false);
   };
@@ -80,29 +87,35 @@ export default function PublishPostPage() {
     <div>
       <Header title={isEdit ? '编辑帖子' : '发布帖子'} />
       <div className="p-4 space-y-5">
-        <div>
-          <label className="text-sm font-medium mb-2 block">帖子标题</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="请输入帖子标题" maxLength={50}
+        <FormField label="帖子标题" required>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="请输入帖子标题" maxLength={100}
             className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none transition-colors" />
-          <p className="text-xs text-gray-400 text-right mt-1">{title.length}/50</p>
-        </div>
+          <CharCounter current={title.length} max={100} />
+        </FormField>
 
-        <div>
-          <label className="text-sm font-medium mb-2 block">正文内容</label>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="分享你的想法..." rows={8} maxLength={5000}
+        <FormField label="正文内容" required>
+          <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="分享你的想法..." rows={8} maxLength={2000}
             className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none transition-colors resize-none" />
-          <p className="text-xs text-gray-400 text-right mt-1">{content.length}/5000</p>
-        </div>
+          <CharCounter current={content.length} max={2000} />
+        </FormField>
 
         <div>
           <label className="text-sm font-medium mb-2 block">图片 <span className="text-gray-400 font-normal">({images.length}/9)</span></label>
           <ImageUploader images={images} onChange={setImages} max={9} showStatus />
         </div>
 
-        <button onClick={handleSubmit} disabled={submitting}
-          className="w-full py-3.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors text-lg">
-          {submitting ? '提交中...' : isEdit ? '保存修改' : '发布'}
-        </button>
+        <div className="flex gap-3">
+          <button onClick={handleSubmit} disabled={submitting}
+            className="flex-1 py-3.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors text-lg">
+            {submitting ? '提交中...' : isEdit ? '保存修改' : '发布'}
+          </button>
+          {submitError && !submitting && (
+            <button onClick={handleSubmit}
+              className="px-6 py-3.5 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 active:scale-95 transition-all text-lg whitespace-nowrap">
+              🔄 重试
+            </button>
+          )}
+        </div>
         <p className="text-xs text-gray-400 text-center -mt-2">
           {isEdit ? '修改后重新提交审核' : (draft.title || draft.content) && !isEdit ? '草稿已自动保存' : '发布后立即可见'}
         </p>

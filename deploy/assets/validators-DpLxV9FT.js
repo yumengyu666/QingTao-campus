@@ -1,0 +1,1 @@
+function e(e){return e.trim()?e.length<2?`用户名至少2个字符`:e.length>20?`用户名最多20个字符`:/^[a-zA-Z0-9_一-龥]+$/.test(e)?null:`用户名只能包含中英文、数字和下划线`:`请输入用户名`}function t(e){return e?e.length<6?`密码至少6位`:e.length>50?`密码最多50位`:!/[a-zA-Z]/.test(e)||!/[0-9]/.test(e)?`密码需同时包含字母和数字`:null:`请输入密码`}export{e as n,t};

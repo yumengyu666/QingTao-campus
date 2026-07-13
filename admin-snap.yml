@@ -1,0 +1,94 @@
+- generic [ref=e2]:
+  - link "跳到主要内容" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e42]:
+    - banner [ref=e43]:
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - link "轻淘" [ref=e46] [cursor=pointer]:
+            - /url: /
+            - img [ref=e47]
+            - generic [ref=e50]: 轻淘
+          - heading "管理后台" [level=1] [ref=e52]
+        - navigation [ref=e53]:
+          - link "概览" [ref=e54] [cursor=pointer]:
+            - /url: /admin
+            - img [ref=e55]
+            - generic [ref=e56]: 概览
+          - link "图片审核" [ref=e57] [cursor=pointer]:
+            - /url: /admin/images
+            - img [ref=e58]
+            - generic [ref=e62]: 图片审核
+          - link "用户" [ref=e63] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e64]
+            - generic [ref=e69]: 用户
+    - generic [ref=e72]:
+      - heading "数据概览" [level=2] [ref=e73]
+      - generic [ref=e78]: 系统状态：正常运行
+      - generic [ref=e79]:
+        - generic [ref=e80]:
+          - paragraph [ref=e81]: 总用户数
+          - paragraph [ref=e82]: "16"
+        - generic [ref=e83]:
+          - paragraph [ref=e84]: 总商品数
+          - paragraph [ref=e85]: "181"
+        - generic [ref=e86]:
+          - paragraph [ref=e87]: 总帖子数
+          - paragraph [ref=e88]: "121"
+        - generic [ref=e89]:
+          - paragraph [ref=e90]: 今日新增用户
+          - paragraph [ref=e91]: "16"
+        - generic [ref=e92]:
+          - paragraph [ref=e93]: 今日新增商品
+          - paragraph [ref=e94]: "3"
+        - generic [ref=e95]:
+          - paragraph [ref=e96]: 今日新增帖子
+          - paragraph [ref=e97]: "3"
+        - generic [ref=e98]:
+          - paragraph [ref=e99]: 待审核
+          - paragraph [ref=e100]: "0"
+        - generic [ref=e101]:
+          - paragraph [ref=e102]: 失物招领
+          - paragraph [ref=e103]: "30"
+      - generic [ref=e104]:
+        - button "内容审核 商品/帖子审核" [ref=e105]:
+          - paragraph [ref=e106]: 内容审核
+          - paragraph [ref=e107]: 商品/帖子审核
+        - button "图片审核 查看待审图片" [ref=e108]:
+          - paragraph [ref=e109]: 图片审核
+          - paragraph [ref=e110]: 查看待审图片
+        - button "用户管理 管理平台用户" [ref=e111]:
+          - paragraph [ref=e112]: 用户管理
+          - paragraph [ref=e113]: 管理平台用户
+      - heading "轮播图管理 (5)" [level=3] [ref=e114]
+      - generic [ref=e115]:
+        - generic [ref=e116]:
+          - generic [ref=e117]:
+            - paragraph [ref=e118]: /banner1.webp
+            - paragraph [ref=e119]: 排序：1 | 启用
+          - button "删除" [ref=e120]
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - paragraph [ref=e123]: /banner2.webp
+            - paragraph [ref=e124]: 排序：2 | 启用
+          - button "删除" [ref=e125]
+        - generic [ref=e126]:
+          - generic [ref=e127]:
+            - paragraph [ref=e128]: /banner3.webp
+            - paragraph [ref=e129]: 排序：3 | 启用
+          - button "删除" [ref=e130]
+        - generic [ref=e131]:
+          - generic [ref=e132]:
+            - paragraph [ref=e133]: /banner4.webp
+            - paragraph [ref=e134]: 排序：4 | 启用
+          - button "删除" [ref=e135]
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - paragraph [ref=e138]: /banner5.webp
+            - paragraph [ref=e139]: 排序：5 | 启用
+          - button "删除" [ref=e140]
+      - generic [ref=e141]:
+        - textbox "图片URL" [ref=e142]
+        - spinbutton [ref=e143]: "0"
+        - button "添加" [ref=e144]

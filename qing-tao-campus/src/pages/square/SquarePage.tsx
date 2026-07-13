@@ -3,6 +3,7 @@ import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { FiTrendingUp, FiClock, FiCompass } from 'react-icons/fi';
 import { Skeleton } from '@/components/common/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
+import toast from 'react-hot-toast';
 import { EndOfList } from '@/components/common/EndOfList';
 import { Header } from '@/components/layout/Header';
 import { apiFetch } from '@/utils/api';
@@ -10,7 +11,7 @@ import { formatCount } from '@/utils/format';
 
 interface FeedItem {
   id: number;
-  type: 'note' | 'video' | 'treehole' | 'resource' | 'wanted' | 'goods' | 'qa';
+  type: 'note' | 'video' | 'treehole' | 'resource' | 'wanted' | 'goods' | 'qa' | 'post';
   title: string;
   content?: string;
   coverUrl?: string;
@@ -50,7 +51,11 @@ function FeedCard({ item, onClick }: { item: FeedItem; onClick: () => void }) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`${item.type === 'treehole' ? '树洞' : item.type === 'video' ? '视频' : item.type === 'resource' ? '资料' : item.type === 'wanted' ? '求购' : item.type === 'goods' ? '商品' : item.type === 'qa' ? '问答' : '笔记'}：${item.title || item.content?.slice(0, 30) || '查看详情'}`}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       className="break-inside-avoid mb-3 rounded-xl overflow-hidden bg-white dark:bg-[var(--color-card)]
         border border-gray-100 dark:border-[var(--color-border)] cursor-pointer
         shadow-sm hover:shadow-md active:scale-[0.985] transition-all duration-200"
@@ -81,7 +86,7 @@ function FeedCard({ item, onClick }: { item: FeedItem; onClick: () => void }) {
                 <img
                   src={item.coverUrl || item.images?.[0]}
                   alt=""
-                  loading="lazy"
+                  loading="lazy" decoding="async"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                 />
                 {isVideo && (
@@ -130,7 +135,7 @@ function FeedCard({ item, onClick }: { item: FeedItem; onClick: () => void }) {
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden shrink-0">
                   {item.user?.avatarUrl && (
-                    <img src={item.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={item.user.avatarUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   )}
                 </div>
                 <span className="text-[10px] text-gray-400 dark:text-[var(--color-text-tertiary)] truncate">
@@ -198,11 +203,12 @@ export default function SquarePage() {
       apiFetch('/api/videos/feed?pageSize=4').then(r => r.json()),
     ]).then(results => {
       const mixed: FeedItem[] = [];
+      let failedCount = 0;
 
       results.forEach(r => {
-        if (r.status !== 'fulfilled') return;
+        if (r.status !== 'fulfilled') { failedCount++; return; }
         const json = r.value;
-        if (json.code !== 200) return;
+        if (json.code !== 200) { failedCount++; return; }
         (json.data?.list || (Array.isArray(json.data) ? json.data : [])).forEach((item: any) => {
           const images = typeof item.images === 'string'
             ? JSON.parse(item.images)
@@ -238,14 +244,18 @@ export default function SquarePage() {
         });
       });
 
-      // Shuffle for organic feed appearance
-      for (let i = mixed.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [mixed[i], mixed[j]] = [mixed[j], mixed[i]];
-      }
+      // Shuffle for organic feed appearance (deferred to avoid main thread jank)
+      setTimeout(() => {
+        mixed.sort(() => Math.random() - 0.5);
+        setFeed([...mixed]);
+      }, 0);
 
-      setFeed(mixed);
-    }).catch(() => {}).finally(() => setLoading(false));
+      if (failedCount > 0 && failedCount < 8) {
+        toast.error(`${failedCount} 个内容源加载失败，部分内容可能缺失`);
+      } else if (failedCount === 8) {
+        toast.error('内容加载失败，请检查网络后重试');
+      }
+    }).catch(() => { toast.error('内容加载失败'); }).finally(() => setLoading(false));
   }, [tab]);
 
   const handleClick = (item: FeedItem) => {
@@ -256,6 +266,7 @@ export default function SquarePage() {
       case 'wanted': navigate(`/wanted/${item.id}`); break;
       case 'goods': navigate(`/goods/${item.id}`); break;
       case 'qa': navigate(`/qa/${item.id}`); break;
+      case 'post': navigate(`/square/post/${item.id}`); break;
       default: navigate(`/explore/note/${item.id}`);
     }
   };
@@ -319,7 +330,7 @@ export default function SquarePage() {
                   border border-gray-100 dark:border-[var(--color-border)]">
                   <div className="skeleton rounded-none"
                     style={{
-                      aspectRatio: i % 4 === 0 ? '9/16' : i % 4 === 1 ? '4/3' : i % 4 === 2 ? '1/1' : '3/4',
+                      aspectRatio: '3/4',
                     }} />
                   <div className="p-3 space-y-2">
                     <div className="skeleton h-3 w-11/12 rounded-md" />

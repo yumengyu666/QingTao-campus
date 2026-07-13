@@ -134,7 +134,7 @@ export default function QaDetailPage() {
           {post.images?.length > 0 && (
             <div className="mt-3 flex gap-2 flex-wrap">
               {post.images.map((img: string, i: number) => (
-                <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity" loading="lazy"
+                <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" decoding="async"
                   onClick={() => { setLightboxImages(post.images.map((u: string) => ({ url: u }))); setLightboxIndex(i); setLightboxOpen(true); }} />
               ))}
             </div>
@@ -167,7 +167,7 @@ export default function QaDetailPage() {
                   {a.images?.length > 0 && (
                     <div className="mt-2 flex gap-2 flex-wrap">
                       {a.images.map((img: string, i: number) => (
-                        <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" loading="lazy"
+                        <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" loading="lazy" decoding="async"
                           onClick={() => { setLightboxImages(a.images.map((u: string) => ({ url: u }))); setLightboxIndex(i); setLightboxOpen(true); }} />
                       ))}
                     </div>

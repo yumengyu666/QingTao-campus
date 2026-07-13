@@ -1,5 +1,7 @@
-import { useState, useEffect, type ReactNode } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useUnreadStore } from '@/stores/unreadStore';
+import { motion } from 'framer-motion';
 
 type TabKey = 'home' | 'square' | 'publish' | 'messages' | 'profile';
 
@@ -17,15 +19,16 @@ const HomeIcon = () => (
   </svg>
 );
 
+// Compass/explore icon — replaced warning circle
 const SquareIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10"/>
-    <path d="M12 16v-4M12 8h.01"/>
+    <path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M14.83 9.17l4.24-4.24M4.93 19.07l4.24-4.24"/>
   </svg>
 );
 
 const PublishIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <path d="M12 5v14M5 12h14"/>
   </svg>
 );
@@ -43,25 +46,37 @@ const ProfileIcon = () => (
   </svg>
 );
 
-const tabs: Tab[] = [
-  { key: 'home', label: '首页', icon: <HomeIcon />, to: '/' },
-  { key: 'square', label: '广场', icon: <SquareIcon />, to: '/square' },
-  { key: 'publish', label: '发布', icon: <PublishIcon />, to: '/square/publish' },
-  { key: 'messages', label: '消息', icon: <MessagesIcon />, to: '/messages' },
-  { key: 'profile', label: '我的', icon: <ProfileIcon />, to: '/profile' },
-];
-
 export default function LiquidTabBar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const unreadCount = useUnreadStore((s) => s.msgCount);
   const [activeTab, setActiveTab] = useState<TabKey>('home');
+
+  const basePath = location.pathname.startsWith('/lg') ? '/lg' : '';
+
+  const tabs: Tab[] = [
+    { key: 'home', label: '首页', icon: <HomeIcon />, to: `${basePath}/` },
+    { key: 'square', label: '广场', icon: <SquareIcon />, to: `${basePath}/square` },
+    { key: 'publish', label: '发布', icon: <PublishIcon />, to: `${basePath}/square/publish` },
+    { key: 'messages', label: '消息', icon: <MessagesIcon />, to: `${basePath}/messages` },
+    { key: 'profile', label: '我的', icon: <ProfileIcon />, to: `${basePath}/profile` },
+  ];
 
   useEffect(() => {
     const path = location.pathname;
-    if (path.startsWith('/square')) setActiveTab('square');
-    else if (path.startsWith('/messages')) setActiveTab('messages');
-    else if (path.startsWith('/profile')) setActiveTab('profile');
+    if (path.startsWith(`${basePath}/square`)) setActiveTab('square');
+    else if (path.startsWith(`${basePath}/messages`)) setActiveTab('messages');
+    else if (path.startsWith(`${basePath}/profile`)) setActiveTab('profile');
     else setActiveTab('home');
-  }, [location.pathname]);
+  }, [location.pathname, basePath]);
+
+  const handleTab = useCallback((tab: Tab) => {
+    if (tab.key === 'publish') {
+      navigate(tab.to);
+    } else {
+      navigate(tab.to);
+    }
+  }, [navigate]);
 
   return (
     <div className="lg-tabbar">
@@ -70,29 +85,86 @@ export default function LiquidTabBar() {
           const isActive = activeTab === tab.key;
           const isPublish = tab.key === 'publish';
           return (
-            <NavLink
+            <motion.button
               key={tab.key}
-              to={tab.to}
-              className={`lg-tabbar-item ${isActive && !isPublish ? 'lg-tabbar-item-active' : 'lg-tabbar-item-inactive'}`}
-              style={{ textDecoration: 'none' }}
+              onClick={() => handleTab(tab)}
+              className="lg-tabbar-item lg-tabbar-item-inactive"
+              style={{
+                position: 'relative',
+                background: 'transparent',
+              }}
+              aria-label={tab.label}
+              aria-current={isActive ? 'page' : undefined}
+              whileTap={{ scale: 0.9 }}
             >
-              {isPublish ? (
-                <div style={{
-                  width: 36, height: 36, borderRadius: 12,
-                  background: '#0066D6',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <span style={{ color: '#FFF', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>+</span>
-                </div>
-              ) : (
-                <div className="lg-tabbar-icon" style={{ color: isActive ? '#FFFFFF' : '#888888' }}>
-                  {tab.icon}
-                </div>
+              {/* Sliding pill background indicator for active tab */}
+              {isActive && !isPublish && (
+                <motion.div
+                  layoutId="tab-pill-bg"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: 26,
+                    background: '#0066D6',
+                    boxShadow: '0 2px 8px rgba(0,102,214,0.4)',
+                    zIndex: 0,
+                  }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 500,
+                    damping: 30,
+                    mass: 0.8,
+                  }}
+                />
               )}
-              <span className={`lg-tabbar-label ${isActive && !isPublish ? 'lg-tabbar-label-active' : 'lg-tabbar-label-inactive'}`}>
+              {isPublish ? (
+                <motion.div
+                  style={{
+                    width: 36, height: 36, borderRadius: 12,
+                    background: '#0066D6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1,
+                  }}
+                  whileTap={{ scale: 0.92 }}
+                  transition={{ type: 'spring', stiffness: 600, damping: 25 }}
+                >
+                  <span style={{ color: '#FFF', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>+</span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="lg-tabbar-icon"
+                  style={{
+                    color: isActive ? '#FFFFFF' : undefined,
+                    zIndex: 1,
+                    position: 'relative',
+                  }}
+                  animate={{
+                    scale: isActive ? [0.8, 1.15, 1.0] : 1,
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.34, 1.56, 0.64, 1], // spring-like cubic bezier
+                  }}
+                >
+                  {tab.icon}
+                  {tab.key === 'messages' && unreadCount > 0 && (
+                    <span className="lg-tabbar-badge">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </motion.div>
+              )}
+              <motion.span
+                className={`lg-tabbar-label ${isActive && !isPublish ? 'lg-tabbar-label-active' : 'lg-tabbar-label-inactive'}`}
+                style={{ zIndex: 1 }}
+                animate={{
+                  color: isActive && !isPublish ? '#FFFFFF' : undefined,
+                }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
                 {tab.label}
-              </span>
-            </NavLink>
+              </motion.span>
+            </motion.button>
           );
         })}
       </div>

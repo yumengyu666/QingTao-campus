@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { ReactNode } from "react";
+import { useEffect, useCallback, useRef, useId } from "react";
 
 interface GlassCardProps {
   children: ReactNode;
@@ -37,15 +38,11 @@ export function GlassCard({
 
   return (
     <motion.div
-      whileHover={hover ? { y: -1, scale: 1.008 } : {}}
+      whileHover={hover ? { y: -1, scale: 1.004 } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
-      style={
-        noBlur
-          ? { backdropFilter: "none", WebkitBackdropFilter: "none" }
-          : undefined
-      }
-      className={`${variantClass} ${p} ${onClick ? "cursor-pointer" : ""} ${hover && variant === "default" ? "lg-card-hover" : ""} ${className}`}
+      style={noBlur ? { backdropFilter: "none", WebkitBackdropFilter: "none" } : undefined}
+      className={`${variantClass} ${p} ${onClick ? "cursor-pointer" : ""} ${hover && variant === "default" ? "lg-card-hover" : ""} ${className}`.trim().replace(/\s+/g, ' ')}
     >
       {children}
     </motion.div>
@@ -93,6 +90,10 @@ interface GlassSheetProps {
   onClose: () => void;
   children: ReactNode;
   className?: string;
+  /** Accessible label for the sheet (required for a11y) */
+  ariaLabel?: string;
+  /** Accessible labelledby ID pointing to a title element */
+  ariaLabelledby?: string;
 }
 
 export function GlassSheet({
@@ -100,7 +101,69 @@ export function GlassSheet({
   onClose,
   children,
   className = "",
+  ariaLabel,
+  ariaLabelledby,
 }: GlassSheetProps) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      // Focus trap
+      if (e.key === 'Tab' && sheetRef.current) {
+        const focusable = sheetRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        if (sheetRef.current) {
+          const firstFocusable = sheetRef.current.querySelector<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (firstFocusable) {
+            firstFocusable.focus();
+          } else {
+            sheetRef.current.focus();
+          }
+        }
+      });
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [open, handleKeyDown]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -112,13 +175,20 @@ export function GlassSheet({
             transition={{ duration: 0.25 }}
             className="lg-backdrop"
             onClick={onClose}
+            aria-hidden="true"
           />
           <motion.div
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={ariaLabel}
+            aria-labelledby={ariaLabelledby}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 320 }}
             className={`lg-sheet ${className}`}
+            tabIndex={-1}
           >
             <div className="flex justify-center -mt-2 mb-5">
               <div className="w-10 h-1 rounded-full bg-black/10 dark:bg-white/15" />

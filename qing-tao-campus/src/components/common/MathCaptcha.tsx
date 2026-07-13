@@ -70,6 +70,7 @@ export function MathCaptcha({ onCaptchaReady, onCaptchaChange, className, refres
               src={svgDataUri}
               alt="验证码"
               className={`h-11 rounded-lg border border-white/20 select-none bg-white ${rateLimited ? 'opacity-30 pointer-events-none' : 'cursor-pointer'}`}
+              decoding="async"
               onClick={() => { onCaptchaChange(); generate(); }}
             />
             <button

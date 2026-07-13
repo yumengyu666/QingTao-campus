@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { useNavigate } from 'react-router-dom';
@@ -12,11 +12,12 @@ import { Skeleton } from '@/components/common/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
 import { EndOfList } from '@/components/common/EndOfList';
 import { LazyImage } from '@/components/common/LazyImage';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { apiFetch } from '@/utils/api';
 import type { Goods } from '@/types/goods';
 import { formatTime } from '@/utils/format';
 import { useAuthStore } from '@/stores/authStore';
-import { FiBox, FiX, FiEye, FiMapPin, FiTag } from 'react-icons/fi';
+import { FiBox, FiX, FiEye, FiMapPin, FiTag, FiStar } from 'react-icons/fi';
 
 const FALLBACK_BANNERS = [
   { id: 1, src: '/banner1.webp', alt: '轻淘 — 郑轻校园二手交易' },
@@ -46,7 +47,7 @@ const itemFade = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
 
@@ -59,12 +60,14 @@ export default function HomePage() {
   const [activeType, setActiveType] = useState('');
   const [newestGoods, setNewestGoods] = useState<Goods[]>([]);
   const [hotGoods, setHotGoods] = useState<Goods[]>([]);
+  const [recommendedGoods, setRecommendedGoods] = useState<Goods[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [announcements, setAnnouncements] = useState<Array<{ id: number; title: string; content: string; createdAt: string }>>([]);
   const [categories, setCategories] = useState<{ id: number; name: string; icon: string }[]>([]);
   const [banners, setBanners] = useState(FALLBACK_BANNERS);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<{ id: number; title: string; content: string; createdAt: string } | null>(null);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() => localStorage.getItem('welcome_dismissed') === '1');
 
   const fetchData = useCallback(() => {
     const controller = new AbortController();
@@ -74,7 +77,7 @@ export default function HomePage() {
     if (activeCampus) params.set('campus', activeCampus);
     if (activeType) params.set('listType', activeType);
 
-    Promise.all([
+    Promise.allSettled([
       apiFetch(`/api/goods/newest?${params.toString()}`, { signal: controller.signal }).then((r) => r.json()),
       apiFetch(`/api/goods/hot?${params.toString()}`, { signal: controller.signal }).then((r) => r.json()),
     ])
@@ -124,6 +127,15 @@ export default function HomePage() {
         }
       })
       .catch(() => {});
+    // "为你推荐" — 随机推荐（fallback to newest）
+    apiFetch('/api/goods?sort=newest&pageSize=6')
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.code === 200 && j.data?.list?.length > 0) {
+          setRecommendedGoods(j.data.list);
+        }
+      })
+      .catch(() => { /* 推荐加载失败：非关键功能，静默降级 */ });
   }, []);
 
   const handleCategoryClick = (catId: number) => {
@@ -163,6 +175,46 @@ export default function HomePage() {
         <SearchBar placeholder="搜索商品..." searchType="goods" />
       </div>
 
+      {/* Welcome Card — shown to logged-in users who haven't dismissed it */}
+      {currentUser && !welcomeDismissed && (
+        <div className="px-4 mb-4">
+          <GlassCard padding="lg" variant="featured" className="relative">
+            <button
+              onClick={() => {
+                setWelcomeDismissed(true);
+                localStorage.setItem('welcome_dismissed', '1');
+              }}
+              className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              aria-label="关闭"
+            >
+              <FiX size={16} />
+            </button>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/20">
+                🎉
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  欢迎来到轻淘校园！
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                  这里是郑州轻工业大学的校园社区 — 二手交易、社区广场、失物招领、匿名树洞，开启你的校园生活
+                </p>
+                <button
+                  onClick={() => {
+                    setWelcomeDismissed(true);
+                    localStorage.setItem('welcome_dismissed', '1');
+                  }}
+                  className="mt-3 px-5 py-2 bg-indigo-500 text-white text-sm font-medium rounded-xl hover:bg-indigo-600 active:scale-95 transition-all shadow-md shadow-indigo-500/20"
+                >
+                  开始探索
+                </button>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
       {/* Welcome Hero — new users see this */}
       {!currentUser && (
         <div className="px-4 mb-4">
@@ -189,8 +241,7 @@ export default function HomePage() {
 
       {/* Banner */}
       <div className="px-4 mb-6 md:px-0 md:mb-8">
-        <Swiper
-          modules={[Autoplay, Pagination]}
+        <Swiper modules={[Autoplay, Pagination]}
           autoplay={{ delay: 3500, disableOnInteraction: false }}
           pagination={{ clickable: true, el: '.banner-pagination' }}
           loop
@@ -199,7 +250,7 @@ export default function HomePage() {
         >
           {banners.map((b) => (
             <SwiperSlide key={b.id}>
-              <img src={b.src} alt={b.alt} className="w-full h-full object-cover" loading={b.id === 1 ? 'eager' : 'lazy'} fetchpriority={b.id === 1 ? 'high' : 'auto'} />
+              <img src={b.src} alt={b.alt} className="w-full h-full object-cover" loading={b.id === 1 ? 'eager' : 'lazy'} decoding="async" fetchPriority={b.id === 1 ? 'high' : 'auto'} />
             </SwiperSlide>
           ))}
         </Swiper>
@@ -249,7 +300,11 @@ export default function HomePage() {
                     {announcements.map((a, i: number) => (
                       <span
                         key={a.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`公告：${a.title}`}
                         onClick={() => setSelectedAnnouncement(a)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAnnouncement(a); } }}
                         className="cursor-pointer hover:underline font-medium"
                       >
                         {a.title}
@@ -311,7 +366,7 @@ export default function HomePage() {
           <motion.span
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-xs text-gray-400 ml-1 hidden md:inline"
+            className="text-xs text-gray-400 ml-1 inline"
           >
             {activeFilters}（{goodsCount} 件）
           </motion.span>
@@ -319,7 +374,7 @@ export default function HomePage() {
       </div>
 
       {/* Newest Goods */}
-      <section className="px-4 mb-6">
+      <section className="px-4 mb-6" data-onboarding="home-goods">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-lg md:text-xl flex items-center gap-2">
             最新发布
@@ -337,7 +392,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        {loading && initialLoad ? (
+        {loading ? (
           <Skeleton.Grid count={4} cols={4} />
         ) : newestGoods.length === 0 ? (
           <EmptyState
@@ -381,10 +436,11 @@ export default function HomePage() {
       {/* Hot Goods */}
       <section className="px-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-lg md:text-xl">🔥 热门推荐</h2>
+          <h2 className="font-bold text-lg md:text-xl flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>🔥 热门推荐</h2>
         </div>
 
-        {loading && initialLoad ? (
+        {loading ? (
           <Skeleton.Grid count={4} cols={2} />
         ) : hotGoods.length === 0 ? (
           !loading && (
@@ -409,6 +465,44 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* Recommended For You */}
+      {recommendedGoods.length > 0 && (
+        <section className="px-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-lg md:text-xl flex items-center gap-2">
+              <FiStar className="text-indigo-500" /> 为你推荐
+            </h2>
+          </div>
+          {/* Mobile: horizontal scroll */}
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 md:hidden">
+            {recommendedGoods.slice(0, 6).map((g, i) => (
+              <motion.div
+                key={g.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.06 }}
+                className="flex-shrink-0 w-40"
+              >
+                <GoodsItem g={g} onClick={() => lgNav(`/goods/${g.id}`)} />
+              </motion.div>
+            ))}
+          </div>
+          {/* Desktop: grid */}
+          <div className="hidden md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-4">
+            {recommendedGoods.slice(0, 4).map((g, i) => (
+              <motion.div
+                key={g.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <GoodsItem g={g} onClick={() => lgNav(`/goods/${g.id}`)} />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Bottom hint */}
       {!loading && !initialLoad && (newestGoods.length > 0 || hotGoods.length > 0) && (
         <EndOfList />
@@ -418,11 +512,15 @@ export default function HomePage() {
       <AnimatePresence>
         {selectedAnnouncement && (
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="announcement-title"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm"
             onClick={() => setSelectedAnnouncement(null)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setSelectedAnnouncement(null); }}
           >
             <motion.div
               initial={{ y: '100%' }}
@@ -435,10 +533,11 @@ export default function HomePage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📢</span>
-                  <h2 className="font-bold text-lg">{selectedAnnouncement.title}</h2>
+                  <h2 id="announcement-title" className="font-bold text-lg">{selectedAnnouncement.title}</h2>
                 </div>
                 <button
                   onClick={() => setSelectedAnnouncement(null)}
+                  aria-label="关闭公告"
                   className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 >
                   <FiX />
@@ -461,7 +560,7 @@ export default function HomePage() {
 }
 
 /* ==================== Goods Item Card ==================== */
-function GoodsItem({ g, onClick }: { g: Goods; onClick: () => void }) {
+const GoodsItem = memo(function GoodsItem({ g, onClick }: { g: Goods; onClick: () => void }) {
   const isOwner = g.userId === useAuthStore.getState().user?.id;
 
   const getImgSrc = (img: string | { url?: string; blurredUrl?: string; pending?: boolean }) => {
@@ -489,7 +588,11 @@ function GoodsItem({ g, onClick }: { g: Goods; onClick: () => void }) {
 
   return (
     <motion.div
+      role="button"
+      tabIndex={0}
+      aria-label={`${g.title}，价格${priceLabel}，${g.campus ? CAMPUS_MAP[g.campus as keyof typeof CAMPUS_MAP] || g.campus : ''}`}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       whileTap={{ scale: 0.97 }}
       className="bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden cursor-pointer hover-lift group border border-gray-50 dark:border-[var(--color-border)]"
     >
@@ -573,4 +676,4 @@ function GoodsItem({ g, onClick }: { g: Goods; onClick: () => void }) {
       </div>
     </motion.div>
   );
-}
+});

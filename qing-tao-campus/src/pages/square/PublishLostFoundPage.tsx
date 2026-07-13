@@ -4,6 +4,7 @@ import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import type { ImageItem } from '@/components/common/ImageUploader';
+import { CharCounter } from '@/components/common/CharCounter';
 import { Skeleton } from '@/components/common/Skeleton';
 import { CAMPUS_MAP } from '@/utils/constants';
 import { useDraft } from '@/hooks/useDraft';
@@ -108,9 +109,8 @@ export default function PublishLostFoundPage() {
 
   return (
     <div>
-      <Header title={isEdit ? '编辑失物招领' : type === 'lost' ? '发布丢失物品' : '发布捡到物品'} />
-      <div className="p-4 space-y-5">
-        {/* Type */}
+      <Header title={isEdit ? '编辑失物招领' : '发布失物招领'} />
+      <div className="p-4 flex flex-col gap-4">
         <div>
           <label className="text-sm font-medium mb-2 block">类型</label>
           <div className="flex gap-2">
@@ -120,17 +120,15 @@ export default function PublishLostFoundPage() {
             </button>
             <button onClick={() => setType('found')}
               className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${type === 'found' ? 'bg-green-500 text-white' : 'bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)]'}`}>
-              🟢 我捡到东西
+              🟢 我捡到了东西
             </button>
           </div>
         </div>
-
-        {/* Title */}
         <div>
           <label className="text-sm font-medium mb-2 block">标题</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：丢失蓝色卡包、捡到一副耳机" maxLength={50}
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="简要描述丢失物品" maxLength={50}
             className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none" />
-          <p className="text-xs text-gray-400 text-right mt-1">{title.length}/50</p>
+          <CharCounter current={title.length} max={50} />
         </div>
 
         {/* Images */}
@@ -190,9 +188,8 @@ export default function PublishLostFoundPage() {
         {/* Description */}
         <div>
           <label className="text-sm font-medium mb-2 block">详细描述</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="描述物品特征、丢失/捡到的经过..." rows={5} maxLength={2000}
-            className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none resize-none" />
-          <p className="text-xs text-gray-400 text-right mt-1">{description.length}/2000</p>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="描述物品特征、text-sm font-bold-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none resize-none" />
+          <CharCounter current={description.length} max={2000} />
         </div>
 
         <button onClick={handleSubmit} disabled={submitting}

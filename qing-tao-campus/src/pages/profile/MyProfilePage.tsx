@@ -278,7 +278,7 @@ export default function MyProfilePage() {
         </button>
         <button
           onClick={() => {
-            if (window.confirm('确定要注销账号吗？此操作不可撤销，所有数据将被清除。')) {
+            if (window.confirm('确定要注销账号吗？此操作不可撤销，所有数据将被清除。') && window.confirm('再次确认：注销后所有商品、帖子、聊天记录将永久删除。')) {
               apiFetch('/api/users/me', { method: 'DELETE' })
                 .then(r => r.json())
                 .then(j => { if (j.code === 200) { useAuthStore.getState().logout(); } })

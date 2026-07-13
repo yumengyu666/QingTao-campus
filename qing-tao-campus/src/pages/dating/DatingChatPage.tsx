@@ -277,7 +277,7 @@ export default function DatingChatPage() {
           </span>
         </div>
         {peer?.userId && (
-          <button onClick={() => navigate(`/messages/${peer.userId}`)}
+          <button onClick={() => nav(`/messages/${peer.userId}`)}
             className="text-xs px-2 py-1 rounded-md text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors mr-1">
             普通消息
           </button>

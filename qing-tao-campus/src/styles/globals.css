@@ -8,6 +8,7 @@
 @import "./components.css";
 @import "./forms.css";
 @import "./accessibility.css";
+@import "./a11y-fixes.css";
 @import "./liquid-glass-light.css";
 @import "./liquid-glass-dark.css";
 @import "./liquid-glass.css";

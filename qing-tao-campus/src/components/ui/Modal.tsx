@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef, useId } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ModalProps {
@@ -38,6 +38,10 @@ export function Modal({
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 640 : false
   );
+  const titleId = useId();
+  const descId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 640);
@@ -47,19 +51,61 @@ export function Modal({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      // Focus trap: Tab / Shift+Tab within the dialog
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     },
     [onClose]
   );
 
   useEffect(() => {
     if (open) {
+      // Save current focus to restore on close
+      previousFocusRef.current = document.activeElement as HTMLElement;
       document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
+      // Focus first focusable element after render
+      requestAnimationFrame(() => {
+        if (dialogRef.current) {
+          const firstFocusable = dialogRef.current.querySelector<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (firstFocusable) {
+            firstFocusable.focus();
+          } else {
+            dialogRef.current.focus();
+          }
+        }
+      });
     }
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
+      // Restore focus on close
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        previousFocusRef.current.focus();
+      }
     };
   }, [open, handleKeyDown]);
 
@@ -80,16 +126,23 @@ export function Modal({
             className="absolute inset-0 bg-[var(--modal-backdrop-bg)]"
             style={{ backdropFilter: 'var(--modal-backdrop-blur)' }}
             onClick={closeOnBackdrop ? onClose : undefined}
+            aria-hidden="true"
           />
 
           {/* Bottom Sheet (mobile) */}
           {useBottomSheet ? (
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? titleId : undefined}
+              aria-describedby={description ? descId : undefined}
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               className="fixed bottom-0 left-0 right-0 bg-[var(--modal-bg)] rounded-t-2xl shadow-[var(--modal-shadow)] max-h-[85vh] overflow-y-auto w-full"
+              tabIndex={-1}
             >
               {/* Drag handle */}
               <div className="flex justify-center pt-3 pb-1">
@@ -100,10 +153,10 @@ export function Modal({
                 <div className="flex items-start justify-between px-5 pt-2 pb-0">
                   <div>
                     {title && (
-                      <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{title}</h2>
+                      <h2 id={titleId} className="text-lg font-bold text-[var(--color-text-primary)]">{title}</h2>
                     )}
                     {description && (
-                      <p className="text-sm text-[var(--color-text-tertiary)] mt-1">{description}</p>
+                      <p id={descId} className="text-sm text-[var(--color-text-tertiary)] mt-1">{description}</p>
                     )}
                   </div>
                   {showClose && (
@@ -127,22 +180,28 @@ export function Modal({
           ) : (
             /* Centered Modal (desktop) */
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? titleId : undefined}
+              aria-describedby={description ? descId : undefined}
               initial={{ scale: 0.92, y: 24, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.92, y: 24, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               className={`relative bg-[var(--modal-bg)] rounded-[var(--modal-border-radius)] shadow-[var(--modal-shadow)] w-full overflow-hidden`}
               style={{ maxWidth: sizeMap[size] }}
+              tabIndex={-1}
             >
               {/* Header */}
               {(title || showClose) && (
                 <div className="flex items-start justify-between p-[var(--modal-padding)] pb-0">
                   <div>
                     {title && (
-                      <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{title}</h2>
+                      <h2 id={titleId} className="text-lg font-bold text-[var(--color-text-primary)]">{title}</h2>
                     )}
                     {description && (
-                      <p className="text-sm text-[var(--color-text-tertiary)] mt-1">{description}</p>
+                      <p id={descId} className="text-sm text-[var(--color-text-tertiary)] mt-1">{description}</p>
                     )}
                   </div>
                   {showClose && (

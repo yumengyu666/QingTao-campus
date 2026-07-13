@@ -2,7 +2,7 @@ export const TOKEN_KEY = 'qingtao_token';
 const REFRESH_KEY = 'qingtao_refresh';
 export const USER_KEY = 'qingtao_user';
 const THEME_KEY = 'qingtao_theme';
-const SEARCH_HISTORY_KEY = 'qingtao_search_history';
+const SEARCH_HISTORY_KEY = 'search_history';
 
 export const storage = {
   getToken: (): string | null => localStorage.getItem(TOKEN_KEY),
@@ -49,7 +49,7 @@ export const storage = {
     }
   },
   setSearchHistory: (history: string[]) => {
-    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
   },
   clearSearchHistory: () => localStorage.removeItem(SEARCH_HISTORY_KEY),
 };

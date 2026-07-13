@@ -8,12 +8,13 @@ import { EndOfList } from '@/components/common/EndOfList';
 import { Pagination } from '@/components/common/Pagination';
 import { BackToTop } from '@/components/common/BackToTop';
 import { LazyImage } from '@/components/common/LazyImage';
+import { VirtualList } from '@/components/common/VirtualList';
 import { ShimmerCard } from '@/components/ui/ShimmerCard';
 import { CONDITION_COLORS, CAMPUS_MAP } from '@/utils/constants';
 import { CONDITION_MAP } from '@/types/goods';
 import { apiFetch } from '@/utils/api';
 import { useAuthStore } from '@/stores/authStore';
-import { FiSearch, FiChevronLeft, FiChevronRight, FiSliders, FiBarChart2 } from 'react-icons/fi';
+import { FiSearch, FiChevronLeft, FiChevronRight, FiSliders, FiBarChart2, FiPlusCircle } from 'react-icons/fi';
 import { useCompareStore } from '@/stores/compareStore';
 import { useCampusStore } from '@/stores/campusStore';
 
@@ -26,7 +27,16 @@ export default function GoodsListPage() {
   const campusStore = useCampusStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = Number(searchParams.get('categoryId')) || 0;
-  const activeCampus = campusStore.campus; // Uses global campus store instead of URL param
+  const activeCampus = campusStore.campus;
+  // Sync campus to URL for shareability and back/forward navigation
+  useEffect(() => {
+    const current = searchParams.get('campus');
+    if (activeCampus && current !== activeCampus) {
+      setSearchParams(prev => { prev.set('campus', activeCampus); return prev; }, { replace: true });
+    } else if (!activeCampus && current) {
+      setSearchParams(prev => { prev.delete('campus'); return prev; }, { replace: true });
+    }
+  }, [activeCampus]);
   const [sort, setSort] = useState<SortType>('newest');
   const [conditions, setConditions] = useState<string[]>([]);
   const [listType, setListType] = useState(searchParams.get('listType') || '');
@@ -38,12 +48,14 @@ export default function GoodsListPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [error, setError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollL, setCanScrollL] = useState(false);
   const [canScrollR, setCanScrollR] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<{ id: number; name: string; icon: string }[]>([]);
   const [page, setPage] = useState(1);
+  const [searchTrigger, setSearchTrigger] = useState(0);
 
   const updateArrows = useCallback(() => {
     const el = scrollRef.current;
@@ -83,6 +95,7 @@ export default function GoodsListPage() {
       params.set('order', 'desc');
     } else if (sort === 'hot') params.set('sort', 'view_count');
 
+    setError(false);
     apiFetch(`/api/goods?${params.toString()}`)
       .then((res) => res.json())
       .then((json) => {
@@ -91,12 +104,12 @@ export default function GoodsListPage() {
           setTotal(json.data.total || 0);
         }
       })
-      .catch(() => {})
+      .catch(() => { setError(true); })
       .finally(() => {
         setLoading(false);
         setInitialLoad(false);
       });
-  }, [activeCategory, activeCampus, conditions, keyword, sort, listType, page, priceMin, priceMax]);
+  }, [activeCategory, activeCampus, conditions, keyword, sort, listType, page, priceMin, priceMax, searchTrigger]);
 
   useEffect(() => {
     apiFetch('/api/categories').then(r => r.json())
@@ -131,15 +144,23 @@ export default function GoodsListPage() {
 
       {/* Search Bar */}
       <div className="px-4 py-3 bg-white dark:bg-[var(--color-card)]">
-        <div className="relative">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="搜索商品..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-[var(--color-card-hover)] focus:bg-gray-50 dark:focus:bg-[var(--color-card-hover)] outline-none text-sm transition-all focus:ring-2 focus:ring-indigo-400/30"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="搜索商品..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setSearchTrigger(t => t + 1); }}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-[var(--color-card-hover)] focus:bg-gray-50 dark:focus:bg-[var(--color-card-hover)] outline-none text-sm transition-all focus:ring-2 focus:ring-indigo-400/30"
+            />
+          </div>
+          <button onClick={() => setSearchTrigger(t => t + 1)}
+            className="px-4 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 active:scale-95 transition-all flex-shrink-0"
+            aria-label="搜索">
+            <FiSearch size={16} />
+          </button>
         </div>
       </div>
 
@@ -148,6 +169,7 @@ export default function GoodsListPage() {
         {/* 左箭头 */}
         <button
           onClick={() => scroll('left')}
+          aria-label="向左滚动分类"
           className={`hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-[var(--color-card-hover)] shadow-lg border border-gray-200 dark:border-[var(--color-border)] hover:shadow-xl transition-all ${
             canScrollL ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
@@ -185,6 +207,7 @@ export default function GoodsListPage() {
         {/* 右箭头 */}
         <button
           onClick={() => scroll('right')}
+          aria-label="向右滚动分类"
           className={`hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-[var(--color-card-hover)] shadow-lg border border-gray-200 dark:border-[var(--color-border)] hover:shadow-xl transition-all ${
             canScrollR ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
@@ -275,7 +298,7 @@ export default function GoodsListPage() {
           <div className="flex items-center gap-1">
             <input
               type="number" placeholder="最低价" value={priceMin}
-              onChange={(e) => { const v = e.target.value; if (v && isNaN(Number(v))) { setPriceError('请输入有效价格'); return; } setPriceError(''); setPriceMin(v); }}
+              onChange={(e) => { const v = e.target.value; if (v && isNaN(Number(v))) { setPriceError('请输入有效价格'); return; } setPriceError(''); if (priceMax && Number(v) > Number(priceMax)) setPriceError('最低价不能高于最高价'); else setPriceMin(v); }}
               className="w-20 px-2.5 py-1.5 rounded-full text-xs bg-gray-100 dark:bg-[var(--color-card-hover)] text-gray-600 dark:text-[var(--color-text-secondary)] outline-none border-0"
             />
             <span className="text-xs text-gray-400">—</span>
@@ -311,10 +334,27 @@ export default function GoodsListPage() {
             <ShimmerCard key={i} lines={2} avatar={false} className="h-56" />
           ))}
         </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <p className="text-gray-500 text-sm">加载失败，请检查网络</p>
+          <button onClick={() => { setError(false); setSearchTrigger(t => t + 1); }}
+            className="px-6 py-2 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 active:scale-95 transition-all">
+            重试
+          </button>
+        </div>
       ) : goods.length === 0 ? (
         <EmptyState
           message="暂无符合条件的商品"
           description="试试调整筛选条件或搜索关键词"
+          action={
+            <button
+              onClick={() => nav('/publish/goods')}
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-500 text-white text-sm font-medium rounded-xl hover:bg-indigo-600 active:scale-95 transition-all shadow-md shadow-indigo-500/20"
+            >
+              <FiPlusCircle size={15} />
+              发布第一件商品
+            </button>
+          }
         />
       ) : (
         <div className="p-4 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
@@ -329,10 +369,18 @@ export default function GoodsListPage() {
             return (
             <motion.div
               key={g.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${g.title}，${g.categoryName || ''}，价格${(() => {
+                if (g.listType === 'rent' || g.listType === 'rent_want') return `¥${g.price}/天`;
+                if (g.listType === 'buy') return `求 ¥${g.price}`;
+                return `¥${g.price}`;
+              })()}`}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               onClick={() => navigate(`/goods/${g.id}`)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/goods/${g.id}`); } }}
               className="bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden cursor-pointer hover-lift group"
             >
               <div className="h-36 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-4xl relative overflow-hidden">
@@ -347,12 +395,12 @@ export default function GoodsListPage() {
                   <span className="text-4xl">📦</span>
                 )}
                 {g.hasPendingImages && (
-                  <span className="absolute bottom-2 left-2 text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-yellow-50/90 text-yellow-600 backdrop-blur-sm">
+                  <span className="absolute bottom-2 left-2 text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-yellow-600/90 text-white font-bold backdrop-blur-sm shadow-sm">
                     🕐 图片审核中
                   </span>
                 )}
                 {g.status === 'sold' && (
-                  <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-gray-800/80 text-white backdrop-blur-sm">
+                  <span className="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-red-600/90 text-white font-bold backdrop-blur-sm shadow outline outline-1 outline-white/30">
                     已售
                   </span>
                 )}
@@ -371,7 +419,7 @@ export default function GoodsListPage() {
                       import('react-hot-toast').then(m => m.default.error(result.message));
                     }
                   }}
-                    className={`absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded-md font-medium backdrop-blur-sm ${
+                    className={`absolute bottom-2 right-2 text-[11px] px-2 py-1 rounded-md font-medium backdrop-blur-sm ${
                       compareStore.hasItem(g.id) ? 'bg-indigo-500/90 text-white' : 'bg-white/80 text-gray-600'
                     }`}>
                     {compareStore.hasItem(g.id) ? '✓ 已对比' : '⇆ 对比'}

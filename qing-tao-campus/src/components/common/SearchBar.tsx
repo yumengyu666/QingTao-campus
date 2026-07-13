@@ -18,7 +18,7 @@ export function SearchBar({
 
   return (
     <motion.button
-      whileTap={{ scale: 0.985 }}
+      whileTap={{ scale: 0.99 }}
       onClick={() => nav(to)}
       className={`lg-input lg-input-search group ${className}`}
       aria-label={placeholder}
@@ -26,6 +26,7 @@ export function SearchBar({
       <FiSearch
         className="text-[var(--color-text-tertiary)] group-hover:text-[var(--color-text-secondary)] transition-colors flex-shrink-0"
         size={17}
+        aria-hidden="true"
       />
       <span className="text-sm text-[var(--color-text-placeholder)] text-left flex-1 select-none">
         {placeholder}

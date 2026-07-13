@@ -9,7 +9,7 @@ import { useUnreadStore } from '@/stores/unreadStore';
 import { formatRelativeTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
 import toast from 'react-hot-toast';
-import { FiBell, FiTrash2, FiCheckCircle } from 'react-icons/fi';
+import { FiBell, FiTrash2, FiCheckCircle, FiHome } from 'react-icons/fi';
 
 const typeIcons: Record<string, string> = { review_result: '📋', new_follower: '👤', new_comment: '💬', goods_sold: '💰', announcement: '📢', dating_request: '💝', chat_message: '✉️', reservation: '📅', barter: '🔄', wanted: '🔍' };
 
@@ -41,6 +41,8 @@ export default function NotificationsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [filterType, setFilterType] = useState('all');
 
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+
   const typeFilters = [
     { key: 'all', label: '全部', icon: '🔔' },
     { key: 'trade', label: '交易', icon: '💰', types: ['trade_intent', 'trade_accepted', 'trade_completed', 'trade_rejected', 'new_review'] },
@@ -49,19 +51,21 @@ export default function NotificationsPage() {
   ];
 
   const filteredNotifs = filterType === 'all'
-    ? notifs
+    ? notifs.filter(n => !showUnreadOnly || !n.isRead)
     : notifs.filter(n => {
         const filter = typeFilters.find(f => f.key === filterType);
         return filter?.types?.includes(n.type);
       });
 
   const fetchNotifs = () => {
-    apiFetch('/api/notifications')
+    apiFetch('/api/notifications?page=&pageSize=20')
       .then(r => r.json()).then(json => { if (json.code === 200) setNotifs(json.data.list || []); })
       .catch(() => {}).finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchNotifs(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchNotifs(); }, [token]);
+  const [notifPage, setNotifPage] = useState(1);
+  const loadMoreNotifs = () => { setNotifPage(p => p + 1); };; // eslint-disable-line react-hooks/exhaustive-deps
 
   const markAllRead = async () => {
     const res = await apiFetch('/api/notifications/read-all', { method: 'PATCH' });
@@ -82,7 +86,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const deleteOne = async (e: React.MouseEvent, id: number) => {
+  const deleteOne = async (e: React.MouseEvent, id: number) => { if (!window.confirm('确定删除此通知？')) return;
     e.stopPropagation();
     try {
       const res = await apiFetch(`/api/notifications/${id}`, { method: 'DELETE' });
@@ -179,7 +183,7 @@ export default function NotificationsPage() {
         <button onClick={markAllRead} className="text-sm text-indigo-500">全部已读</button>
       </div>
       {loading ? <div className="p-4"><Skeleton.List rows={5} /></div>
-      : filteredNotifs.length === 0 ? <EmptyState message={filterType === 'all' ? '暂无通知' : '暂无此类通知'} icon={<FiBell className="text-5xl mb-4" />} />
+      : filteredNotifs.length === 0 ? <EmptyState message={filterType === 'all' ? '暂无通知' : '暂无此类通知'} description="当有人评论你的商品、关注你或发送私信时，你会收到通知" icon={<FiBell className="text-5xl mb-4" />} action={<button onClick={() => nav('/')} className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-500 text-white text-sm font-medium rounded-xl hover:bg-indigo-600 active:scale-95 transition-all shadow-md shadow-indigo-500/20"><FiHome size={15} />去首页逛逛</button>} />
       : (
         <div className="divide-y divide-gray-50 dark:divide-[var(--color-border)]">
           {filteredNotifs.map((n) => {

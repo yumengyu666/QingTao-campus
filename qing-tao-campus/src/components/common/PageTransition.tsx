@@ -50,6 +50,27 @@ const reducedVariants = {
 };
 
 /* Glass sub-page variant — slide in/out from right with subtle blur */
+const slideVariants = {
+  slideRight: {
+    initial: { x: "30%", opacity: 0 },
+    animate: { x: 0, opacity: 1 },
+    exit: { x: "-30%", opacity: 0 },
+    transition: { type: "spring", damping: 28, stiffness: 300 }
+  },
+  slideLeft: {
+    initial: { x: "-30%", opacity: 0 },
+    animate: { x: 0, opacity: 1 },
+    exit: { x: "30%", opacity: 0 },
+    transition: { type: "spring", damping: 28, stiffness: 300 }
+  },
+  slideUp: {
+    initial: { y: "20%", opacity: 0 },
+    animate: { y: 0, opacity: 1 },
+    exit: { y: "20%", opacity: 0 },
+    transition: { type: "spring", damping: 28, stiffness: 300 }
+  },
+};
+
 const glassVariants = {
   initial: {
     opacity: 0,

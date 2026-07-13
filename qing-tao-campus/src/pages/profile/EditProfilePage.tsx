@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
+import { CharCounter } from '@/components/common/CharCounter';
+import { FormField } from '@/components/common/FormField';
 import { useAuthStore } from '@/stores/authStore';
 import { CAMPUS_OPTIONS } from '@/types/category';
 import { apiFetch } from '@/utils/api';
@@ -99,7 +101,7 @@ export default function EditProfilePage() {
         {/* Avatar */}
         <div className="flex flex-col items-center">
           <div className="w-20 h-20 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl font-medium overflow-hidden">
-            {avatar ? <img src={avatar} alt="" className="w-full h-full object-cover" /> : (nickname || user?.username || '?')[0]}
+            {avatar ? <img src={avatar} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /> : (nickname || user?.username || '?')[0]}
           </div>
           <label className="mt-2 text-sm text-indigo-500 cursor-pointer hover:text-indigo-600 transition-colors">
             {avatarUploading ? '上传中...' : '更换头像'}
@@ -157,16 +159,17 @@ export default function EditProfilePage() {
         </div>
 
         {/* Bio */}
-        <div>
-          <label className="text-sm font-medium mb-1 block">个人简介</label>
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={100} rows={3} placeholder="介绍一下自己..."
+        <FormField label="个人简介">
+          <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={200} rows={3} placeholder="介绍一下自己..."
             className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none resize-none" />
-          <p className="text-xs mt-1">
-            当前展示：{user?.bio || '(空)'}
-            {statusBadge('bio')}
-          </p>
-          <p className="text-xs text-gray-400 text-right">{bio.length}/100</p>
-        </div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs">
+              当前展示：{user?.bio || '(空)'}
+              {statusBadge('bio')}
+            </p>
+            <CharCounter current={bio.length} max={200} />
+          </div>
+        </FormField>
 
         {/* Campus */}
         <div>

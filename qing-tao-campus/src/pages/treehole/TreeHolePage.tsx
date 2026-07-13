@@ -116,6 +116,7 @@ export default function TreeHolePage() {
         body: JSON.stringify({ action }),
       });
     } catch {
+      toast.error('网络错误，点赞失败');
       // Revert on error
       const revert = new Set(likedIds);
       if (isLiked) revert.add(postId); else revert.delete(postId);
@@ -189,7 +190,7 @@ export default function TreeHolePage() {
               {posting ? '...' : '发布'}
             </motion.button>
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 text-right">{content.length}/1000</p>
+          <p className="text-[11px] text-gray-400 mt-2 text-right"><span className={content.length > 900 ? 'text-red-500 font-bold' : ''}>{content.length}/1000</span></p>
         </motion.div>
 
         {/* Sort toggle */}
@@ -198,9 +199,9 @@ export default function TreeHolePage() {
           <button onClick={() => { setSort('newest'); setPage(1); fetchPosts(1); }}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${sort === 'newest' ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-[var(--color-card-hover)] text-gray-500'}`}>最新</button>
           <button onClick={() => { setSort('hot'); setPage(1); fetchPosts(1); }}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${sort === 'hot' ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-[var(--color-card-hover)] text-gray-500'}`}>最热</button>
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${sort === 'hot' ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-[var(--color-card-hover)] text-gray-500'}`}>最热</button><button onClick={() => { setSort('week'); setPage(1); fetchPosts(1); }} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${sort === "week" ? "bg-indigo-500 text-white" : "bg-gray-100 dark:bg-[var(--color-card-hover)] text-gray-500"}`}>本周</button>
           </div>
-          {myCodes.size > 0 && (
+          {myCodes.size > 0 && (<span className="text-[10px] text-gray-400 mr-1" title="匿名码仅保存在当前浏览器">&#9888;</span>) && (
             <button onClick={() => setShowMine(!showMine)}
               className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${showMine ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-gray-400 hover:text-gray-600'}`}>
               {showMine ? '全部' : `我的(${myCodes.size})`}
@@ -239,7 +240,7 @@ export default function TreeHolePage() {
                     <div onClick={() => handleExpand(p.id)} className="p-4 cursor-pointer">
                       <div className="flex items-center gap-2 mb-2.5">
                         <span className="px-2.5 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-bold rounded-full">
-                          #{p.code}
+                          #{p._displayIndex || (typeof p.id === "number" ? p.id.toString(36).toUpperCase() : "????")}
                         </span>
                         <span className="text-[11px] text-gray-400">{formatTime(p.createdAt)}</span>
                       </div>
@@ -249,7 +250,7 @@ export default function TreeHolePage() {
                       {(() => { const imgs = typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []); return imgs.length > 0 && (
                         <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(imgs.length, 3)}, 1fr)` }}>
                         {imgs.slice(0, 3).map((img: string, idx: number) => (
-                          <LazyImage key={idx} src={img} alt="" className="w-full aspect-square rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+                          <LazyImage key={idx} src={img} alt="" loading="lazy" className="w-full aspect-square rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
                             onClick={(e) => { e.stopPropagation(); setLightboxImages(imgs); setLightboxIndex(idx); }} />
                         ))}
                         </div>
@@ -272,7 +273,7 @@ export default function TreeHolePage() {
                           {p.commentCount || 0}
                         </button>
                         <button onClick={(e) => handleReport(e, 'treehole_post', p.id)}
-                          className="flex items-center gap-1 text-xs text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors ml-auto">
+                          className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors ml-auto px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
                           <FiFlag className="text-[11px]" />
                         </button>
                       </div>

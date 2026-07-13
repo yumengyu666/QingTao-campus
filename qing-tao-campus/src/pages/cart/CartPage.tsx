@@ -8,8 +8,9 @@ import { Skeleton } from '@/components/common/Skeleton';
 import { useAuthStore } from '@/stores/authStore';
 import { CONDITION_MAP } from '@/types/goods';
 import { apiFetch } from '@/utils/api';
+import { classifyError, getErrorMessage } from '@/utils/errorHandler';
 import toast from 'react-hot-toast';
-import { FiTrash2, FiShoppingCart, FiCopy, FiChevronRight } from 'react-icons/fi';
+import { FiTrash2, FiShoppingCart, FiCopy, FiChevronRight, FiRefreshCw } from 'react-icons/fi';
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ export default function CartPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<number | null>(null);
+  const [orderingItems, setOrderingItems] = useState<Set<number>>(new Set());
+  const [orderErrors, setOrderErrors] = useState<Set<number>>(new Set());
 
   const fetchCart = () => {
     setLoading(true);
@@ -51,6 +54,29 @@ export default function CartPage() {
     }
     await navigator.clipboard.writeText(text);
     toast.success(`${label}已复制`);
+  };
+
+  const orderItem = async (item: any) => {
+    setOrderingItems(prev => new Set(prev).add(item.id));
+    setOrderErrors(prev => { const next = new Set(prev); next.delete(item.id); return next; });
+    try {
+      const res = await apiFetch('/api/orders', {
+        method: 'POST',
+        body: JSON.stringify({ goodsId: item.goodsId, cartItemId: item.id }),
+      });
+      const json = await res.json();
+      if (json.code === 200 || json.code === 201) {
+        toast.success('下单成功！');
+        setItems(prev => prev.filter(i => i.id !== item.id));
+      } else {
+        toast.error(json.message || '下单失败');
+        setOrderErrors(prev => new Set(prev).add(item.id));
+      }
+    } catch (err) {
+      toast.error(getErrorMessage(classifyError(err)));
+      setOrderErrors(prev => new Set(prev).add(item.id));
+    }
+    setOrderingItems(prev => { const next = new Set(prev); next.delete(item.id); return next; });
   };
 
   if (loading) {
@@ -104,7 +130,7 @@ export default function CartPage() {
                     <img
                       src={item.goods.images[0]}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover" decoding="async"
                       loading="lazy"
                     />
                   ) : (
@@ -160,6 +186,26 @@ export default function CartPage() {
                       >
                         <FiTrash2 className="text-xs" />
                       </button>
+                    </div>
+                    <div className="flex gap-1.5 mt-1.5">
+                      {orderErrors.has(item.id) ? (
+                        <button
+                          onClick={() => orderItem(item)}
+                          disabled={orderingItems.has(item.id)}
+                          className="text-[11px] px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 font-medium active:scale-90 transition-transform disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <FiRefreshCw className={`text-xs ${orderingItems.has(item.id) ? 'animate-spin' : ''}`} />
+                          重试下单
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => orderItem(item)}
+                          disabled={orderingItems.has(item.id)}
+                          className="text-[11px] px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-600 font-medium active:scale-90 transition-transform disabled:opacity-50"
+                        >
+                          {orderingItems.has(item.id) ? '下单中...' : '立即下单'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

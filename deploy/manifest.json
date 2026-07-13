@@ -1,0 +1,17 @@
+{
+  "name": "轻淘 - 青桃校园",
+  "short_name": "轻淘",
+  "description": "郑州轻工业大学校园二手交易平台",
+  "start_url": "/lg/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F2F7",
+  "theme_color": "#0066D6",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+var e={brand_new:`全新`,like_new:`九九新`,used:`正常使用`,worn:`战斗成色`},t={pending:{label:`审核中`,color:`bg-yellow-500`},approved:{label:`已上架`,color:`bg-green-500`},rejected:{label:`已拒绝`,color:`bg-red-500`},sold:{label:`已卖出`,color:`bg-gray-500`},reserved:{label:`已预订`,color:`bg-blue-500`},offline:{label:`已下架`,color:`bg-gray-400`}};export{t as n,e as t};

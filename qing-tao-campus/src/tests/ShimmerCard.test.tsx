@@ -6,12 +6,12 @@ describe('ShimmerCard', () => {
   it('renders with default props', () => {
     const { container } = render(<ShimmerCard />);
     expect(container.firstElementChild).toBeInTheDocument();
-    expect((container.firstElementChild as HTMLElement).className).toContain('rounded-2xl');
+    expect((container.firstElementChild as HTMLElement).className).toContain('lg-card');
   });
 
   it('renders avatar when avatar=true', () => {
     const { container } = render(<ShimmerCard avatar={true} />);
-    // The avatar is a 10x10 rounded-full div
+    // The avatar is a 10x10 rounded-full lg-skeleton div
     const avatarEl = container.querySelector('.w-10.h-10.rounded-full');
     expect(avatarEl).toBeInTheDocument();
   });
@@ -24,9 +24,8 @@ describe('ShimmerCard', () => {
 
   it('renders correct number of shimmer lines', () => {
     const { container } = render(<ShimmerCard lines={5} />);
-    // 1 avatar block (4 lines: avatar circle + 2 text lines) + 5 shimmer lines
-    const shimmerLines = container.querySelectorAll('.animate-shimmer');
-    // Total shimmer elements = avatar circle + 2 text lines + 5 content lines
+    // Uses lg-skeleton class for shimmer elements (avatar circle + 2 text + 5 content lines)
+    const shimmerLines = container.querySelectorAll('.lg-skeleton');
     expect(shimmerLines.length).toBeGreaterThanOrEqual(5);
   });
 

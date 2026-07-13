@@ -35,6 +35,13 @@ export function useSwipeBack(onSwipe: () => void, enabled = true) {
       const dx = e.touches[0].clientX - startX.current;
       const dy = e.touches[0].clientY - startY.current;
 
+      // Cancel tracking if vertical scroll dominates early movement (user is scrolling, not swiping)
+      if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+        tracking.current = false;
+        setProgress(0);
+        return;
+      }
+
       // Only continue tracking rightward swipes where horizontal > vertical
       if (dx > 0 && Math.abs(dx) > Math.abs(dy)) {
         setProgress(Math.min(dx / 120, 1));
@@ -72,4 +79,32 @@ export function useSwipeBack(onSwipe: () => void, enabled = true) {
   }, [onSwipe, enabled, resetProgress]);
 
   return { swipeProgress: progress };
+}
+
+// Enhanced swipe detection: only trigger on horizontal swipes (ignore vertical scroll)
+export function useSwipeBackEnhanced(onSwipeRight: () => void, enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    let startX = 0, startY = 0;
+    let isHorizontal = false;
+    const onTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isHorizontal = false;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (Math.abs(dx) > Math.abs(dy) && dx > 30 && !isHorizontal) {
+        isHorizontal = true;
+        onSwipeRight();
+      }
+    };
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [onSwipeRight, enabled]);
 }

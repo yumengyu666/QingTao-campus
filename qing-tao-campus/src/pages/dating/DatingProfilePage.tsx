@@ -148,7 +148,7 @@ export default function DatingProfilePage() {
         {/* Pixel Avatar Preview */}
         <div className="flex flex-col items-center">
           <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-3xl shadow-2xl shadow-pink-300/50 overflow-hidden">
-            {avatar ? <img src={avatar} className="w-full h-full object-cover" alt="" /> : (nickname || '?')[0]}
+            {avatar ? <img src={avatar} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" /> : (nickname || '?')[0]}
           </div>
           <p className="text-xs text-gray-400 mt-2">默认像素头像，关注你的人才能看到自定义头像</p>
           <label className="mt-3 text-sm text-pink-500 cursor-pointer hover:text-pink-600 transition-colors">

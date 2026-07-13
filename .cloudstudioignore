@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.zip
+*.tar.gz
+*.png
+*.yml
+test_pages.py
+populate-prod.js
+uploads/
+logs/
+audit-logs/
+.vite/
+.playwright-cli/
+test_full_v2.ts
+src.zip

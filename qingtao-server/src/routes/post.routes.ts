@@ -16,5 +16,7 @@ router.delete('/:id', authMiddleware, postCtrl.deletePost);
 router.get('/:id/comments', optionalAuth, postCtrl.getPostComments);
 router.post('/:id/comments', authMiddleware, commentLimiter, validate(createPostCommentSchema), moderateBody(['content']), postCtrl.createPostComment);
 router.delete('/:id/comments/:commentId', authMiddleware, postCtrl.deletePostComment);
+router.post('/:id/like', authMiddleware, postCtrl.togglePostLike);
+router.post('/:id/comments/:commentId/like', authMiddleware, postCtrl.toggleCommentLike);
 
 export default router;

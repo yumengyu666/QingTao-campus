@@ -1,8 +1,11 @@
 import { useState, type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ═══════════════ Components ═══════════════ */
 function BackBtn({ onClick }: { onClick: () => void }) {
-  return <button onClick={onClick} className="lg-btn w-8 h-8 !p-0 !rounded-full flex-shrink-0 text-base">←</button>;
+  return <button onClick={onClick} className="lg-btn lg-btn-icon flex-shrink-0 text-base" aria-label="返回">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>;
 }
 function GlassInput({ placeholder, value, onChange }: { placeholder: string; value?: string; onChange?: (v: string) => void }) {
   return <input className="lg-input" placeholder={placeholder} value={value} onChange={onChange ? e => onChange(e.target.value) : undefined} />;
@@ -11,10 +14,10 @@ function GlassBtn({ children, primary, full, onClick, className }: { children: R
   return <button onClick={onClick} className={`lg-btn ${primary ? 'lg-btn-primary' : ''} ${full ? 'w-full' : ''} ${className || ''}`}>{children}</button>;
 }
 function Chip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
-  return <button onClick={onClick} className={`lg-chip ${active ? 'lg-chip-on' : 'lg-chip-off'}`}>{label}</button>;
+  return <button onClick={onClick} className={`lg-chip ${active ? 'lg-chip-active' : 'lg-chip-inactive'}`}>{label}</button>;
 }
 function TabRow({ tabs, active, onChange }: { tabs: string[]; active: number; onChange: (i: number) => void }) {
-  return <div className="lg-tab-row">{tabs.map((t, i) => <button key={i} onClick={() => onChange(i)} className={`lg-tab-item-row ${active === i ? 'lg-tab-row-on' : 'lg-tab-row-off'}`}>{t}</button>)}</div>;
+  return <div className="lg-tab-row">{tabs.map((t, i) => <button key={i} onClick={() => onChange(i)} className={`lg-tab ${active === i ? 'lg-tab-active' : 'lg-tab-inactive'}`}>{t}</button>)}</div>;
 }
 function Avatar({ size, gradient }: { size: number; gradient: string }) {
   return <div style={{ width: size, height: size, borderRadius: '50%', background: gradient, border: '2px solid rgba(255,255,255,0.8)', flexShrink: 0 }} />;
@@ -47,13 +50,13 @@ function HomePage({ nav }: { nav: (p: string) => void }) {
         </div>
         <button onClick={() => nav('search')} className="lg-btn w-9 h-9 !p-0 !rounded-full">🔔</button>
       </div>
-      <div onClick={() => nav('search')} className="lg-input flex items-center gap-2 cursor-pointer"><span className="text-[#999]">🔍</span><span className="text-sm text-[#999]">搜索商品、帖子、用户···</span></div>
-      <div className="lg-featured p-5 flex flex-col gap-2 justify-end min-h-[150px]">
+      <div onClick={() => nav('search')} className="lg-input lg-input-search flex items-center gap-2 cursor-pointer hover:bg-[var(--lg-surface-hover)] active:scale-[0.985] transition-all" role="button" tabIndex={0} aria-label="搜索"><span className="text-[#999]">🔍</span><span className="text-sm text-[#999]">搜索商品、帖子、用户···</span></div>
+      <div className="lg-card-featured p-5 flex flex-col gap-2 justify-end min-h-[150px]">
         <span className="text-xl font-extrabold text-[#0F172A]">全新液态玻璃体验</span>
         <span className="text-xs text-[#666]">iOS 26 风格 · 校园二手交易社区</span>
       </div>
       <div className="flex gap-2">
-        {[{e:'⭐',l:'热门',c:'#FF9500'},{e:'🛍️',l:'淘货',c:'#34C759'},{e:'📚',l:'资料',c:'#0066D6'},{e:'❤️',l:'恋爱',c:'#FF3B30'}].map((q,i) => (
+        {[{e:'⭐',l:'热门',c:'#FF9500'},{e:'🛍️',l:'淘货',c:'#34C759'},{e:'📚',l:'资料',c:'var(--color-chat-bubble-self, #0066D6)'},{e:'❤️',l:'恋爱',c:'#FF3B30'}].map((q,i) => (
           <div key={i} className="flex flex-col items-center gap-1.5 flex-1 cursor-pointer" onClick={() => {if(i===1) nav('goods'); if(i===3) nav('dating')}}>
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg" style={{background:`${q.c}18`,border:`1px solid ${q.c}33`}}>{q.e}</div>
             <span className="text-[11px] font-semibold text-[#555]">{q.l}</span>
@@ -65,9 +68,9 @@ function HomePage({ nav }: { nav: (p: string) => void }) {
         {['全部','出售','求购','出租'].map((c,i) => <Chip key={i} active={filter===i} label={c} onClick={()=>setFilter(i)} />)}
       </div>
       <div className="flex gap-2.5">
-        {[{tag:'出',c:'#34C759',t:'iPhone 14 Pro',p:'¥4,200',g:GRADIENTS.prod4} as const,{tag:'求',c:'#FF3B30',t:'数位板Wacom',p:'¥300-500',g:GRADIENTS.prod2} as const,{tag:'出',c:'#34C759',t:'宿舍小台灯',p:'¥35',g:GRADIENTS.prod1} as const,{tag:'租',c:'#0066D6',t:'相机三脚架',p:'¥5/天',g:GRADIENTS.prod3} as const].map((p,i) => (
+        {[{tag:'出',c:'#34C759',t:'iPhone 14 Pro',p:'¥4,200',g:GRADIENTS.prod4} as const,{tag:'求',c:'#FF3B30',t:'数位板Wacom',p:'¥300-500',g:GRADIENTS.prod2} as const,{tag:'出',c:'#34C759',t:'宿舍小台灯',p:'¥35',g:GRADIENTS.prod1} as const,{tag:'租',c:'var(--color-chat-bubble-self, #0066D6)',t:'相机三脚架',p:'¥5/天',g:GRADIENTS.prod3} as const].map((p,i) => (
           <div key={i} className="lg-product-card flex-1 flex flex-col gap-2 cursor-pointer" onClick={() => nav('goods-detail')}>
-            <div className="relative w-full aspect-square rounded-xl" style={{background:p.g}}>
+            <div className="relative w-full aspect-square rounded-xl" style={{background:p.g}} role="img" aria-label={`${p.t} 商品图片`}>
               <span className="absolute top-2 left-2 px-1.5 rounded-md text-[10px] font-bold text-white" style={{background:p.c}}>{p.tag}</span>
             </div>
             <div className="px-2 pb-2"><div className="text-[13px] font-semibold text-[#0F172A] truncate">{p.t}</div><div className="lg-price text-sm">{p.p}</div></div>
@@ -109,7 +112,7 @@ function MessagesPage({ nav }: { nav: (p: string) => void }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between"><h1 className="lg-h1">消息</h1><GlassBtn onClick={() => {}}>➕</GlassBtn></div>
       <GlassInput placeholder="搜索消息" />
-      <div onClick={() => nav('ai-chat')} className="lg-card p-3.5 flex items-center gap-3 cursor-pointer" style={{background:'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,248,255,0.7))'}}>
+      <div onClick={() => nav('ai-chat')} className="lg-card p-3.5 flex items-center gap-3 cursor-pointer lg-card-featured">
         <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg" style={{background:'linear-gradient(135deg,#0066D6,#66F)'}}>⭐</div>
         <div className="flex flex-col gap-0.5 flex-1"><span className="text-sm font-semibold text-[#0F172A]">小轻 AI 助手</span><span className="text-[11px] text-[#999]">智能问答 · 学习助手 · 校园百科</span></div>
       </div>
@@ -145,7 +148,7 @@ function ProfilePage({ nav }: { nav: (p: string) => void }) {
       </div>
       <div className="lg-card p-1 flex flex-col">
         {[{t:'编辑资料',act:'edit-profile'},{t:'账号安全',act:''},{t:'我的预约',act:'reservations'},{t:'我的徽章',act:'badges'},{t:'退出登录',act:'login',danger:true}].map((s,i)=>(
-          <div key={i} className="px-4 py-3 cursor-pointer rounded-xl hover:bg-black/[0.02]" onClick={() => s.act && nav(s.act)}>
+          <div key={i} className={`px-4 py-3 cursor-pointer rounded-xl ${s.danger ? 'hover:bg-red-50 active:bg-red-100' : 'hover:bg-black/[0.02]'}`} onClick={() => s.act && nav(s.act)}>
             <span className={`text-sm font-medium ${s.danger ? 'text-[#FF3B30]' : 'text-[#0F172A]'}`}>{s.t}</span>
           </div>
         ))}
@@ -169,7 +172,7 @@ function GoodsDetailPage({ nav }: { nav: (p: string) => void }) {
       <div className="flex items-center gap-3 p-3 rounded-2xl" style={{background:'rgba(255,255,255,0.5)'}}>
         <Avatar size={40} gradient={GRADIENTS.avatar1} /><div className="flex-1"><span className="text-sm font-semibold text-[#0F172A]">李同学</span><span className="lg-caption block">科学校区 · 3天前</span></div>
       </div>
-      <div className="flex gap-3"><GlassBtn full onClick={() => nav('chat-detail')}>💬 私聊</GlassBtn><GlassBtn primary full>🛒 立即购买</GlassBtn></div>
+      <div className="flex gap-3"><GlassBtn onClick={() => nav('chat-detail')} className="flex-1 min-w-0">💬 私聊</GlassBtn><GlassBtn primary className="flex-1 min-w-0">🛒 立即购买</GlassBtn></div>
     </div>
   );
 }
@@ -180,10 +183,10 @@ function ChatDetailPage({ nav }: { nav: (p: string) => void }) {
       <div className="flex items-center gap-3"><BackBtn onClick={() => nav('messages')} /><span className="lg-h3">张同学</span></div>
       {[{from:1,t:'在吗？'},{from:0,t:'在的！什么事？'},{from:1,t:'明天中午一起吃饭吧，老地方见？'},{from:0,t:'好的！12点食堂见 😊'}].map((m,i)=>(
         <div key={i} className={`flex ${m.from ? 'justify-start' : 'justify-end'}`}>
-          <div className={`max-w-[75%] px-3 py-2.5 rounded-2xl text-sm ${m.from ? 'rounded-bl-sm bg-[#F0F0F5] text-[#0F172A]' : 'rounded-br-sm bg-[#0066D6] text-white'}`}>{m.t}</div>
+          <div className={`max-w-[75%] px-3 py-2.5 rounded-2xl text-sm ${m.from ? 'rounded-bl-sm bg-[var(--color-chat-bubble-other)] text-[var(--color-text-primary)]' : 'rounded-br-sm bg-[var(--color-chat-bubble-self)] text-white'}`}>{m.t}</div>
         </div>
       ))}
-      <div className="fixed bottom-0 left-0 right-0 flex items-center gap-2 px-4 py-3 pb-6" style={{background:'rgba(242,242,247,0.9)',backdropFilter:'blur(20px)'}}>
+      <div className="fixed bottom-0 left-0 right-0 flex items-center gap-2 px-4 py-3 pb-6 bg-[var(--color-glass-bg)] backdrop-blur-xl border-t border-[var(--color-border-divider)]">
         <GlassInput placeholder="消息" /><button className="w-10 h-10 rounded-full bg-[#0066D6] flex items-center justify-center text-white flex-shrink-0">➤</button>
       </div>
     </div>
@@ -253,7 +256,7 @@ function LostFoundPage({ nav }: { nav: (p: string) => void }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3"><BackBtn onClick={() => nav('square')} /><h1 className="lg-h1">失物招领</h1></div>
-      {[{b:'拾到物品',bc:'#0066D6',t:'食堂二楼拾到钥匙一串',d:'有黑色钥匙扣和U盘挂件，请到食堂二楼窗口认领',m:'陈同学 · 今天'},{b:'寻找失物',bc:'#FF3B30',t:'丢失学生卡一张',d:'可能在图书馆到宿舍的路上，姓名王某某',m:'王同学 · 昨天'}].map((c,i)=>(
+      {[{b:'拾到物品',bc:'var(--color-chat-bubble-self, #0066D6)',t:'食堂二楼拾到钥匙一串',d:'有黑色钥匙扣和U盘挂件，请到食堂二楼窗口认领',m:'陈同学 · 今天'},{b:'寻找失物',bc:'#FF3B30',t:'丢失学生卡一张',d:'可能在图书馆到宿舍的路上，姓名王某某',m:'王同学 · 昨天'}].map((c,i)=>(
         <div key={i} className="lg-card p-3.5 flex flex-col gap-2">
           <span className="self-start px-2 py-0.5 rounded-lg text-[10px] font-bold" style={{background:`${c.bc}15`,color:c.bc}}>{c.b}</span>
           <span className="text-sm font-bold text-[#0F172A]">{c.t}</span><span className="lg-body text-xs">{c.d}</span><span className="lg-caption">{c.m}</span>
@@ -270,10 +273,10 @@ function AIChatPage({ nav }: { nav: (p: string) => void }) {
       <div className="flex items-center gap-3"><BackBtn onClick={() => nav('messages')} /><h1 className="lg-h1">小轻 AI 助手</h1></div>
       <div className="flex gap-2 flex-wrap">{['💡 期末高效复习','📚 推荐选修课','🏫 科学校区食堂'].map((t,i)=><Chip key={i} active={false} label={t} onClick={()=>{}} />)}</div>
       <div className="flex flex-col gap-3">
-        <div className="flex justify-end"><div className="max-w-[80%] px-3 py-2.5 rounded-2xl rounded-br-sm text-sm text-white bg-[#0066D6]">期末考试有哪些复习技巧？</div></div>
-        <div className="flex justify-start"><div className="max-w-[85%] px-3 py-2.5 rounded-2xl rounded-bl-sm text-sm text-[#0F172A]" style={{background:'#F0F0F5'}}>期末复习建议分三步：1. 整理知识框架 2. 做往年真题 3. 重点攻克薄弱环节。需要的话可以来 B403 找我拿复习资料 ✨</div></div>
+        <div className="flex justify-end"><div className="max-w-[80%] px-3 py-2.5 rounded-2xl rounded-br-sm text-sm text-white bg-[var(--color-chat-bubble-self)]">期末考试有哪些复习技巧？</div></div>
+        <div className="flex justify-start"><div className="max-w-[85%] px-3 py-2.5 rounded-2xl rounded-bl-sm text-sm text-[var(--color-text-primary)] bg-[var(--color-chat-bubble-other)]">期末复习建议分三步：1. 整理知识框架 2. 做往年真题 3. 重点攻克薄弱环节。需要的话可以来 B403 找我拿复习资料 ✨</div></div>
       </div>
-      <div className="fixed bottom-0 left-0 right-0 flex items-center gap-2 px-4 py-3 pb-6" style={{background:'rgba(242,242,247,0.9)',backdropFilter:'blur(20px)'}}>
+      <div className="fixed bottom-0 left-0 right-0 flex items-center gap-2 px-4 py-3 pb-6 bg-[var(--color-glass-bg)] backdrop-blur-xl border-t border-[var(--color-border-divider)]">
         <GlassInput placeholder="问小轻任何问题..." /><button className="w-10 h-10 rounded-full bg-[#0066D6] flex items-center justify-center text-white flex-shrink-0">➤</button>
       </div>
     </div>
@@ -344,7 +347,7 @@ function CartPage({ nav }: { nav: (p: string) => void }) {
         <div key={i} className="lg-card p-3 flex items-center gap-3">
           <div className="w-16 h-16 rounded-xl" style={{background:c.g}}/>
           <div className="flex-1"><span className="text-sm font-semibold text-[#0F172A] block">{c.n}</span><span className="lg-price text-sm">{c.p}</span></div>
-          <div className="flex items-center gap-2"><button className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold" style={{background:'#F0F0F5'}}>−</button><span className="text-sm font-bold">1</span><button className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold text-[#0066D6]" style={{background:'rgba(0,102,214,0.1)'}}>+</button></div>
+          <div className="flex items-center gap-2"><button className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold" style={{background:'var(--color-chat-bubble-other, #F0F0F5)'}}>−</button><span className="text-sm font-bold">1</span><button className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold text-[#0066D6]" style={{background:'rgba(0,102,214,0.1)'}}>+</button></div>
         </div>
       ))}
       <div className="lg-card p-4 flex justify-between items-center"><span className="text-sm text-[#999]">合计 (2件)</span><span className="text-lg font-extrabold text-[#FF9500]">¥195</span></div>
@@ -476,7 +479,7 @@ function ResourcesPage({ nav }: { nav: (p: string) => void }) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3"><BackBtn onClick={() => nav('square')} /><h1 className="lg-h1">学习资料</h1></div>
       <div className="flex gap-1.5">{['全部','数学','计算机','英语'].map((c,i)=><Chip key={i} active={i===0} label={c} onClick={()=>{}} />)}</div>
-      {[{t:'高等数学期末复习笔记',d:'PDF · 32页 · 下载 86次',c:'#0066D6'},{t:'数据结构红黑树讲义',d:'PPT · 48页 · 下载 214次',c:'#FF9500'}].map((r,i)=>(
+      {[{t:'高等数学期末复习笔记',d:'PDF · 32页 · 下载 86次',c:'var(--color-chat-bubble-self, #0066D6)'},{t:'数据结构红黑树讲义',d:'PPT · 48页 · 下载 214次',c:'#FF9500'}].map((r,i)=>(
         <div key={i} className="lg-card p-3.5 flex items-center gap-3 cursor-pointer">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg" style={{background:r.c}}>📄</div>
           <div className="flex flex-col gap-1"><span className="text-sm font-semibold text-[#0F172A]">{r.t}</span><span className="lg-caption">{r.d}</span></div>
@@ -502,8 +505,34 @@ function SettingsPage({ nav }: { nav: (p: string) => void }) {
   );
 }
 
+function PublishPage({ nav }: { nav: (p: string) => void }) {
+  const options = [
+    { label: '发布商品', desc: '出售 / 求购 / 出租', path: 'goods', color: '#0066D6', emoji: '🛍️' },
+    { label: '发布帖子', desc: '分享校园生活', path: 'square', color: '#FF9500', emoji: '📝' },
+    { label: '失物招领', desc: '遗失 / 拾取登记', path: 'lostfound', color: '#34C759', emoji: '🔍' },
+    { label: '发布求购', desc: '需要什么说说看', path: 'wanted', color: '#FF3B30', emoji: '💡' },
+  ];
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3"><BackBtn onClick={() => nav('home')} /><h1 className="lg-h1">发布内容</h1></div>
+      <div className="grid grid-cols-2 gap-3">
+        {options.map((opt) => (
+          <button key={opt.path} onClick={() => nav(opt.path)}
+            className="flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-white/55 backdrop-blur-xl border border-black/5 active:scale-95 transition-all">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl" style={{ background: opt.color + '15', color: opt.color }}>{opt.emoji}</div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-sm font-semibold text-[#0F172A]">{opt.label}</span>
+              <span className="text-[11px] text-gray-400">{opt.desc}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════ MAIN APP ═══════════════ */
-type PageKey = 'home'|'square'|'messages'|'profile'|'goods-detail'|'chat-detail'|'treehole'|'search'|'qa'|'qa-detail'|'lostfound'|'ai-chat'|'login'|'register'|'user-profile'|'edit-profile'|'cart'|'compare'|'wanted'|'barter'|'dating'|'explore'|'tags'|'badges'|'reservations'|'resources'|'settings';
+type PageKey = 'home'|'square'|'messages'|'profile'|'publish'|'goods-detail'|'chat-detail'|'treehole'|'search'|'qa'|'qa-detail'|'lostfound'|'ai-chat'|'login'|'register'|'user-profile'|'edit-profile'|'cart'|'compare'|'wanted'|'barter'|'dating'|'explore'|'tags'|'badges'|'reservations'|'resources'|'settings';
 
 const tabs = [
   { key: 'home' as PageKey, label: '首页', e: '🏠' },
@@ -515,19 +544,39 @@ const tabs = [
 
 const isSubPage = (p: PageKey) => !['home','square','messages','profile'].includes(p);
 
+/**
+ * LiquidGlassDemo — standalone UI showcase (not used in production).
+ *
+ * Known differences from production LiquidGlassLayout:
+ * - Pure useState page switching (no router), ~500 lines (#96)
+ * - No auth checks — all pages accessible without login (#67)
+ * - Simplified components: no DailyCheckin, no real API calls (#54)
+ * - PageKey type doesn't map 1:1 to real routes (#99)
+ * - Duplicates component definitions also used in LiquidGlassLayout (#100)
+ * - Uses max-w-[390px] mobile-first with md:max-w-2xl desktop adaptation
+ */
 export default function LiquidGlassDemo() {
+  const [showPublishSheet, setShowPublishSheet] = useState(false);
   const [page, setPage] = useState<PageKey>('home');
   const nav = (p: string) => setPage(p as PageKey);
   const showTabs = !isSubPage(page);
 
   return (
-    <div className="lg-root flex flex-col overflow-hidden" style={{height: '100dvh'}}>
-      {/* Status Bar */}
-      {showTabs && <div className="flex items-center justify-center h-[54px] px-6 flex-shrink-0 text-[15px] font-semibold text-[#0F172A]" style={{background:'rgba(242,242,247,0.8)',backdropFilter:'blur(20px)'}}>9:41</div>}
+    <div className="lg-root flex flex-col" style={{minHeight: '100dvh'}}>
+      {/* Header — matches production lg-header height */}
+      {showTabs && <header className="lg-header justify-center text-[15px] font-semibold">轻淘校园</header>}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4" style={{paddingTop: showTabs ? 0 : 16, paddingBottom: showTabs ? 100 : 16}}>
-        <div className="max-w-[390px] mx-auto">
+      <div className="flex-1 overflow-y-auto px-4" style={{paddingTop: showTabs ? 0 : 16, paddingBottom: showTabs ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : 16}}>
+        <div className="max-w-[390px] md:max-w-2xl mx-auto">
+          <AnimatePresence mode="sync">
+            <motion.div
+              key={page}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            >
           {page === 'home' && <HomePage nav={nav} />}
           {page === 'square' && <SquarePage nav={nav} />}
           {page === 'messages' && <MessagesPage nav={nav} />}
@@ -555,24 +604,29 @@ export default function LiquidGlassDemo() {
           {page === 'reservations' && <ReservationsPage nav={nav} />}
           {page === 'resources' && <ResourcesPage nav={nav} />}
           {page === 'settings' && <SettingsPage nav={nav} />}
+          {page === 'publish' && <PublishPage nav={nav} />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
       {/* Tab Bar */}
       {showTabs && (
-        <div className="lg-tabbar-ct">
+        <div className="lg-tabbar">
           <div className="lg-tabbar-pill">
             {tabs.map((tab) => {
               const isActive = page === tab.key;
               return (
-                <button key={tab.key} onClick={() => setPage(tab.key === 'publish' ? 'qa' : tab.key)}
-                  className={`lg-tab-item ${isActive ? 'lg-tab-active' : ''}`}>
+                <button key={tab.key} onClick={() => setPage(tab.key === 'publish' ? 'publish' : tab.key)}
+                  className={`lg-tabbar-item ${isActive ? 'lg-tabbar-item-active' : 'lg-tabbar-item-inactive'}`}
+                  aria-label={tab.label}
+                  aria-current={isActive ? 'page' : undefined}>
                   {tab.key === 'publish' ? (
                     <div className="w-9 h-9 rounded-xl bg-[#0066D6] flex items-center justify-center text-white text-xl font-bold leading-none">+</div>
                   ) : (
-                    <span className={`lg-tab-icon ${isActive ? 'lg-tab-icon-active' : 'lg-tab-icon-inactive'}`}>{tab.e}</span>
+                    <span className="lg-tabbar-icon">{tab.e}</span>
                   )}
-                  <span className={`lg-tab-label ${isActive ? 'lg-tab-label-active' : 'lg-tab-label-inactive'}`}>{tab.label}</span>
+                  <span className={`lg-tabbar-label ${isActive ? 'lg-tabbar-label-active' : 'lg-tabbar-label-inactive'}`}>{tab.label}</span>
                 </button>
               );
             })}

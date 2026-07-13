@@ -139,7 +139,7 @@ export default function NoteEditorPage() {
           {/* Video preview */}
           {videoUrl && (
             <div className="relative flex-shrink-0">
-              <video src={videoUrl} className="w-20 h-20 rounded-lg object-cover" />
+              <video src={videoUrl} className="w-20 h-20 rounded-lg object-cover" loading="lazy" decoding="async" />
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
                 <FiPlay className="text-white text-xl" />
               </div>
@@ -150,7 +150,7 @@ export default function NoteEditorPage() {
           {/* Image previews */}
           {images.map((url, i) => (
             <div key={i} className="relative flex-shrink-0">
-              <img src={url} alt="" className="w-20 h-20 rounded-lg object-cover" />
+              <img src={url} alt="" className="w-20 h-20 rounded-lg object-cover" loading="lazy" decoding="async" />
               <button onClick={() => removeImage(i)}
                 className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white text-[10px]">✕</button>
             </div>

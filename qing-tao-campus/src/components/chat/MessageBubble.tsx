@@ -107,7 +107,7 @@ export default function MessageBubble({
       case 'video':
         return (
           <div className="relative max-w-52 cursor-pointer" onClick={() => onImageClick?.(msg.content)}>
-            <img src={msg.fileName || msg.content} alt="video" className="max-w-52 max-h-52 rounded-lg object-cover" />
+            <img src={msg.fileName || msg.content} alt="video" className="max-w-52 max-h-52 rounded-lg object-cover" loading="lazy" decoding="async" />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
                 <span className="text-white text-lg">▶</span>
@@ -196,19 +196,57 @@ export default function MessageBubble({
         {renderContent()}
       </div>
 
-      {/* Read receipt — only on last my message */}
-      {isMine && !msg._temp && (
-        <div className="self-end text-[10px] mt-0.5 flex-shrink-0">
-          {msg.isRead ? (
-            <span className="text-blue-400" title={msg.readAt ? `已读 ${new Date(msg.readAt).toLocaleTimeString()}` : '已读'}>
+      {/* Read receipt / message status indicators */}
+      {isMine && (
+        <motion.div
+          className="self-end text-[10px] mt-0.5 flex-shrink-0"
+          key={msg._temp ? 'sent' : msg.isRead ? 'read' : msg.isDelivered ? 'delivered' : 'sent'}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          {msg._temp ? (
+            <motion.span
+              className="text-gray-300 dark:text-gray-600"
+              title="已发送"
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            >
+              ✓
+            </motion.span>
+          ) : msg.isRead ? (
+            <motion.span
+              className="text-blue-400"
+              title={msg.readAt ? `已读 ${new Date(msg.readAt).toLocaleTimeString()}` : '已读'}
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            >
               ✓✓
-            </span>
+            </motion.span>
           ) : msg.isDelivered ? (
-            <span className="text-gray-400 dark:text-gray-500" title="已送达">✓✓</span>
+            <motion.span
+              className="text-gray-400 dark:text-gray-500"
+              title="已送达"
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            >
+              ✓✓
+            </motion.span>
           ) : (
-            <span className="text-gray-300 dark:text-gray-600" title="发送中">✓</span>
+            <motion.span
+              className="text-gray-300 dark:text-gray-600"
+              title="已发送"
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            >
+              ✓
+            </motion.span>
           )}
-        </div>
+        </motion.div>
       )}
     </motion.div>
   );

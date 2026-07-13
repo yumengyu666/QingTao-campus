@@ -1,0 +1,22 @@
+- generic [ref=e3]:
+  - link "跳到主要内容" [ref=e1] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - heading "轻淘" [level=1] [ref=e9]
+      - paragraph [ref=e10]: 连接彼此 · 发现美好
+    - generic [ref=e11]:
+      - textbox "用户名" [ref=e13]
+      - generic [ref=e14]:
+        - textbox "密码" [ref=e15]
+        - button "忘记密码？" [ref=e17]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - img "验证码" [ref=e22] [cursor=pointer]
+          - button "换一个" [ref=e23]:
+            - img [ref=e24]
+        - textbox "输入验证码" [ref=e28]
+      - generic [ref=e31] [cursor=pointer]: 我已阅读并同意《用户协议》
+      - button "立即登录" [disabled] [ref=e32]
+    - link "还没有账号？去注册" [ref=e34] [cursor=pointer]:
+      - /url: /register

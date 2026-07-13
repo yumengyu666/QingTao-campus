@@ -4,11 +4,15 @@ import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { Header } from '@/components/layout/Header';
 import { ImageUploader } from '@/components/common/ImageUploader';
 import type { ImageItem } from '@/components/common/ImageUploader';
+import { CharCounter } from '@/components/common/CharCounter';
+import { StepIndicator } from '@/components/common/StepIndicator';
+import { FormField } from '@/components/common/FormField';
 import { Skeleton } from '@/components/common/Skeleton';
 import { CAMPUS_MAP } from '@/utils/constants';
 import { CONDITION_MAP, type GoodsCondition, type GoodsListType } from '@/types/goods';
 import { useAuthStore } from '@/stores/authStore';
 import { apiFetch } from '@/utils/api';
+import { classifyError, getErrorMessage } from '@/utils/errorHandler';
 import { useDraft } from '@/hooks/useDraft';
 import { useKeyboardAvoid } from '@/hooks/useKeyboardAvoid';
 import toast from 'react-hot-toast';
@@ -41,6 +45,7 @@ export default function PublishGoodsPage() {
 
   const [images, setImages] = useState<ImageItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const [editLoading, setEditLoading] = useState(isEdit);
   const [categories, setCategories] = useState<{ id: number; name: string; icon: string }[]>([]);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
@@ -57,7 +62,7 @@ export default function PublishGoodsPage() {
       if (stored) {
         const parsed = JSON.parse(stored);
         const hasContent = Object.values(parsed).some(v => v !== '' && v !== null && v !== undefined && v !== 0);
-        if (hasContent && !window.confirm('检测到未发布的草稿，是否恢复？')) {
+        if (hasContent) {
           clear();
         }
       }
@@ -161,14 +166,17 @@ export default function PublishGoodsPage() {
       const json = await res.json();
 
       if (json.code === 200 || json.code === 201) {
-        toast.success(json.message || (isEdit ? '修改成功' : '发布成功'));
+        toast.success((json.data?.status === `pending` || json.data?.needsReview) ? `提交成功！内容正在审核中，审核通过后将公开展示` : (json.message || (isEdit ? `修改成功` : `发布成功`)));
         clear();
+        setSubmitError(false);
         nav('/profile/goods');
       } else {
         toast.error(json.message || '提交失败');
+        setSubmitError(true);
       }
-    } catch {
-      toast.error('网络错误');
+    } catch (err) {
+      toast.error(getErrorMessage(classifyError(err)));
+      setSubmitError(true);
     }
     setSubmitting(false);
   };
@@ -177,9 +185,14 @@ export default function PublishGoodsPage() {
 
   return (
     <div>
-      <Header title={isEdit ? '编辑商品' : '发布商品'} />
+      <Header title={'  +  // #53: Show audit status hint in edit mode  +  '} />
 
       <div className="p-4 space-y-5">
+        {/* Step indicator */}
+        {!isEdit && (
+          <StepIndicator steps={['基本信息', '详细描述', '预览发布']} current={0} className="mb-2" />
+        )}
+
         {/* Quick Templates — only show when creating new (not editing) */}
         {!isEdit && (
           <div>
@@ -209,12 +222,11 @@ export default function PublishGoodsPage() {
         </div>
 
         {/* Title */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">商品标题</label>
+        <FormField label="商品标题" required>
           <input value={title} onChange={(e) => update({ title: e.target.value })} placeholder="请输入商品标题（最多50字）" maxLength={50}
             className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none transition-colors" />
-          <p className="text-xs text-gray-400 text-right mt-1">{title.length}/50</p>
-        </div>
+          <CharCounter current={title.length} max={50} />
+        </FormField>
 
         {/* Sale / Rental / Buy / Rent-want toggle */}
         <div>
@@ -242,13 +254,13 @@ export default function PublishGoodsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium mb-2 block">开始时间</label>
-                  <input type="datetime-local" value={rentStart} onChange={(e) => update({ rentStart: e.target.value })}
+                  <input type="datetime-local" placeholder="选择日期时间" value={rentStart} onChange={(e) => update({ rentStart: e.target.value })}
                     onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                     className="w-full px-3 py-2 rounded-lg bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none text-sm" />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">结束时间</label>
-                  <input type="datetime-local" value={rentEnd} onChange={(e) => update({ rentEnd: e.target.value })}
+                  <input type="datetime-local" placeholder="选择日期时间" value={rentEnd} onChange={(e) => update({ rentEnd: e.target.value })}
                     onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                     className="w-full px-3 py-2 rounded-lg bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none text-sm" />
                 </div>
@@ -271,7 +283,7 @@ export default function PublishGoodsPage() {
         </div>
 
         {/* Condition — only for sale */}
-        {listType !== 'buy' && (
+        {listType !== 'buy' && listType !== 'rent_want' && (
           <div>
             <label className="text-sm font-medium mb-2 block">成色</label>
             <div className="flex gap-2">
@@ -293,7 +305,7 @@ export default function PublishGoodsPage() {
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">¥</span>
-              <input value={price} onChange={(e) => update({ price: e.target.value })} type="number" placeholder="0" min="0"
+              <input value={price} onChange={(e) => update({ price: e.target.value })} type="number" placeholder="0" min="0" inputMode="decimal" step="0.01"
                 className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none transition-colors" />
             </div>
           </div>
@@ -302,7 +314,7 @@ export default function PublishGoodsPage() {
               <label className="text-sm font-medium mb-2 block">原价 <span className="text-gray-400 font-normal">(选填)</span></label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">¥</span>
-                <input value={originalPrice} onChange={(e) => update({ originalPrice: e.target.value })} type="number" placeholder="0" min="0"
+                <input value={originalPrice} onChange={(e) => update({ originalPrice: e.target.value })} type="number" placeholder="0" min="0" inputMode="decimal" step="0.01"
                   className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none transition-colors" />
               </div>
             </div>
@@ -341,18 +353,25 @@ export default function PublishGoodsPage() {
         </div>
 
         {/* Description */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">商品描述</label>
+        <FormField label="商品描述">
           <textarea value={description} onChange={(e) => update({ description: e.target.value })} placeholder="详细描述商品的使用情况、瑕疵、配件等信息..." rows={5} maxLength={2000}
             className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-[var(--color-border)] focus:border-indigo-500 outline-none transition-colors resize-none" />
-          <p className="text-xs text-gray-400 text-right mt-1">{description.length}/2000</p>
-        </div>
+          <CharCounter current={description.length} max={2000} />
+        </FormField>
 
         {/* Submit */}
-        <button onClick={handleSubmit} disabled={submitting}
-          className="w-full py-3.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors text-lg">
-          {submitting ? '提交中...' : isEdit ? '保存修改' : '发布'}
-        </button>
+        <div className="flex gap-3">
+          <button onClick={handleSubmit} disabled={submitting}
+            className="flex-1 py-3.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors text-lg">
+            {submitting ? '提交中...' : isEdit ? '保存修改' : '发布'}
+          </button>
+          {submitError && !submitting && (
+            <button onClick={handleSubmit}
+              className="px-6 py-3.5 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 active:scale-95 transition-all text-lg whitespace-nowrap">
+              🔄 重试
+            </button>
+          )}
+        </div>
         {draftSavedAt && (
           <p className="text-xs text-green-600 dark:text-green-400 text-center -mt-2">
             ✓ 草稿已自动保存于 {new Date(draftSavedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}

@@ -108,7 +108,7 @@ export default function ReservationsPage() {
                   className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-[var(--color-card-hover)] flex-shrink-0 overflow-hidden cursor-pointer"
                 >
                   {r.goods?.images ? (
-                    <img src={JSON.parse(r.goods.images)[0]} alt="" className="w-full h-full object-cover" />
+                    <img src={JSON.parse(r.goods.images)[0]} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                   )}

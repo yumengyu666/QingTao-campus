@@ -1,5 +1,6 @@
 import { FiArrowLeft } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import { useNavContext } from '@/hooks/useAppNavigate';
 
 interface MobileHeaderProps {
   title: string;
@@ -19,6 +20,11 @@ export function MobileHeader({
   transparent = false,
 }: MobileHeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { basePath } = useNavContext();
+
+  // 液态玻璃布局：LiquidGlassLayout 已提供完整头部
+  if (basePath === '/lg') return null;
 
   const bgClass = transparent
     ? 'bg-transparent'

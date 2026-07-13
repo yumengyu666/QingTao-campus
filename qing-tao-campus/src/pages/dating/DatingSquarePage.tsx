@@ -26,7 +26,8 @@ export default function DatingSquarePage() {
 
   // Following set (by real userId) & request state
   const [followingIds, setFollowingIds] = useState<Set<number>>(new Set());
-  const [pendingSentIds, setPendingSentIds] = useState<Set<number>>(new Set());
+  var [pendingSentIds, setPendingSentIds] = useState<Set<number>>(new Set());
+  var [requestingIds, setRequestingIds] = useState<Set<number>>(new Set());
 
   // Daily Match
   const [dailyMatch, setDailyMatch] = useState<DailyMatch | null>(null);
@@ -124,7 +125,7 @@ export default function DatingSquarePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 dark:from-[var(--color-bg)] dark:via-[var(--color-bg)] dark:to-[var(--color-bg)] flex flex-col items-center justify-center px-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-rose-50/30 to-purple-50/30 dark:from-[var(--color-bg)] dark:via-[var(--color-bg)] dark:to-[var(--color-bg)] flex flex-col items-center justify-center px-8 text-center">
         <motion.div animate={{ y: [0, -10, 0], scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 3 }}
           className="w-28 h-28 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white text-5xl shadow-2xl shadow-pink-300/30 mb-8">
           💝
@@ -152,7 +153,7 @@ export default function DatingSquarePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-50 dark:from-[var(--color-bg)] dark:via-[var(--color-bg)] dark:to-[var(--color-bg)]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-rose-50/30 to-purple-50/30 dark:from-[var(--color-bg)] dark:via-[var(--color-bg)] dark:to-[var(--color-bg)]">
       <Header title="恋爱空间" onBack={() => nav('/')} />
       {/* 关注系统提示 */}
       <div className="mx-4 mt-3 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2 border border-amber-200/30 dark:border-amber-500/20">
@@ -165,7 +166,7 @@ export default function DatingSquarePage() {
         onClick={() => nav('/dating/profile')}
         className="mx-4 mt-4 bg-white/80 dark:bg-[var(--color-card)]/80 backdrop-blur-xl rounded-3xl p-4 flex items-center gap-3 shadow-xl shadow-pink-100/30 dark:shadow-none border border-white/50 dark:border-[var(--color-border)]/30 cursor-pointer hover:shadow-2xl transition-all active:scale-[0.98] group">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-105 transition-transform overflow-hidden">
-          {profile.customAvatar ? <img src={profile.customAvatar} className="w-full h-full object-cover" alt="" /> : profile.nickname?.[0]}
+          {profile.customAvatar ? <img src={profile.customAvatar} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" /> : profile.nickname?.[0]}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm">{profile.nickname}</p>
@@ -690,7 +691,7 @@ function FollowingModal({ following, onClose }: { following: DatingProfile[]; on
             {following.map((f) => (
               <div key={f.userId} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-[var(--color-card-hover)]/50">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-sm overflow-hidden">
-                  {f.customAvatar ? <img src={f.customAvatar} className="w-full h-full object-cover" alt="" /> : f.nickname?.[0] || 'U'}
+                  {f.customAvatar ? <img src={f.customAvatar} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" /> : f.nickname?.[0] || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{f.nickname || `用户 #${f.userId}`}</p>

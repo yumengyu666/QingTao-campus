@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserAvatar } from '@/components/common/UserAvatar';
+import { CharCounter } from '@/components/common/CharCounter';
 import { Skeleton } from '@/components/common/Skeleton';
 import MessageBubble from '@/components/chat/MessageBubble';
 import VoiceRecorder from '@/components/chat/VoiceRecorder';
@@ -462,7 +463,7 @@ export default function ChatPage() {
         const tempId = Date.now();
         const tempMsg = { id: tempId, senderId: currentUser?.id, content: locMsg, type: 'location', createdAt: new Date().toISOString(), _temp: true };
         setMessages(prev => [tempMsg, ...prev]);
-        wsService.send({ type: 'chat_message', to: parseInt(userId!), content: locMsg, messageType: 'location' });
+        wsService.send({ type: 'chat_message', to: parseInt(userId || '0'), content: locMsg, messageType: 'location' });
         apiFetch(`/api/messages/${userId}`, { method: 'POST', body: JSON.stringify({ content: locMsg, type: 'location' }) }).catch(() => {});
       },
       (err) => { toast.dismiss(); toast.error('定位失败'); },
@@ -479,7 +480,7 @@ export default function ChatPage() {
     const tempId = Date.now();
     const tempMsg = { id: tempId, senderId: currentUser?.id, content: cardMsg, type: 'card', createdAt: new Date().toISOString(), _temp: true };
     setMessages(prev => [tempMsg, ...prev]);
-    wsService.send({ type: 'chat_message', to: parseInt(userId!), content: cardMsg, messageType: 'card' });
+    wsService.send({ type: 'chat_message', to: parseInt(userId || '0'), content: cardMsg, messageType: 'card' });
     apiFetch(`/api/messages/${userId}`, { method: 'POST', body: JSON.stringify({ content: cardMsg, type: 'card' }) }).catch(() => {});
     toast.success('已发送名片');
   };
@@ -514,10 +515,10 @@ export default function ChatPage() {
       onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
       {/* Header */}
       <div className="flex-shrink-0 bg-[var(--color-chat-bg)] px-3 h-12 flex items-center gap-2 border-b border-black/5 dark:border-white/10 z-10">
-        <button onClick={() => nav('/messages')} className="p-1">
+        <button onClick={() => nav('/messages')} className="p-1" aria-label="返回消息列表">
           <FiArrowLeft className="text-xl text-gray-700 dark:text-gray-300" />
         </button>
-        <div className="flex-1 min-w-0 flex items-center gap-2.5" onClick={() => navigate(`/user/${userId}`)}>
+        <div className="flex-1 min-w-0 flex items-center gap-2.5" onClick={() => nav(`/user/${userId}`)}>
           <UserAvatar src={peer?.avatarUrl} nickname={peer?.nickname} size="sm" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
@@ -534,18 +535,20 @@ export default function ChatPage() {
         </div>
 
         {/* WeChat-style header actions */}
-        <button onClick={() => setShowSearch(!showSearch)} className="p-2">
+        <button onClick={() => setShowSearch(!showSearch)} className="p-2" aria-label={showSearch ? '关闭搜索' : '搜索消息'}>
           <FiSearch className="text-lg text-gray-600 dark:text-gray-400" />
         </button>
         <button onClick={startVoiceCall} className={`p-2 transition-colors ${isMutualFollow ? 'text-green-500 hover:text-green-600' : 'text-gray-300 dark:text-gray-600'}`}
+          aria-label={isMutualFollow ? '语音通话' : '互关后可语音通话'}
           title={isMutualFollow ? '语音通话' : '互关后可语音通话'}>
           <FiPhone className="text-lg" />
         </button>
         <button onClick={startVideoCall} className={`p-2 transition-colors ${isMutualFollow ? 'text-green-500 hover:text-green-600' : 'text-gray-300 dark:text-gray-600'}`}
+          aria-label={isMutualFollow ? '视频通话' : '互关后可视频通话'}
           title={isMutualFollow ? '视频通话' : '互关后可视频通话'}>
           <FiVideo className="text-lg" />
         </button>
-        <button className="p-1" onClick={() => setShowMenu(!showMenu)}>
+        <button className="p-1" onClick={() => setShowMenu(!showMenu)} aria-label="更多操作">
           <FiMoreHorizontal className="text-xl text-gray-600 dark:text-gray-400" />
         </button>
 
@@ -553,7 +556,7 @@ export default function ChatPage() {
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
             <div className="absolute top-12 right-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-black/5 dark:border-white/10 z-20 py-1 min-w-[140px]">
-              <button onClick={() => { setShowMenu(false); navigate(`/messages/settings/${userId}`); }}
+              <button onClick={() => { setShowMenu(false); nav(`/messages/settings/${userId}`); }}
                 className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
                 📋 聊天详情
               </button>
@@ -567,7 +570,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages — 消息与通话记录合并，按时间排列 */}
-      <div ref={chatRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
+      <div ref={chatRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-3 py-2" role="log" aria-live="polite" aria-label="消息列表">
         {displayedMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mb-3 shadow-sm">
@@ -646,7 +649,7 @@ export default function ChatPage() {
                       setContextMenu({ show: true, x: e.clientX, y: e.clientY, msg: m });
                     }}
                     onTouchStart={handleLongPress}
-                    onCardClick={(userId) => navigate(`/user/${userId}`)}
+                    onCardClick={(userId) => nav(`/user/${userId}`)}
                   />
                   {(item as any)._failed && isMine && (
                     <div className="flex justify-end mt-1">
@@ -694,6 +697,7 @@ export default function ChatPage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.6 }}
             onClick={scrollToBottom}
+            aria-label="滚动到底部"
             className="absolute bottom-[72px] left-1/2 -translate-x-1/2 w-8 h-8 bg-white dark:bg-gray-700 rounded-full shadow-lg flex items-center justify-center z-10"
           >
             <FiChevronDown className="text-gray-500 text-xs" />
@@ -714,7 +718,7 @@ export default function ChatPage() {
                 {replyTo.type === 'image' ? '[图片]' : replyTo.type === 'voice' ? '[语音]' : (replyTo.content?.slice(0, 30) || '')}
               </div>
             </div>
-            <button onClick={() => setReplyTo(null)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+            <button onClick={() => setReplyTo(null)} aria-label="取消引用" className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -729,6 +733,7 @@ export default function ChatPage() {
             <div className="grid grid-cols-10 gap-1 bg-white dark:bg-gray-800 rounded-xl p-2.5 shadow-sm">
               {EMOJIS.map(emoji => (
                 <button key={emoji} onClick={() => { setText(t => t + emoji); inputRef.current?.focus(); }}
+                  aria-label={`表情 ${emoji}`}
                   className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors active:scale-125">
                   {emoji}
                 </button>
@@ -746,31 +751,36 @@ export default function ChatPage() {
         {/* Voice toggle */}
         <button
           onClick={() => setShowVoiceRecorder(true)}
+          aria-label="语音输入"
           className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
         >
           <FiMic className="text-lg" />
         </button>
 
         {/* Text input */}
-        <input
-          ref={inputRef}
-          value={text}
-          onChange={e => { setText(e.target.value); notifyTyping(); }}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              if (text.trim()) { sendMessage(text); stopTyping(); }
-            }
-          }}
-          onBlur={stopTyping}
-          placeholder=""
-          maxLength={500}
-          className="flex-1 min-w-0 px-3 py-2 bg-white dark:bg-gray-800 rounded-md text-[16px] outline-none text-gray-900 dark:text-gray-100"
-        />
+        <div className="flex-1 min-w-0">
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={e => { setText(e.target.value); notifyTyping(); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (text.trim()) { sendMessage(text); stopTyping(); }
+              }
+            }}
+            onBlur={stopTyping}
+            placeholder="输入消息..."
+            maxLength={500}
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 rounded-md text-[16px] outline-none text-gray-900 dark:text-gray-100"
+          />
+          <CharCounter current={text.length} max={500} className="mt-0.5" />
+        </div>
 
         {/* Emoji */}
         <button
           onClick={() => { setShowEmoji(!showEmoji); setShowAttachment(false); }}
+          aria-label={showEmoji ? '关闭表情面板' : '打开表情面板'}
           className={`p-2 transition-colors ${showEmoji ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
         >
           <FiSmile className="text-lg" />
@@ -780,6 +790,7 @@ export default function ChatPage() {
         {text.trim().length === 0 ? (
           <button
             onClick={() => { setShowAttachment(!showAttachment); setShowEmoji(false); }}
+            aria-label={showAttachment ? '关闭附件菜单' : '打开附件菜单'}
             className={`p-2 transition-colors ${showAttachment ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
             <FiPlus className="text-lg" />
@@ -788,6 +799,7 @@ export default function ChatPage() {
           <button
             onClick={() => { sendMessage(text); stopTyping(); }}
             disabled={!text.trim() || sending}
+            aria-label="发送消息"
             className="w-9 h-9 rounded-md bg-[var(--color-chat-send-btn)] text-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 transition-opacity active:scale-95"
           >
             <FiSend className="text-sm -rotate-45" />

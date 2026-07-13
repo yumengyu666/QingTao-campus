@@ -5,12 +5,14 @@ import { UserAvatar } from '@/components/common/UserAvatar';
 import { Skeleton } from '@/components/common/Skeleton';
 import { ImageLightbox } from '@/components/common/ImageLightbox';
 import { ShareButton } from '@/components/common/ShareButton';
-import { FiEye, FiFlag, FiSend, FiTrash2, FiEdit2, FiMessageCircle, FiShare2 } from 'react-icons/fi';
+import { FiEye, FiFlag, FiSend, FiTrash2, FiEdit2, FiMessageCircle, FiShare2, FiHeart, FiArrowUp, FiCornerUpRight } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { formatDate, formatTime } from '@/utils/format';
 import { apiFetch } from '@/utils/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useKeyboardAvoid } from '@/hooks/useKeyboardAvoid';
+import { ReportModal } from '@/components/common/ReportModal';
+import CelebrationEffect from '@/components/common/CelebrationEffect';
 import toast from 'react-hot-toast';
 
 export default function PostDetailPage() {
@@ -24,9 +26,18 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [customReason, setCustomReason] = useState('');
+  const [sortMode, setSortMode] = useState<'latest' | 'helpful'>('latest');
+  const [commentLikes, setCommentLikes] = useState<Record<number, { liked: boolean; count: number }>>({});
+  const [replyTarget, setReplyTarget] = useState<{ id: number; nickname: string } | null>(null);
+  const commentInputRef = useRef<HTMLInputElement>(null);
   const keyboardHeight = useKeyboardAvoid();
+
+  // Post-level like state
+  const [postLiked, setPostLiked] = useState(false);
+  const [postLikeCount, setPostLikeCount] = useState(0);
+  const [likeCelebrate, setLikeCelebrate] = useState(false);
+  const [likeOrigin, setLikeOrigin] = useState({ x: 0, y: 0 });
+  const likeBtnRef = useRef<HTMLButtonElement>(null);
 
   const loadedRef = useRef(false);
 
@@ -37,6 +48,8 @@ export default function PostDetailPage() {
     apiFetch(`/api/posts/${id}`).then(r => r.json()).then(json => {
       if (json.code === 200) {
         setPost(json.data);
+        setPostLiked(json.data.isLiked || false);
+        setPostLikeCount(json.data.likeCount || 0);
         // AI 审核轮询
         if (json.data.status === 'approved') {
           let n = 0; let cancelled = false;
@@ -50,9 +63,33 @@ export default function PostDetailPage() {
     }).catch(() => toast.error('加载帖子失败')).finally(() => setLoading(false));
     // Load comments
     apiFetch(`/api/posts/${id}/comments`).then(r => r.json()).then(json => {
-      if (json.code === 200) setComments(json.data.list || []);
+      if (json.code === 200) {
+        const list = json.data.list || [];
+        setComments(list);
+        // Seed like state from server data
+        const likes: Record<number, { liked: boolean; count: number }> = {};
+        list.forEach((c: any) => {
+          likes[c.id] = { liked: c.isLiked || false, count: c.likeCount || 0 };
+        });
+        setCommentLikes(likes);
+      }
     }).catch(() => { /* 评论加载失败不影响帖子详情主流程 */ });
   }, [id]);
+
+  const handleTogglePostLike = async (e: React.MouseEvent) => {
+    const rect = likeBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      setLikeOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    }
+    const newLiked = !postLiked;
+    setPostLiked(newLiked);
+    setPostLikeCount((c) => c + (newLiked ? 1 : -1));
+    setLikeCelebrate(newLiked);
+    // Best-effort API call
+    try {
+      await apiFetch(`/api/posts/${id}/like`, { method: 'POST' });
+    } catch { /* non-critical */ }
+  };
 
   const handleSend = async () => {
     if (!commentText.trim()) { toast.error('请输入评论内容'); return; }
@@ -83,6 +120,44 @@ export default function PostDetailPage() {
       } else toast.error(json.message);
     } catch { toast.error('网络错误'); }
   };
+
+  const handleLikeComment = async (commentId: number) => {
+    const prev = commentLikes[commentId];
+    const newLiked = !prev?.liked;
+    const newCount = (prev?.count || 0) + (newLiked ? 1 : -1);
+    setCommentLikes((s) => ({ ...s, [commentId]: { liked: newLiked, count: Math.max(0, newCount) } }));
+    try {
+      const res = await apiFetch(`/api/posts/${id}/comments/${commentId}/like`, {
+        method: newLiked ? 'POST' : 'DELETE',
+      });
+      const json = await res.json();
+      if (json.code !== 200) {
+        // Revert on server error
+        setCommentLikes((s) => ({ ...s, [commentId]: prev }));
+      }
+    } catch {
+      // Revert on network error
+      setCommentLikes((s) => ({ ...s, [commentId]: prev }));
+    }
+  };
+
+  const handleReply = (commentId: number, nickname: string) => {
+    setReplyTarget({ id: commentId, nickname });
+    setCommentText(`@${nickname} `);
+    setTimeout(() => {
+      commentInputRef.current?.focus();
+    }, 50);
+  };
+
+  const sortedComments = [...comments].sort((a, b) => {
+    if (sortMode === 'helpful') {
+      const aLikes = commentLikes[a.id]?.count || a.likeCount || 0;
+      const bLikes = commentLikes[b.id]?.count || b.likeCount || 0;
+      return bLikes - aLikes;
+    }
+    // latest: newest first
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   if (loading) return <div><Header title="帖子详情" /><div className="p-4"><Skeleton.Detail /></div></div>;
   if (!post) return <div><Header title="帖子详情" /><p className="text-center text-gray-400 py-12">帖子不存在</p></div>;
@@ -123,6 +198,14 @@ export default function PostDetailPage() {
         <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
           <span>{formatTime(post.createdAt)}</span>
           <span className="flex items-center gap-1"><FiEye /> {post.viewCount}</span>
+          <button
+            ref={likeBtnRef}
+            onClick={handleTogglePostLike}
+            className={`flex items-center gap-1 transition-colors ${postLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}`}
+          >
+            <FiHeart className={postLiked ? 'fill-red-500' : ''} />
+            {postLikeCount > 0 && <span>{postLikeCount}</span>}
+          </button>
           <button onClick={() => {
             const url = window.location.href;
             if (navigator.share) {
@@ -155,19 +238,32 @@ export default function PostDetailPage() {
         {(post.images || []).length > 0 && (
           <div className="mt-4 space-y-2">
             {post.images.map((img: string, i: number) => (
-              <img key={i} src={img} alt="" className="w-full rounded-lg cursor-pointer hover:opacity-95 transition-opacity" onClick={() => setLightboxIndex(i)} />
+              <img key={i} src={img} alt="" className="w-full rounded-lg cursor-pointer hover:opacity-95 transition-opacity" loading="lazy" decoding="async" onClick={() => setLightboxIndex(i)} />
             ))}
           </div>
         )}
       </div>
 
       <div className="bg-white dark:bg-[var(--color-card)] mt-2 md:mt-3 p-4 md:rounded-xl">
-        <h3 className="font-medium text-sm text-gray-500 mb-3">全部回复（{comments.length}）</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium text-sm text-gray-500">全部回复（{comments.length}）</h3>
+          <button
+            onClick={() => setSortMode(sortMode === 'latest' ? 'helpful' : 'latest')}
+            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+              sortMode === 'helpful'
+                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-500'
+            }`}
+          >
+            <FiArrowUp className={sortMode === 'helpful' ? '' : 'rotate-180'} />
+            {sortMode === 'latest' ? '最新' : '最有帮助'}
+          </button>
+        </div>
         {comments.length === 0 ? (
           <p className="text-center text-sm text-gray-400 py-8">暂无回复，来说两句吧</p>
         ) : (
           <div className="space-y-3">
-            {comments.map((c: any) => (
+            {sortedComments.map((c: any) => (
               <div key={c.id} className="flex gap-3">
                 <UserAvatar src={c.user?.avatarUrl} nickname={c.user?.nickname} size="sm" />
                 <div className="flex-1 min-w-0">
@@ -196,6 +292,26 @@ export default function PostDetailPage() {
                   {c.status === 'rejected' && c.reviewComment && (
                     <p className="text-xs text-red-400 mt-0.5">原因：{c.reviewComment}</p>
                   )}
+                  <div className="flex items-center gap-3 mt-2">
+                    <button
+                      onClick={() => handleLikeComment(c.id)}
+                      className={`flex items-center gap-1 text-xs transition-colors ${
+                        commentLikes[c.id]?.liked
+                          ? 'text-red-500'
+                          : 'text-gray-400 hover:text-red-400'
+                      }`}
+                    >
+                      <FiHeart className={commentLikes[c.id]?.liked ? 'fill-red-500' : ''} />
+                      <span>{commentLikes[c.id]?.count || c.likeCount || 0}</span>
+                    </button>
+                    <button
+                      onClick={() => handleReply(c.id, c.user?.nickname)}
+                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-indigo-500 transition-colors"
+                    >
+                      <FiCornerUpRight />
+                      <span>回复</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -207,6 +323,7 @@ export default function PostDetailPage() {
       <div className="fixed bottom-14 left-0 right-0 md:static bg-white dark:bg-[var(--color-card)] border-t md:border border-gray-200 dark:border-[var(--color-border)] md:rounded-xl px-4 py-3 md:mt-3 z-20" style={{ paddingBottom: keyboardHeight || undefined }}>
         <div className="flex items-center gap-2">
           <input
+            ref={commentInputRef}
             type="text" placeholder="说点什么..." value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -221,34 +338,11 @@ export default function PostDetailPage() {
       </div>
       {/* Report Modal */}
       {showReport && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowReport(false)}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-            className="bg-white dark:bg-[var(--color-card)] rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-3">举报帖子</h3>
-            <div className="space-y-2 mb-3">
-              {['垃圾广告','不实信息','人身攻击','色情低俗','违法违规','其他'].map(r => (
-                <button key={r} onClick={() => setReportReason(r)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${reportReason === r ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}>{r}</button>
-              ))}
-            </div>
-            <textarea value={customReason} onChange={e => setCustomReason(e.target.value)}
-              placeholder={reportReason === '其他' ? '请描述具体原因...' : '可补充详细描述（选填）'}
-              rows={2} maxLength={200}
-              className="w-full px-3 py-2 rounded-xl bg-gray-100 dark:bg-[var(--color-card-hover)] text-sm outline-none resize-none" />
-            <div className="flex gap-2 mt-4">
-              <button onClick={() => { setShowReport(false); setReportReason(''); setCustomReason(''); }} className="flex-1 py-2.5 rounded-xl border text-sm font-medium">取消</button>
-              <button onClick={async () => {
-                const finalReason = reportReason === '其他' ? customReason.trim() : reportReason;
-                if (!finalReason) { toast.error('请选择或填写原因'); return; }
-                const res = await apiFetch('/api/reports', { method: 'POST', body: JSON.stringify({ targetType: 'post', targetId: Number(id), reason: finalReason }) });
-                const json = await res.json();
-                if (json.code === 201) { toast.success('举报已提交，管理员处理后会通知你'); setShowReport(false); setReportReason(''); setCustomReason(''); }
-                else toast.error(json.message);
-              }} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium">提交举报</button>
-            </div>
-          </motion.div>
-        </motion.div>
+        <ReportModal
+          targetId={Number(id)}
+          targetType="post"
+          onClose={() => setShowReport(false)}
+        />
       )}
 
       <ImageLightbox
@@ -256,6 +350,11 @@ export default function PostDetailPage() {
         initialIndex={lightboxIndex ?? 0}
         open={lightboxIndex !== null}
         onClose={() => setLightboxIndex(null)}
+      />
+
+      <CelebrationEffect
+        trigger={likeCelebrate}
+        origin={likeOrigin}
       />
     </div>
   );

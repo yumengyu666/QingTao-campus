@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { Skeleton } from '@/components/common/Skeleton';
@@ -13,6 +14,7 @@ import toast from 'react-hot-toast';
 export default function NoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const user = useAuthStore(s => s.user);
   const [note, setNote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -131,7 +133,7 @@ export default function NoteDetailPage() {
             };
             document.addEventListener('touchend', handler);
           }}>
-            <img src={images[currentImg]} alt="" className="w-full h-full object-cover" />
+            <img src={images[currentImg]} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
             {images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
                 {images.map((_: any, i: number) => (
@@ -154,7 +156,7 @@ export default function NoteDetailPage() {
             <div className="font-medium text-gray-900 dark:text-gray-100">{note.user?.nickname}</div>
             <div className="text-xs text-gray-500">{formatTime(note.createdAt)}</div>
           </div>
-          <button onClick={() => navigate(`/messages/${note.user?.id}`)}
+          <button onClick={() => nav(`/messages/${note.user?.id}`)}
             className="px-4 py-1.5 bg-[var(--color-explore-accent)] text-white text-sm rounded-full font-medium">+ 关注</button>
         </div>
 
@@ -196,8 +198,8 @@ export default function NoteDetailPage() {
               {note.related.map((r: any) => {
                 const rImgs = typeof r.images === 'string' ? JSON.parse(r.images) : (r.images || []);
                 return (
-                  <div key={r.id} onClick={() => navigate(`/explore/note/${r.id}`)} className="flex-shrink-0 w-32 cursor-pointer">
-                    {rImgs[0] ? <img src={rImgs[0]} alt="" className="w-32 h-32 rounded-lg object-cover mb-1" />
+                  <div key={r.id} onClick={() => nav(`/explore/note/${r.id}`)} className="flex-shrink-0 w-32 cursor-pointer">
+                    {rImgs[0] ? <img src={rImgs[0]} alt="" className="w-32 h-32 rounded-lg object-cover mb-1" loading="lazy" decoding="async" />
                       : <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg mb-1 flex items-center justify-center">📝</div>}
                     <div className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">{r.title}</div>
                   </div>

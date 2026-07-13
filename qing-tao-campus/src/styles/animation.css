@@ -198,3 +198,32 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+
+/* Global shimmer for all skeleton elements */
+.skeleton {
+  animation: lg-shimmer-base 1.8s ease-in-out infinite;
+  background: linear-gradient(90deg, 
+    var(--skeleton-bg, rgba(0,0,0,0.05)) 0%, 
+    var(--skeleton-shine, rgba(0,0,0,0.1)) 40%, 
+    var(--skeleton-bg, rgba(0,0,0,0.05)) 80%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes lg-shimmer-base {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Pulse shimmer for avatar skeletons */
+.skeleton-avatar {
+  animation: lg-shimmer-base 1.5s ease-in-out infinite;
+}
+
+/* Card loading shimmer */
+.skeleton-card {
+  animation: lg-shimmer-base 2s ease-in-out infinite;
+  border-radius: 12px;
+}

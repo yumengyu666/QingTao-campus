@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiX, FiLoader, FiUpload, FiAlertCircle, FiMove } from 'react-icons/fi';
+import { FiX, FiLoader, FiUpload, FiAlertCircle, FiMove, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { apiFetch } from '@/utils/api';
 import { storage } from '@/utils/storage';
 
@@ -11,6 +11,11 @@ interface ImageItem {
 }
 
 export type { ImageItem };
+
+interface LocalPreview {
+  file: File;
+  objectUrl: string;
+}
 
 interface Props {
   images: ImageItem[];
@@ -24,11 +29,19 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
+  const [localPreviews, setLocalPreviews] = useState<LocalPreview[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Drag-to-reorder state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Cleanup local preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      localPreviews.forEach((p) => URL.revokeObjectURL(p.objectUrl));
+    };
+  }, []);
 
   useEffect(() => {
     if (!showStatus) return;
@@ -80,24 +93,41 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
   };
 
   const processFiles = async (fileList: FileList) => {
-    const files = Array.from(fileList).slice(0, max - images.length);
+    const files = Array.from(fileList).slice(0, max - images.length - localPreviews.length);
     if (files.length === 0) return;
     const oversize = files.find((f) => f.size > 5 * 1024 * 1024);
     if (oversize) { setError(`图片 "${oversize.name}" 超过5MB限制`); return; }
     setError('');
     setUploadProgress(0);
+
+    // Create local previews immediately
+    const previews: LocalPreview[] = files.map((f) => ({
+      file: f,
+      objectUrl: URL.createObjectURL(f),
+    }));
+    setLocalPreviews((prev) => [...prev, ...previews]);
+
     setUploading(true);
     const formData = new FormData();
     files.forEach((f) => formData.append('images', f));
     try {
       const json = await uploadWithProgress(formData);
+      // Remove local previews
+      previews.forEach((p) => URL.revokeObjectURL(p.objectUrl));
+      setLocalPreviews((prev) => prev.filter((p) => !previews.includes(p)));
+
       if (json.code === 200 && json.data?.urls) {
         const items: ImageItem[] = json.data.urls.map((u: any) => ({
           url: u.url, blurredUrl: u.blurredUrl, reviewId: u.reviewId, status: 'pending' as const,
         }));
         onChange([...images, ...items]);
       }
-    } catch { setError('上传失败，请重试'); }
+    } catch {
+      // Remove local previews on error
+      previews.forEach((p) => URL.revokeObjectURL(p.objectUrl));
+      setLocalPreviews((prev) => prev.filter((p) => !previews.includes(p)));
+      setError('上传失败，请重试');
+    }
     setUploading(false);
     setUploadProgress(0);
     if (inputRef.current) inputRef.current.value = '';
@@ -105,9 +135,25 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
 
   const handleAdd = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files) processFiles(e.target.files); };
   const handleRemove = (idx: number) => { onChange(images.filter((_, i) => i !== idx)); setError(''); };
+  const handleRemoveLocalPreview = (idx: number) => {
+    setLocalPreviews((prev) => {
+      const item = prev[idx];
+      if (item) URL.revokeObjectURL(item.objectUrl);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragOver(true); };
   const handleDragLeave = () => setDragOver(false);
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files) processFiles(e.dataTransfer.files); };
+
+  // Move image up/down
+  const moveImage = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= images.length) return;
+    const newImages = [...images];
+    [newImages[idx], newImages[target]] = [newImages[target], newImages[idx]];
+    onChange(newImages);
+  };
 
   // Reorder drag handlers
   const handleReorderDragStart = (e: React.DragEvent, index: number) => {
@@ -146,9 +192,12 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
     setDragOverIndex(null);
   };
 
+  const totalCount = images.length + localPreviews.length;
+
   return (
     <div>
       <div className="flex flex-wrap gap-2.5">
+        {/* Uploaded images */}
         {images.map((img, i) => {
           const isPending = showStatus && img.status === 'pending';
           const isRejected = showStatus && img.status === 'rejected';
@@ -157,7 +206,7 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
           const isOver = dragOverIndex === i;
 
           return (
-            <div key={i}
+            <div key={`img-${i}`}
               draggable
               onDragStart={(e) => handleReorderDragStart(e, i)}
               onDragOver={(e) => handleReorderDragOver(e, i)}
@@ -168,7 +217,7 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
                 isDragging ? 'opacity-40 scale-90' : ''
               } ${isOver ? 'ring-2 ring-indigo-400 scale-105' : ''}`}
             >
-              <img src={displayUrl} alt="" className={`w-full h-full object-cover ${isPending ? 'blur-sm' : ''}`} loading="lazy" />
+              <img src={displayUrl} alt="" className={`w-full h-full object-cover ${isPending ? 'blur-sm' : ''}`} loading="lazy" decoding="async" />
               {isPending && (
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <span className="text-[9px] text-white bg-black/50 px-1.5 py-0.5 rounded">待审核</span>
@@ -179,12 +228,32 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
                   <span className="text-[9px] text-white bg-red-500 px-1.5 py-0.5 rounded">已拒绝</span>
                 </div>
               )}
-              {/* Reorder handle */}
-              <div className="absolute top-0.5 left-0.5 w-5 h-5 rounded-md bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Reorder arrows */}
+              <div className="absolute top-0.5 left-0.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveImage(i, -1); }}
+                  disabled={i === 0}
+                  className="w-5 h-5 rounded-md bg-black/40 flex items-center justify-center disabled:opacity-30 hover:bg-black/60 transition-colors"
+                >
+                  <FiChevronUp className="text-white text-[10px]" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveImage(i, 1); }}
+                  disabled={i === images.length - 1}
+                  className="w-5 h-5 rounded-md bg-black/40 flex items-center justify-center disabled:opacity-30 hover:bg-black/60 transition-colors"
+                >
+                  <FiChevronDown className="text-white text-[10px]" />
+                </button>
+              </div>
+              {/* Drag handle */}
+              <div className="absolute top-0.5 right-0.5 w-5 h-5 rounded-md bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <FiMove className="text-white text-[10px]" />
               </div>
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                <button onClick={() => handleRemove(i)} className="w-6 h-6 rounded-full bg-white/90 text-gray-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white">
+                <button
+                  onClick={() => handleRemove(i)}
+                  className="w-6 h-6 rounded-full bg-white/90 text-gray-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                >
                   <FiX className="text-xs" />
                 </button>
               </div>
@@ -192,7 +261,29 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
           );
         })}
 
-        {images.length < max && (
+        {/* Local previews (uploading) */}
+        {localPreviews.map((preview, i) => (
+          <div key={`local-${i}`}
+            className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 dark:bg-[var(--color-card-hover)] ring-2 ring-indigo-300 dark:ring-indigo-600"
+          >
+            <img src={preview.objectUrl} alt="上传预览" className="w-full h-full object-cover opacity-60" />
+            <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
+              <FiLoader className="text-white text-lg animate-spin" />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <button
+                onClick={() => handleRemoveLocalPreview(i)}
+                className="w-6 h-6 rounded-full bg-white/90 text-gray-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                disabled={uploading}
+              >
+                <FiX className="text-xs" />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* Upload slot */}
+        {totalCount < max && (
           <label
             onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
             className={`w-20 h-20 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer select-none ${
@@ -209,7 +300,7 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
             ) : (
               <>
                 <FiUpload className="text-lg text-gray-400" />
-                <span className="text-[10px] text-gray-400 mt-0.5">{images.length}/{max}</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">{totalCount}/{max}</span>
               </>
             )}
             <input ref={inputRef} type="file" accept="image/*" multiple onChange={handleAdd} disabled={uploading} className="hidden" />
@@ -217,9 +308,16 @@ export function ImageUploader({ images, onChange, max = 9, showStatus = false }:
         )}
       </div>
 
+      {/* Global progress bar */}
       {uploading && uploadProgress > 0 && (
-        <div className="mt-2 w-full h-1.5 bg-gray-200 dark:bg-[var(--color-card-hover)] rounded-full overflow-hidden">
-          <div className="h-full bg-indigo-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+        <div className="mt-2 w-full">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-indigo-500 font-medium">上传中...</span>
+            <span className="text-[10px] text-indigo-500 font-medium tabular-nums">{uploadProgress}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-gray-200 dark:bg-[var(--color-card-hover)] rounded-full overflow-hidden">
+            <div className="h-full bg-indigo-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+          </div>
         </div>
       )}
 

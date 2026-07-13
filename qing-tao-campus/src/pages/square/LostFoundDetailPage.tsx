@@ -182,7 +182,7 @@ export default function LostFoundDetailPage() {
 
         {item.images?.length > 0 && (
           <div className="mt-4 space-y-2">
-            {item.images.map((img: string, i: number) => <img key={i} src={img} alt="" className="w-full rounded-lg cursor-pointer hover:opacity-95 transition-opacity" loading="lazy" onClick={() => setLightboxIndex(i)} />)}
+            {item.images.map((img: string, i: number) => <img key={i} src={img} alt="" className="w-full rounded-lg cursor-pointer hover:opacity-95 transition-opacity" loading="lazy" decoding="async" onClick={() => setLightboxIndex(i)} />)}
           </div>
         )}
       </div>

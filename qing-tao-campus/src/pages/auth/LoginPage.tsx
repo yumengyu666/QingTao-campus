@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FiAlertTriangle, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiX, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { apiFetch } from '@/utils/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [captchaId, setCaptchaId] = useState('');
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [loading, setLoading] = useState(false);
@@ -71,7 +72,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex justify-center items-center relative overflow-hidden"
       style={{
-        background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
+        background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
         backgroundSize: '400% 400%',
         animation: 'gradientBG 15s ease infinite',
       }}>
@@ -120,7 +121,8 @@ export default function LoginPage() {
         {/* Form — inputs match original exactly */}
         <form onSubmit={handleSubmit}>
           <div className="mb-5 relative">
-            <input type="text" placeholder="用户名" required value={username}
+            <label className="sr-only" htmlFor="login-username">用户名</label>
+            <input id="login-username" type="text" placeholder="用户名" required value={username}
               onChange={e => setUsername(e.target.value)}
               className="w-full px-5 py-[15px] rounded-xl text-white text-[15px] outline-none transition-all"
               style={{
@@ -133,9 +135,10 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-5 relative">
-            <input type="password" placeholder="密码" required value={password}
+            <label className="sr-only" htmlFor="login-password">密码</label>
+            <input id="login-password" type={showPassword ? 'text' : 'password'} placeholder="密码" required value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full px-5 py-[15px] rounded-xl text-white text-[15px] outline-none transition-all"
+              className="w-full px-5 py-[15px] pr-12 rounded-xl text-white text-[15px] outline-none transition-all"
               style={{
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.2)',
@@ -143,6 +146,13 @@ export default function LoginPage() {
               onFocus={e => { e.target.style.background = 'rgba(255,255,255,0.2)'; e.target.style.borderColor = 'rgba(255,255,255,0.6)'; e.target.style.boxShadow = '0 0 10px rgba(255,255,255,0.1)'; }}
               onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.1)'; e.target.style.borderColor = 'rgba(255,255,255,0.2)'; e.target.style.boxShadow = 'none'; }}
             />
+            <button type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors p-1"
+              aria-label={showPassword ? '隐藏密码' : '显示密码'}
+            >
+              {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+            </button>
             <div className="text-right mt-1">
               <button type="button" onClick={() => setShowForgotPwd(true)}
                 className="text-white/60 text-xs hover:text-white hover:underline transition-all">
@@ -159,19 +169,13 @@ export default function LoginPage() {
           </div>
 
           {/* Agreement checkbox */}
-          <label className="flex items-center gap-2 cursor-pointer text-white/80 text-sm mb-5" onClick={() => setAgreed(a => !a)}>
-            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${agreed ? 'bg-white border-white' : 'border-white/40'}`}>
-              {agreed && (
-                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" style={{ color: '#e73c7e' }}>
-                  <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
-            </div>
-            <span>
+          <div className="flex items-start gap-2 text-white/80 text-sm mb-5">
+            <input type="checkbox" checked={agreed} onChange={() => setAgreed(a => !a)} id="agree-checkbox" className="w-5 h-5 rounded accent-indigo-500 flex-shrink-0 cursor-pointer mt-0.5" />
+            <label htmlFor="agree-checkbox" className="cursor-pointer">
               我已阅读并同意
-              <span className="underline cursor-pointer hover:opacity-80" onClick={e => { e.stopPropagation(); setShowDisclaimer(true); }}>《用户协议》</span>
-            </span>
-          </label>
+            </label>
+            <span className="underline cursor-pointer hover:opacity-80" onClick={() => setShowDisclaimer(true)}>《用户协议》</span>
+          </div>
 
           {/* Submit — exact match */}
           <button type="submit" disabled={!canSubmit}
@@ -209,7 +213,7 @@ export default function LoginPage() {
               {version === 'normal' && '✓ '}普通版本
             </button>
             <button
-              onClick={() => { setVersion('lg'); localStorage.setItem('prefer_lg', '1'); }}
+              onClick={() => { setVersion('lg'); localStorage.setItem('prefer_lg', '1'); toast.success('已切换到液态玻璃版本'); }}
               className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
                 version === 'lg'
                   ? 'bg-white text-indigo-600 shadow-md'
@@ -318,6 +322,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        <div key={step} className="animate-[fadeIn_0.25s_ease-out]">
         {step === 'username' ? (
           <div className="space-y-4">
             <p className="text-sm text-gray-500">请输入用户名，系统将查询您的安全问题进行验证。</p>
@@ -375,6 +380,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

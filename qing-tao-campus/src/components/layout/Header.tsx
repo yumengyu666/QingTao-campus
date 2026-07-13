@@ -1,6 +1,6 @@
 import { FiArrowLeft, FiShare2, FiSearch } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { useAppNavigate } from '@/hooks/useAppNavigate';
+import { useAppNavigate, useNavContext } from '@/hooks/useAppNavigate';
 import { DarkModeToggle } from '@/components/common/DarkModeToggle';
 import { ThemePicker } from '@/components/theme/ThemePicker';
 import { Breadcrumb } from '@/components/common/Breadcrumb';
@@ -27,6 +27,11 @@ export function Header({
 }: Props) {
   const navigate = useNavigate();
   const nav = useAppNavigate();
+  const { basePath } = useNavContext();
+
+  // 液态玻璃布局：LiquidGlassLayout 已提供完整头部（主Tab标题/子页返回），
+  // 页面内 Header 不再渲染，避免双重嵌套
+  if (basePath === '/lg') return null;
 
   useEffect(() => {
     document.title = title ? `${title} - 轻淘` : '轻淘 - 郑州轻工业大学校园二手交易平台';

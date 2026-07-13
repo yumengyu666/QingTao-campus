@@ -42,6 +42,22 @@ function getPageTitle(pathname: string): string {
   return last || "页面";
 }
 
+// #100: This is the production Liquid Glass layout. See also LiquidGlassDemo.tsx for the demo version.
+// Both should be kept in visual sync.
+/**
+ * LiquidGlassLayout — production liquid glass shell.
+ *
+ * Architecture notes:
+ * - .lg-root is scoped to a div (not <html>), so portals/modals render outside
+ *   the glass theme context. For portal styling, use explicit lg-* classes.
+ * - Publish sheet drag indicator is duplicated from GlassSheet.tsx (#33).
+ *   Keep both in sync when changing either.
+ * - Route paths are defined here AND in router/index.tsx (#30, #97).
+ *   When adding routes, update both files.
+ * - Scroll events are handled via refs (not state) for performance (#53).
+ * - AnimatePresence mode="sync" for faster transitions (#58).
+ * - Pull-to-refresh uses passive touch events for iOS compatibility (#93).
+ */
 export default function LiquidGlassLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -124,20 +140,28 @@ export default function LiquidGlassLayout() {
     else setActiveTab("home");
   }, [location.pathname, basePath]);
 
-  // Scroll to top on page change
-  useEffect(() => { window.scrollTo({ top: 0 }); }, [location.pathname]);
+  // Scroll to top of main content area on page change
+  useEffect(() => {
+    const main = document.getElementById("lg-main");
+    if (main) main.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [location.pathname]);
+  // #74: Reset tab bar visible on every page change
+  useEffect(() => { setTabBarVisible(true); scrollThreshold.current = 0; lastScrollY.current = 0; }, [location.pathname]);
+
   // Close publish sheet on navigation
   useEffect(() => { setShowPublishSheet(false); }, [location.pathname]);
 
-  // Keyboard detection: hide tab bar when soft keyboard is open
+  // #88: Keyboard detection with fallback for browsers without visualViewport
   useEffect(() => {
-    if (!window.visualViewport) return;
-    const handler = () => {
-      const isOpen = window.visualViewport!.height < window.innerHeight * 0.85;
-      setKeyboardOpen(isOpen);
-    };
-    window.visualViewport.addEventListener("resize", handler);
-    return () => window.visualViewport.removeEventListener("resize", handler);
+    if (window.visualViewport) {
+      const handler = () => setKeyboardOpen(window.visualViewport!.height < window.innerHeight * 0.75);
+      window.visualViewport.addEventListener("resize", handler);
+      return () => window.visualViewport.removeEventListener("resize", handler);
+    }
+    // Fallback for browsers without visualViewport
+    const handler = () => setKeyboardOpen(window.innerHeight < window.outerHeight * 0.75);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
   }, []);
 
   // Scroll-based tab bar hide/show (main pages only)
@@ -190,7 +214,10 @@ export default function LiquidGlassLayout() {
     };
 
     const handleTouchEnd = () => {
-      if (hasTriggeredRefresh.current) setTimeout(() => window.location.reload(), 400);
+      if (hasTriggeredRefresh.current) {
+        // Soft refresh: re-navigate to current path to trigger data reload
+        navigate(location.pathname, { replace: true });
+      }
       isPulling.current = false;
       hasTriggeredRefresh.current = false;
       setRefreshing(false);
@@ -198,7 +225,7 @@ export default function LiquidGlassLayout() {
 
     main.addEventListener("touchstart", handleTouchStart, { passive: true });
     main.addEventListener("touchmove", handleTouchMove, { passive: true });
-    main.addEventListener("touchend", handleTouchEnd);
+    main.addEventListener("touchend", handleTouchEnd, { passive: true });
     return () => {
       main.removeEventListener("touchstart", handleTouchStart);
       main.removeEventListener("touchmove", handleTouchMove);
@@ -224,14 +251,14 @@ export default function LiquidGlassLayout() {
 
   return (
     <NavigationContext.Provider value={navContextValue}>
-      <div className="lg-root flex flex-col lg-bg" style={{ minHeight: "100dvh" }}>
+      <div className={`lg-root flex flex-col lg-bg ${document.documentElement.classList.contains("dark") ? "dark" : ""}`} style={{ minHeight: "100dvh", transition: "padding-bottom 0.2s ease-out" }}>
         <a href="#lg-main" className="skip-link">跳转到主要内容</a>
 
         {/* ── Main-page header ── */}
         {!isSubPage && (
           <header className="lg-header items-center justify-between">
             <span className="text-[15px] font-semibold text-gray-900 dark:text-white tracking-tight">
-              轻淘校园
+              {activeTab === 'profile' ? '我的' : activeTab === 'square' ? '广场' : activeTab === 'messages' ? '消息' : '轻淘校园'}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -248,7 +275,7 @@ export default function LiquidGlassLayout() {
 
         {/* ── Sub-page glass header with back button ── */}
         {isSubPage && (
-          <header className="lg-header lg-sub-header">
+          <header className="lg-header lg-sub-header flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}
               className="w-9 h-9 -ml-2 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
@@ -259,7 +286,7 @@ export default function LiquidGlassLayout() {
             <span className="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-white truncate px-2">
               {pageTitle}
             </span>
-            <div className="w-9" />
+            <div className="w-9 flex items-center justify-end"><button onClick={() => navigate(`${basePath}/search`)} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all" aria-label="搜索"><FiSearch className="text-[17px]" /></button></div>
           </header>
         )}
 
@@ -269,7 +296,7 @@ export default function LiquidGlassLayout() {
           className="flex-1 overflow-y-auto"
           style={{
             paddingTop: 8,
-            paddingBottom: isSubPage ? 16 : 100,
+            paddingBottom: isSubPage ? 16 : "calc(80px + env(safe-area-inset-bottom, 0px))",
           }}
         >
           {/* Pull-to-refresh indicator */}
@@ -283,10 +310,9 @@ export default function LiquidGlassLayout() {
             </div>
           )}
 
-          <div className="px-4 w-full mx-auto">
-            <AnimatePresence mode="wait">
+          <div className="px-4 w-full max-w-2xl mx-auto">
+            <AnimatePresence mode="sync">
               <PageTransition
-                key={location.pathname}
                 variant={isSubPage ? "glass" : "default"}
               >
                 <Outlet />
@@ -349,7 +375,7 @@ export default function LiquidGlassLayout() {
                         +
                       </motion.div>
                     ) : (
-                      <span className="lg-tabbar-icon relative" style={{ color: isActive ? "#FFFFFF" : undefined }}>
+                      <span className="lg-tabbar-icon relative">
                         {icons[tab.key]}
                         {tab.key === "messages" && unreadCount > 0 && (
                           <span className="lg-tabbar-badge">
@@ -386,12 +412,15 @@ export default function LiquidGlassLayout() {
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 320 }}
                 className="lg-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="publish-sheet-title"
               >
                 <div className="flex justify-center -mt-2 mb-5">
                   <div className="w-10 h-1 rounded-full bg-black/10 dark:bg-white/15" />
                 </div>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">发布内容</h3>
+                  <h3 id="publish-sheet-title" className="text-lg font-bold text-gray-900 dark:text-white">发布内容</h3>
                   <button
                     onClick={() => setShowPublishSheet(false)}
                     className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 transition-colors"

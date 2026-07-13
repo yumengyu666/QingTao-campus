@@ -3,10 +3,16 @@
    iOS 26 / visionOS 风格 · 毛玻璃 + 动态光影
    Background: #F2F2F7 (light) / #0A0A14 (dark)
    Accent: #0066D6 | Native-level glass morphism
+
+   Theme layers:
+   - .liquid-glass = dark default (this file)
+   - .lg-root       = light override (liquid-glass-light.css)
+   - .dark .lg-root = dark refinement (liquid-glass-dark.css)
    ============================================================ */
 
 /* ============================================================
-   Layer 1: Base Theme Tokens
+   Layer 1: Base Theme Tokens (dark default)
+   Light mode overrides these via liquid-glass-light.css .lg-root
    ============================================================ */
 .liquid-glass {
   color-scheme: dark;
@@ -28,7 +34,7 @@
   --lg-surface-input: rgba(255,255,255,0.07);
   --lg-surface-input-focus: rgba(255,255,255,0.10);
 
-  /* ── Legacy surface aliases ── */
+  /* ── Legacy surface aliases (kept for backward compat; prefer --lg-* tokens) ── */
   --color-bg-section: var(--lg-surface-1);
   --color-bg-raised: var(--lg-surface-2);
   --color-bg-overlay: var(--lg-surface-1);
@@ -66,7 +72,7 @@
   --lg-border-divider: rgba(255,255,255,0.06);
   --color-border-focus: #0066D6;
 
-  /* Legacy border aliases */
+  /* Legacy aliases (kept for backward compat; prefer --lg-* tokens) */
   --color-border-default: var(--lg-border-default);
   --color-border-light: var(--lg-border-subtle);
   --color-border-strong: var(--lg-border-strong);
@@ -165,6 +171,10 @@
   --tooltip-bg: rgba(255,255,255,0.94);
   --tooltip-text: #0F172A;
 
+  /* ── Chat bubble colors ── */
+  --color-chat-bubble-self: rgba(0,102,214,0.25);
+  --color-chat-bubble-other: rgba(255,255,255,0.08);
+
   /* ── Motion tokens ── */
   --lg-duration-instant: 80ms;
   --lg-duration-fast: 150ms;
@@ -190,8 +200,6 @@
   background: var(--lg-surface-1);
   border: 1px solid var(--lg-border-default);
   border-radius: 16px;
-  backdrop-filter: var(--lg-glass-blur-light);
-  -webkit-backdrop-filter: var(--lg-glass-blur-light);
   transition: background var(--lg-duration-normal) var(--lg-ease-out),
               border-color var(--lg-duration-normal) var(--lg-ease-out),
               box-shadow var(--lg-duration-normal) var(--lg-ease-out),
@@ -213,7 +221,7 @@
 .lg-card-featured {
   background: linear-gradient(135deg, rgba(0,102,214,0.15), rgba(102,51,153,0.08));
   border: 1px solid var(--lg-border-strong);
-  border-radius: 20px;
+  border-radius: 16px;
   backdrop-filter: var(--lg-glass-blur-heavy);
   -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
   box-shadow: var(--lg-shadow-glow);
@@ -223,7 +231,7 @@
 .lg-card-elevated {
   background: var(--lg-surface-2);
   border: 1px solid var(--lg-border-strong);
-  border-radius: 18px;
+  border-radius: 16px;
   backdrop-filter: var(--lg-glass-blur);
   -webkit-backdrop-filter: var(--lg-glass-blur);
   box-shadow: var(--lg-shadow-md);
@@ -235,6 +243,14 @@
   border: 1px solid var(--lg-border-default);
   border-radius: 16px;
   overflow: hidden;
+}
+.lg-card-group > *:first-child {
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}
+.lg-card-group > *:last-child {
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
 }
 .lg-card-group > * + * {
   border-top: 1px solid var(--lg-border-divider);
@@ -297,8 +313,8 @@
   cursor: pointer;
   color: #FFFFFF;
   background: var(--lg-surface-3);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: var(--lg-glass-blur-light);
+  -webkit-backdrop-filter: var(--lg-glass-blur-light);
   border: 1px solid var(--lg-border-default);
   transition: all var(--lg-duration-normal) var(--lg-ease-out);
   user-select: none;
@@ -364,7 +380,7 @@
 .lg-btn-sm {
   padding: 10px 18px;
   font-size: 13px;
-  border-radius: 20px;
+  border-radius: 16px;
 }
 
 /* ============================================================
@@ -377,6 +393,7 @@
   padding: 7px 16px;
   border-radius: 16px;
   font-size: 12px;
+  line-height: 1;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -389,7 +406,7 @@
 }
 .lg-chip-active {
   background: rgba(0, 102, 214, 0.2);
-  color: #0066D6;
+  color: var(--color-text-brand);
   border: 1px solid rgba(0, 102, 214, 0.3);
   box-shadow: 0 1px 4px rgba(0,102,214,0.15);
 }
@@ -429,7 +446,7 @@
   color: var(--color-text-secondary);
 }
 .lg-tab-inactive {
-  color: #888888;
+  color: var(--color-text-tertiary);
 }
 
 /* ── Pill Tab Bar (Bottom Navigation) ── */
@@ -442,7 +459,7 @@
   display: flex;
   justify-content: center;
   padding: 0 16px 12px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), 12px));
   z-index: 100;
 }
 .lg-tabbar-pill {
@@ -450,7 +467,7 @@
   gap: 2px;
   padding: 5px;
   width: 100%;
-  max-width: 380px;
+  max-width: min(380px, calc(100vw - 32px));
   height: 60px;
   background: rgba(15,23,42,0.88);
   border: 1px solid var(--lg-glass-border);
@@ -460,6 +477,7 @@
   box-shadow: var(--lg-shadow-lg);
 }
 .lg-tabbar-item {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -476,7 +494,7 @@
   user-select: none;
 }
 .lg-tabbar-item-active {
-  background: #0066D6;
+  background: rgba(0, 102, 214, 0.12);
   box-shadow: 0 2px 8px rgba(0,102,214,0.4);
 }
 .lg-tabbar-item-inactive {
@@ -491,11 +509,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  color: inherit;
+}
+.lg-tabbar-item-active .lg-tabbar-icon {
+  color: #FFFFFF;
 }
 .lg-tabbar-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   letter-spacing: 0;
 }
 .lg-tabbar-label-active {
@@ -551,7 +573,34 @@
   color: #FFFFFF;
 }
 
-/* ── Skeleton loading ── */
+/* ── Focus visible (keyboard navigation) ── */
+.liquid-glass :focus-visible {
+  outline: 2px solid rgba(0, 102, 214, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Skip link (accessibility) ── */
+.liquid-glass .skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 999;
+  padding: 8px 16px;
+  background: #0066D6;
+  color: #FFFFFF;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.liquid-glass .skip-link:focus {
+  top: 8px;
+}
+
+
+  /* ── Skeleton loading ── */
 .lg-skeleton {
   background: linear-gradient(
     90deg,
@@ -598,14 +647,14 @@
   border: 1px solid var(--lg-glass-border);
   border-bottom: none;
   border-radius: 24px 24px 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: var(--lg-shadow-2xl);
   z-index: 201;
   padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px));
   max-width: 430px;
   width: 100%;
-  margin: 0 auto;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ── Glass dialog / modal ── */
@@ -667,6 +716,7 @@
 }
 .lg-product-card:active { transform: scale(0.975); }
 
+/* Product tag — prefer GlassBadge component with variant prop */
 .lg-product-tag {
   position: absolute;
   top: 8px;
@@ -693,7 +743,7 @@
 .lg-profile-card {
   background: linear-gradient(135deg, rgba(0,102,214,0.12), rgba(102,51,153,0.06));
   border: 1px solid var(--lg-border-default);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 20px;
   backdrop-filter: var(--lg-glass-blur);
   -webkit-backdrop-filter: var(--lg-glass-blur);
@@ -731,18 +781,18 @@
 .lg-h1 {
   font-size: 28px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--color-text-primary);
   letter-spacing: -0.5px;
 }
 .lg-h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--color-text-primary);
 }
 .lg-h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--color-text-primary);
 }
 .lg-body {
   font-size: 14px;
@@ -758,22 +808,6 @@
   font-weight: 700;
   color: #FF9500;
 }
-/* ── Glass header ── */
-.lg-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  height: 54px;
-  padding: 0 20px;
-  flex-shrink: 0;
-  background: rgba(15,23,42,0.82);
-  backdrop-filter: var(--lg-glass-blur-heavy);
-  -webkit-backdrop-filter: var(--lg-glass-blur-heavy);
-  border-bottom: 1px solid var(--lg-border-subtle);
-}
-
 /* ── Sub-page header (with back button + centered title) ── */
 .lg-sub-header {
   justify-content: flex-start;
@@ -805,4 +839,28 @@
   box-shadow: var(--lg-shadow-lg);
   max-width: 240px;
   line-height: 1.4;
+}
+
+/* ── Reduced motion: disable expensive backdrop-filter animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .lg-card,
+  .lg-card-featured,
+  .lg-card-elevated,
+  .lg-card-group,
+  .lg-input,
+  .lg-btn,
+  .lg-chip,
+  .lg-tabbar-pill,
+  .lg-sheet,
+  .lg-dialog,
+  .lg-header,
+  .lg-toast,
+  .lg-product-card,
+  .lg-profile-card,
+  .rounded-xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

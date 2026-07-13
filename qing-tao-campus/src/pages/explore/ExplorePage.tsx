@@ -44,7 +44,7 @@ function NoteCard({ note, onClick }: { note: NoteCardData; onClick: () => void }
         aspectRatio: images.length > 1 ? '3/4' : '1/1',
       }}>
         {coverUrl ? (
-          <img src={coverUrl} alt={note.title} className="w-full h-full object-cover" loading="lazy" />
+          <img src={coverUrl} alt={note.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">📝</div>
         )}
@@ -112,6 +112,7 @@ export default function ExplorePage() {
   const fetchNotes = useCallback(async (pageNum: number, reset = false) => {
     try {
       setLoading(true);
+      if (reset) setNotes([]);
       const res = await apiFetch(`/api/notes?sort=${activeTab}&postType=note&page=${pageNum}&pageSize=20`);
       const json = await res.json();
       if (json.code === 200) {
@@ -155,7 +156,12 @@ export default function ExplorePage() {
     load();
   }, []);
 
-  // Infinite scroll
+  // Infinite scroll — load more when page changes
+  useEffect(() => {
+    if (page > 1) fetchNotes(page);
+  }, [page, fetchNotes]);
+
+  // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {

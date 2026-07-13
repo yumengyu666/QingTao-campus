@@ -1,0 +1,1 @@
+{"version":3,"file":"etag.d.ts","sourceRoot":"","sources":["../../src/middleware/etag.ts"],"names":[],"mappings":"AAAA;;;GAGG;AACH,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAG1D,wBAAgB,SAAS,CAAC,aAAa,SAAM,IACnC,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,UAyBxD"}

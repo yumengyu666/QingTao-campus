@@ -4,13 +4,23 @@
    ============================================================ */
 
 /* ── Light mode root overrides ── */
+/* ===== OVERRIDE LAYER: .lg-root redefines --lg-* tokens set by .liquid-glass base =====
+   These values win because liquid-glass-light.css is imported AFTER liquid-glass.css.
+   When adding new tokens, define them in .liquid-glass first, then override here. */
 .lg-root {
   color-scheme: light;
+
+  /* Chat bubble colors (#28) */
+  --color-chat-bubble-self: rgba(0, 102, 214, 0.1);
+  --color-chat-bubble-other: rgba(0, 0, 0, 0.04);
+  --color-chat-bg: #F2F2F7;
+  --color-chat-input-bg: rgba(242, 242, 247, 0.85);
+  --color-chat-timestamp-bg: rgba(0, 0, 0, 0.05);
+  --color-chat-send-btn: #0066D6;
   background: #F2F2F7;
   color: #0F172A;
   min-height: 100dvh;
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro", sans-serif;
-  overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 
   /* ── Override theme tokens for light mode ── */
@@ -107,8 +117,7 @@
 }
 
 /* ── Text overrides inside lg-root ── */
-.lg-root .text-gray-900,
-.lg-root .dark\:text-gray-100 { color: var(--color-text-primary) !important; }
+.lg-root .text-gray-900 { color: var(--color-text-primary) !important; }
 .lg-root .text-gray-800 { color: #1E293B !important; }
 .lg-root .text-gray-700 { color: rgba(0,0,0,0.70) !important; }
 .lg-root .text-gray-600 { color: var(--color-text-secondary) !important; }
@@ -142,10 +151,10 @@
 .lg-root .bg-white\/85,
 .lg-root .bg-white\/90,
 .lg-root .bg-white\/95 {
-  background: rgba(255,255,255,0.70) !important;
+  background: var(--lg-glass-bg) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border: 1px solid rgba(255,255,255,0.50) !important;
+  border: 1px solid var(--lg-glass-border) !important;
 }
 
 /* ── Header / sticky glass ── */
@@ -178,8 +187,9 @@
   box-shadow: 0 0 0 3px rgba(0,102,214,0.10) !important;
 }
 
-/* ── Rounded-xl form sections ── */
-.lg-root .rounded-xl {
+/* ── Glass background for section containers (not all rounded-xl) ── */
+.lg-root section.rounded-xl,
+.lg-root .glass-section.rounded-xl {
   background: rgba(255,255,255,0.55) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
@@ -216,7 +226,7 @@
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255,255,255,0.60);
-  border-radius: 18px;
+  border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
 }
 
@@ -266,9 +276,11 @@
   box-shadow: 0 4px 24px rgba(0,0,0,0.06);
 }
 .lg-root .lg-tabbar-item-active {
-  background: #0066D6;
+  background: rgba(0, 102, 214, 0.10);
+  box-shadow: 0 2px 8px rgba(0,102,214,0.15);
 }
-.lg-root .lg-tabbar-label-active { color: #FFFFFF; }
+.lg-root .lg-tabbar-item-active .lg-tabbar-icon { color: #0066D6; }
+.lg-root .lg-tabbar-label-active { color: #0066D6; }
 .lg-root .lg-tabbar-label-inactive { color: rgba(0,0,0,0.30); }
 
 /* ── Product card ── */
@@ -391,7 +403,7 @@
 
 /* ── Swiper ── */
 .lg-root .swiper { border-radius: 16px; overflow: hidden; }
-.lg-root .swiper-pagination-bullet { background: rgba(0,0,0,0.25) !important; }
+.lg-root .swiper-pagination-bullet { background: rgba(0,0,0,0.45) !important; }
 .lg-root .swiper-pagination-bullet-active { background: #0066D6 !important; }
 
 /* ── Scrollbar ── */
@@ -422,11 +434,6 @@
 /* ── Hover states ── */
 .lg-root .hover\:bg-gray-100:hover { background: rgba(0,0,0,0.04) !important; }
 .lg-root .hover\:bg-black\/5:hover { background: rgba(0,0,0,0.04) !important; }
-/* ── Glass header (light) ── */
-.lg-root .lg-header {
-  background: rgba(242,242,247,0.80);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-}
 
 /* ── Sub-page header (light) ── */
 .lg-root .lg-sub-header {

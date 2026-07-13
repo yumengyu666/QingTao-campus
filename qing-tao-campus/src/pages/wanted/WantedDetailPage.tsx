@@ -56,7 +56,7 @@ export default function WantedDetailPage() {
           {images.length > 0 && (
             <div className="grid grid-cols-3 gap-2 mt-4">
               {images.map((img: string, i: number) => (
-                <img key={i} src={img} alt="" className="rounded-xl w-full aspect-square object-cover" />
+                <img key={i} src={img} alt="" className="rounded-xl w-full aspect-square object-cover" loading="lazy" decoding="async" />
               ))}
             </div>
           )}

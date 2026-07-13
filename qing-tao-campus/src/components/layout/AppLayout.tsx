@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { SideNav } from './SideNav';
 import { PageTransition } from '@/components/common/PageTransition';
 import { BackToTop } from '@/components/common/BackToTop';
+import OnboardingWalkthrough from '@/components/onboarding/OnboardingWalkthrough';
 import Mascot from '@/components/mascot/Mascot';
 import MascotChat from '@/components/mascot/MascotChat';
 import { useKeyboardNav } from '@/hooks/useKeyboardNav';
@@ -30,6 +31,7 @@ export function AppLayout() {
       </a>
 
       <SideNav />
+      <OnboardingWalkthrough />
 
       <main
         id="main-content"

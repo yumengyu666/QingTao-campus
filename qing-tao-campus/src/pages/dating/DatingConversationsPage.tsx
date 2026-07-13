@@ -65,7 +65,7 @@ export default function DatingConversationsPage() {
                 className="flex items-center gap-3 px-4 py-2.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] active:bg-black/[0.04] dark:active:bg-white/[0.04] transition-colors border-b border-black/[0.03] dark:border-white/[0.03] cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-md bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0 overflow-hidden">
-                  {c.customAvatar ? <img src={c.customAvatar} className="w-full h-full object-cover" alt="" /> : c.nickname?.[0] || '?'}
+                  {c.customAvatar ? <img src={c.customAvatar} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" /> : c.nickname?.[0] || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">

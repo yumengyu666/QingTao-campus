@@ -20,6 +20,7 @@ interface NavItem {
   label: string;
   badge?: number;
   adminOnly?: boolean;
+  dataOnboarding?: string;
 }
 
 /* ── Nav Groups ── */
@@ -71,10 +72,11 @@ function Badge({ count }: { count: number }) {
 }
 
 /* ── Desktop Nav Item ── */
-function NavLinkItem({ to, icon: Icon, label, badge }: NavItem) {
+function NavLinkItem({ to, icon: Icon, label, badge, dataOnboarding }: NavItem) {
   return (
     <NavLink
       to={to}
+      data-onboarding={dataOnboarding}
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-xl transition-all duration-200 px-3 py-2.5 relative group ${
           isActive
@@ -111,10 +113,11 @@ function NavLinkItem({ to, icon: Icon, label, badge }: NavItem) {
 }
 
 /* ── Mobile Bottom Nav Item ── */
-function MobileNavLink({ to, icon: Icon, label, badge }: NavItem) {
+function MobileNavLink({ to, icon: Icon, label, badge, dataOnboarding }: NavItem) {
   return (
     <NavLink
       to={to}
+      data-onboarding={dataOnboarding}
       className={({ isActive }) =>
         `flex flex-col items-center justify-center gap-0.5 px-1 py-1 transition-all duration-200 relative ${
           isActive
@@ -243,7 +246,7 @@ export function SideNav() {
             }`}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm shadow-indigo-500/20 flex-shrink-0 overflow-hidden">
-              <img src="/logo.png" alt="轻淘" className="w-full h-full object-contain" />
+              <img src="/logo.png" alt="轻淘" className="w-full h-full object-contain" decoding="async" />
             </div>
             {!collapsed && (
               <div className="min-w-0">
@@ -275,6 +278,7 @@ export function SideNav() {
                           key={item.to}
                           to={item.to}
                           title={item.label}
+                          aria-label={item.label}
                           className={({ isActive }) =>
                             `flex items-center justify-center rounded-xl transition-all duration-200 p-2.5 relative group ${
                               isActive
@@ -299,21 +303,24 @@ export function SideNav() {
             {/* Publish */}
             <button
               onClick={() => setShowPublish(true)}
+              data-onboarding="publish-btn"
               className={`flex items-center rounded-xl transition-all duration-200 w-full text-left text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-gray-200 group ${
                 collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'
               }`}
               title="发布"
+              aria-label="发布内容"
             >
               <FiPlusCircle size={20} className="flex-shrink-0" />
               {!collapsed && <span className="text-sm font-medium">发布</span>}
             </button>
 
-            <NavLinkItem to="/messages" icon={FiMail} label="消息" badge={msgUnread} />
+            <NavLinkItem to="/messages" icon={FiMail} label="消息" badge={msgUnread} dataOnboarding="messages-tab" />
             <NavLinkItem
               to="/profile"
               icon={FiUser}
               label="我的"
               badge={unreadCount}
+              dataOnboarding="profile-tab"
             />
 
             {user?.role === 'admin' && (
@@ -353,6 +360,7 @@ export function SideNav() {
             onClick={toggleCollapsed}
             className="mt-2 mx-auto p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
             title={collapsed ? '展开侧边栏' : '收起侧边栏'}
+            aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
           >
             {collapsed ? <FiChevronRight size={16} /> : <FiChevronLeft size={16} />}
           </button>
@@ -376,8 +384,8 @@ export function SideNav() {
             <span className="text-[10px] font-medium">发布</span>
           </button>
 
-          <MobileNavLink to="/messages" icon={FiMail} label="消息" badge={msgUnread} />
-          <MobileNavLink to="/profile" icon={FiUser} label="我的" badge={unreadCount} />
+          <MobileNavLink to="/messages" icon={FiMail} label="消息" badge={msgUnread} dataOnboarding="messages-tab" />
+          <MobileNavLink to="/profile" icon={FiUser} label="我的" badge={unreadCount} dataOnboarding="profile-tab" />
         </div>
       </nav>
 

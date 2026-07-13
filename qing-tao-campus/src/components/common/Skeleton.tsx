@@ -12,6 +12,8 @@
  * - Profile: user profile skeleton
  */
 
+import { memo } from 'react';
+
 function TextLine({
   width,
   height = 'h-3.5',
@@ -29,7 +31,7 @@ function TextLine({
   );
 }
 
-function SkeletonCard() {
+const SkeletonCard = memo(function SkeletonCard() {
   return (
     <div className="bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden border border-gray-100 dark:border-[var(--color-border)]">
       <div className="skeleton h-36 md:h-44 rounded-none" />
@@ -43,9 +45,9 @@ function SkeletonCard() {
       </div>
     </div>
   );
-}
+});
 
-function SkeletonCardSimple() {
+const SkeletonCardSimple = memo(function SkeletonCardSimple() {
   return (
     <div className="bg-white dark:bg-[var(--color-card)] rounded-xl overflow-hidden">
       <div className="skeleton h-36 md:h-44 rounded-none" />
@@ -59,9 +61,9 @@ function SkeletonCardSimple() {
       </div>
     </div>
   );
-}
+});
 
-function SkeletonList({ rows = 4 }: { rows?: number }) {
+const SkeletonList = memo(function SkeletonList({ rows = 4 }: { rows?: number }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: rows }).map((_, i) => (
@@ -79,9 +81,9 @@ function SkeletonList({ rows = 4 }: { rows?: number }) {
       ))}
     </div>
   );
-}
+});
 
-function SkeletonDetail() {
+const SkeletonDetail = memo(function SkeletonDetail() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Hero image */}
@@ -119,9 +121,9 @@ function SkeletonDetail() {
       </div>
     </div>
   );
-}
+});
 
-function SkeletonText({
+const SkeletonText = memo(function SkeletonText({
   lines = 3,
   className = '',
 }: {
@@ -136,9 +138,9 @@ function SkeletonText({
       ))}
     </div>
   );
-}
+});
 
-function SkeletonAvatar({
+const SkeletonAvatar = memo(function SkeletonAvatar({
   size = 'md',
 }: {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -150,9 +152,9 @@ function SkeletonAvatar({
     xl: 'w-20 h-20',
   };
   return <div className={`skeleton ${sizeMap[size]} rounded-full flex-shrink-0`} />;
-}
+});
 
-function SkeletonGrid({
+const SkeletonGrid = memo(function SkeletonGrid({
   count = 6,
   cols = 2,
   bordered = true,
@@ -178,9 +180,9 @@ function SkeletonGrid({
       ))}
     </div>
   );
-}
+});
 
-function SkeletonConversation({ rows = 5 }: { rows?: number }) {
+const SkeletonConversation = memo(function SkeletonConversation({ rows = 5 }: { rows?: number }) {
   return (
     <div className="space-y-0.5">
       {Array.from({ length: rows }).map((_, i) => (
@@ -200,13 +202,13 @@ function SkeletonConversation({ rows = 5 }: { rows?: number }) {
       ))}
     </div>
   );
-}
+});
 
-function SkeletonBanner() {
+const SkeletonBanner = memo(function SkeletonBanner() {
   return <div className="skeleton banner-swiper" />;
-}
+});
 
-function SkeletonProfile() {
+const SkeletonProfile = memo(function SkeletonProfile() {
   return (
     <div className="space-y-4">
       {/* Cover photo area */}
@@ -229,7 +231,7 @@ function SkeletonProfile() {
       </div>
     </div>
   );
-}
+});
 
 export const Skeleton = {
   Card: SkeletonCard,

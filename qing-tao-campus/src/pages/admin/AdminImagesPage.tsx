@@ -129,12 +129,12 @@ export default function AdminImagesPage() {
                   {/* Blurred preview */}
                   <div className="flex-shrink-0 flex gap-2">
                     <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 relative group">
-                      <img src={item.blurredUrl} alt="" className="w-full h-full object-cover" />
+                      <img src={item.blurredUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       <span className="absolute bottom-0 left-0 right-0 text-[9px] bg-black/50 text-white text-center py-0.5">模糊</span>
                     </div>
                     <button onClick={() => setPreviewUrl(item.url)}
                       className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 relative group cursor-pointer">
-                      <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" loading="lazy" />
                       <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
                         <FiZoomIn className="text-white opacity-0 group-hover:opacity-100 text-lg" />
                       </span>

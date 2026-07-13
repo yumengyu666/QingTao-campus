@@ -90,11 +90,11 @@ export default function ConversationsPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             message={search ? '未找到联系人' : '暂无消息'}
-            description={search ? '换个关键词试试' : '去首页逛逛，联系卖家开启对话'}
+            description={search ? '换个关键词试试' : '去广场看看同学们都在聊什么'}
             icon={<div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mb-1 shadow-sm"><FiMessageCircle className="text-3xl text-gray-300 dark:text-gray-600" /></div>}
             action={!search && (
-              <button onClick={() => nav('/')} className="px-5 py-2.5 bg-[var(--color-chat-send-btn)] text-white rounded-md text-sm font-medium active:scale-95 transition-all">
-                去逛逛
+              <button onClick={() => nav('/square')} className="px-5 py-2.5 bg-[var(--color-chat-send-btn)] text-white rounded-md text-sm font-medium active:scale-95 transition-all">
+                去广场看看
               </button>
             )}
           />

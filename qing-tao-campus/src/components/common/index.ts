@@ -21,3 +21,6 @@ export { ConfirmModal } from './ConfirmModal';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ScrollToTop } from './ScrollToTop';
 export { LazyImage } from './LazyImage';
+export { CharCounter } from './CharCounter';
+export { StepIndicator } from './StepIndicator';
+export { FormField } from './FormField';

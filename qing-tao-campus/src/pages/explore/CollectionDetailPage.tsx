@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/hooks/useAppNavigate';
 import { motion } from 'framer-motion';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -11,6 +12,7 @@ import { formatCount } from '@/utils/format';
 export default function CollectionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const nav = useAppNavigate();
   const [notes, setNotes] = useState<any[]>([]);
   const [collection, setCollection] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ export default function CollectionDetailPage() {
             const imgs = typeof n.images === 'string' ? JSON.parse(n.images) : (n.images || []);
             return (
               <motion.div key={n.id} whileTap={{ scale: 0.97 }}
-                onClick={() => navigate(`/explore/note/${n.id}`)}
+                onClick={() => nav(`/explore/note/${n.id}`)}
                 className="break-inside-avoid mb-3 bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm cursor-pointer">
                 {imgs[0] ? <LazyImage src={imgs[0]} alt="" className="w-full object-cover" aspectRatio="3/4" />
                   : <div className="aspect-[3/4] flex items-center justify-center text-3xl bg-gray-100 dark:bg-gray-700">📝</div>}

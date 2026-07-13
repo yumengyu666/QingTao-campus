@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { CampusTag } from '@/components/common/CampusTag';
+import { ReputationBadge } from '@/components/common/ReputationBadge';
 import { Skeleton } from '@/components/common/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LazyImage } from '@/components/common/LazyImage';
@@ -28,6 +29,7 @@ export default function UserProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'goods' | 'posts' | 'notes' | 'reviews'>('goods');
+  const [tabCache, setTabCache] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -137,7 +139,15 @@ export default function UserProfilePage() {
                 {profile.reputationLabel}
               </span>
             )}
+            <div className="mt-2">
+              <ReputationBadge
+                tradeCount={profile.tradeCount || 0}
+                approvalRate={profile.approvalRate || 0}
+                level={profile.reputationLabel}
+              />
+            </div>
             <div className="flex gap-4 mt-2 text-sm">
+              {profile.mutualFollowCount > 0 && <span className="text-green-500 text-xs">🏷 {profile.mutualFollowCount}个共同关注</span>}
               <span><b>{profile.followCount}</b> 关注</span>
               <span><b>{profile.fansCount}</b> 粉丝</span>
               <span><b>{profile.goodsCount}</b> 商品</span>
@@ -243,7 +253,7 @@ export default function UserProfilePage() {
                       <span className="w-6 text-right text-gray-500">{star}星</span>
                       <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div className="h-full bg-amber-400 rounded-full" style={{
-                          width: `${reviews.list.filter((r: any) => r.rating === star).length / Math.max(reviews.totalReviews, 1) * 100}%`
+                          width: `${Math.max(reviews.list.filter(function(r) { return r.rating === star; }).length / Math.max(reviews.totalReviews, 1) * 100, 3)}%`
                         }} />
                       </div>
                     </div>

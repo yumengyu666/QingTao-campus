@@ -46,6 +46,9 @@ export default defineConfig({
     css: false,
   },
   build: {
+    // 兼容微信/QQ 内置浏览器（X5 内核基于较旧 Chromium）
+    target: 'es2015',
+    cssTarget: 'chrome61',
     rollupOptions: {
       output: {
         manualChunks(id) {
